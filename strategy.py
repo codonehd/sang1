@@ -103,6 +103,7 @@ class TradingStrategy(QObject):
             db_manager=db_manager,
             screen_manager=screen_manager if screen_manager else ScreenManager(logger=logger) 
         )
+        self.pending_daily_data_stocks = set() # 일봉 데이터 수신 대기 종목 관리용 세트 추가
         # 초기화 상태 플래그
         self.is_initialized_successfully = False # 최종 초기화 성공 여부
         self.initialization_status = {
