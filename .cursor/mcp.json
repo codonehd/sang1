@@ -1,0 +1,58 @@
+{
+    "mcpServers": {
+      "brave-search": {
+        "command": "cmd",
+        "args": [
+          "/c",
+          "npx",
+          "-y",
+          "@smithery/cli@latest",
+          "run",
+          "@smithery-ai/brave-search",
+          "--key",
+          "ef4c5a71-3489-41b0-8870-0e45ac94743f",
+          "--profile",
+          "impressive-spider-CQ4EVR"
+        ]
+      },
+      "sequential-thinking": {
+        "command": "npx",
+        "args": [
+          "-y",
+          "@modelcontextprotocol/server-sequential-thinking"
+        ]
+      },
+      "terminal": {
+        "command": "npx",
+        "args": [
+          "-y",
+          "@dillip285/mcp-terminal"
+        ]
+      },
+      "mcp-youtube": {
+        "command": "npx",
+        "args": [
+          "@anaisbetts/mcp-youtube"
+        ]
+      },
+      "filesystem": {
+          "command": "npx",
+          "args": [
+            "-y",
+            "@modelcontextprotocol/server-filesystem",
+            "C:\\python",
+            "C:\\python\\sang1",
+            "C:\\python\\sang1\\tests",
+            "C:\\python\\sang1\\logs",
+            "C:\\Users\\suko\\AppData\\Local\\Programs\\cursor"
+          ]
+      },
+      "context7": {
+        "command": "npx",
+        "args": [
+          "-y", 
+          "@upstash/context7-mcp@latest"
+          ]
+      }
+    }
+  }

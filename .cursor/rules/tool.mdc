@@ -1,0 +1,14 @@
+---
+description: tool
+globs: 
+alwaysApply: false
+---
+{
+  "rules": [
+    {
+      "tool": "filesystem",
+      "priority": "high"
+    }
+  ]
+}
+

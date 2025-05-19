@@ -1,0 +1,43 @@
+{
+    "계좌정보": {
+        "계좌번호": "8101891811",
+        "비밀번호": ""
+    },
+    "매수금액": 1000000,
+    "매매전략": {
+        "익절_수익률": 5.0,
+        "익절_매도비율": 50,
+        "트레일링_하락률": 1.8,
+        "손절손실률_전일종가기준": 2.0,
+        "MarketOpenTime": "09:00:00",
+        "MarketCloseTime": "15:30:00",
+        "dry_run_mode": false
+    },
+    "Database": {
+        "path": "logs/trading_data.test.db"
+    },
+    "Logging": {
+        "level": "DEBUG",
+        "max_bytes": 10485760,
+        "backup_count": 5
+    },
+    "API_Limit": {
+        "tr_request_interval_ms": 210
+    },
+    "AutoTrading": {
+        "start_automatically": false
+    },
+    "watchlist": [
+        { "code": "180640", "name": "한진칼", "yesterday_close_price": 122700 },
+        { "code": "376900", "name": "로킷헬스케어", "yesterday_close_price": 21200 },
+        { "code": "002070", "name": "비비안", "yesterday_close_price": 1019 },
+        { "code": "104040", "name": "대성파인텍", "yesterday_close_price": 1102 },
+        { "code": "419530", "name": "SAMG엔터", "yesterday_close_price": 62500 },
+        { "code": "136150", "name": "원일티엔아이", "yesterday_close_price": 35900 },
+        { "code": "335870", "name": "윙스풋", "yesterday_close_price": 2630 }
+    ],
+    "PeriodicStatusReport": {
+        "enabled": true,
+        "interval_seconds": 60
+    }
+}
