@@ -1516,6 +1516,18 @@ class TradingStrategy(QObject):
             # 현재는 경고 로깅 후 함수 종료.
             return
 
+        # active_order_entry가 None이 아님이 보장되므로 아래 코드 실행 가능
+        # === 주문번호 업데이트 로직 추가 시작 ===
+        if active_order_entry.get('order_no') is None and chejan_data.get("9203"):
+            active_order_entry['order_no'] = chejan_data.get("9203")
+            # rq_name_key를 찾아서 로그에 포함 (디버깅 용이성)
+            rq_name_for_log = active_order_entry.get('rq_name_key', 'N/A') 
+            if rq_name_for_log == 'N/A' and 'rq_name' in active_order_entry: # 이전 버전 호환 또는 다른 경로로 설정된 경우
+                 rq_name_for_log = active_order_entry['rq_name']
+
+            self.log(f"활성 주문에 API 주문번호 업데이트: {active_order_entry['order_no']} (RQName: {rq_name_for_log}, Code: {code})", "INFO")
+        # === 주문번호 업데이트 로직 추가 끝 ===
+
         order_status = chejan_data.get("913") 
         order_qty = self._safe_to_int(chejan_data.get("900"))
         filled_qty_total = self._safe_to_int(chejan_data.get("902"))

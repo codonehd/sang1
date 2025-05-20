@@ -7,9 +7,9 @@
     "매매전략": {
         "익절_수익률": 5.0,
         "익절_매도비율": 50,
-        "최종_익절_수익률": 10.0,
+        "최종_익절_수익률": 9.0,
         "트레일링_활성화_수익률": 2.0,
-        "트레일링_하락률": 1.8,
+        "트레일링_하락률": 1.5,
         "손절손실률_전일종가기준": 2.0,
         "MarketOpenTime": "09:00:00",
         "MarketCloseTime": "15:30:00",
@@ -33,9 +33,9 @@
         { "code": "180640", "name": "한진칼", "yesterday_close_price": 112100 },
         { "code": "376900", "name": "로킷헬스케어", "yesterday_close_price": 19930 },
         { "code": "389260", "name": "대명에너지", "yesterday_close_price": 24900 },
-        { "code": "032940", "name": "원익", "yesterday_close_price": 3770 },
+        { "code": "032940", "name": "원익", "yesterday_close_price": 3730 },
         { "code": "086060", "name": "진바이오텍텍", "yesterday_close_price": 4185 },
-        { "code": "136150", "name": "원일티엔아이", "yesterday_close_price": 30400 },
+        { "code": "136150", "name": "원일티엔아이", "yesterday_close_price": 29200 },
         { "code": "335870", "name": "윙스풋", "yesterday_close_price": 2407 }
     ],
     "PeriodicStatusReport": {
