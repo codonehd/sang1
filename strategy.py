@@ -44,7 +44,7 @@ class StrategySettings:
     market_close_time_str: str = "15:30:00"
     periodic_report_enabled: bool = True
     periodic_report_interval_seconds: int = 60
-    max_daily_buy_count: int = 5  # 하루 최대 매수 실행 횟수
+    max_daily_buy_count: int = 10  # 하루 최대 매수 실행 횟수
     cancel_pending_orders_on_exit: bool = True  # 프로그램 종료 시 미체결 주문 자동 취소 여부
     auto_liquidate_after_minutes_enabled: bool = False # 일정 시간 경과 시 자동 청산 기능 활성화 여부
     auto_liquidate_after_minutes: int = 60  # 자동 청산 기준 시간 (분)

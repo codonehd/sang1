@@ -30,13 +30,13 @@
         "start_automatically": false
     },
     "watchlist": [
-        { "code": "180640", "name": "한진칼", "yesterday_close_price": 112100 },
-        { "code": "376900", "name": "로킷헬스케어", "yesterday_close_price": 19930 },
+        { "code": "253840", "name": "수젠텍", "yesterday_close_price": 7160 },
+        { "code": "376900", "name": "로킷헬스케어", "yesterday_close_price": 19950 },
         { "code": "389260", "name": "대명에너지", "yesterday_close_price": 24900 },
-        { "code": "032940", "name": "원익", "yesterday_close_price": 3730 },
-        { "code": "086060", "name": "진바이오텍텍", "yesterday_close_price": 4185 },
-        { "code": "136150", "name": "원일티엔아이", "yesterday_close_price": 29200 },
-        { "code": "335870", "name": "윙스풋", "yesterday_close_price": 2407 }
+        { "code": "032940", "name": "원익", "yesterday_close_price": 3790 },
+        { "code": "086060", "name": "진바이오텍", "yesterday_close_price": 4115 },
+        { "code": "217330", "name": "싸이토젠", "yesterday_close_price": 4405 },
+        { "code": "246250", "name": "에스엘에스바이오", "yesterday_close_price": 2420 }
     ],
     "PeriodicStatusReport": {
         "enabled": true,
