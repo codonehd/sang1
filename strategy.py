@@ -35,9 +35,11 @@ class AccountState:
 class StrategySettings:
     buy_amount_per_stock: float = 1000000.0
     stop_loss_rate_from_yesterday_close: float = 2.0  # 전일 종가 기준 손절률
-    target_profit_rate: float = 10.0 # 목표 수익률 (전량 매도 기준)
-    partial_sell_ratio: float = 0.5
-    trailing_stop_fall_rate: float = 2.0
+    partial_take_profit_rate: float = 5.0  # 부분 익절 수익률 (settings.json의 "익절_수익률")
+    full_take_profit_target_rate: float = 10.0 # 최종 익절 수익률 (settings.json의 "최종_익절_수익률")
+    partial_sell_ratio: float = 0.5 # 부분 익절 시 매도 비율 (settings.json의 "익절_매도비율")
+    trailing_stop_activation_profit_rate: float = 2.0 # 트레일링 스탑 활성화 수익률 (settings.json의 "트레일링_활성화_수익률")
+    trailing_stop_fall_rate: float = 1.8 # 트레일링 스탑 하락률 (settings.json의 "트레일링_하락률")
     market_open_time_str: str = "09:00:00"
     market_close_time_str: str = "15:30:00"
     periodic_report_enabled: bool = True
@@ -62,6 +64,8 @@ class StockTrackingData:
     is_gap_up_today: bool = False
     is_yesterday_close_broken_today: bool = False
     trailing_stop_partially_sold: bool = False # 트레일링 스탑 50% 매도 여부
+    is_trailing_stop_active: bool = False # 트레일링 스탑 활성화 여부 (2% 수익 달성 시 True)
+    partial_take_profit_executed: bool = False # 5% 부분 익절 실행 여부
     buy_timestamp: Optional[datetime] = None # 매수 체결 시간 기록
     api_data: Dict[str, Any] = field(default_factory=dict)
     # daily_chart_error: bool = False # REMOVED: No longer fetching daily chart via opt10081
@@ -164,9 +168,11 @@ class TradingStrategy(QObject):
         s = self.settings
         s.buy_amount_per_stock = cfg.get_setting("매매전략", "종목당매수금액", s.buy_amount_per_stock)
         s.stop_loss_rate_from_yesterday_close = cfg.get_setting("매매전략", "손절손실률_전일종가기준", s.stop_loss_rate_from_yesterday_close)
-        s.target_profit_rate = cfg.get_setting("매매전략", "익절수익률", s.target_profit_rate)
-        s.partial_sell_ratio = cfg.get_setting("매매전략", "분할매도비율", s.partial_sell_ratio)
-        s.trailing_stop_fall_rate = cfg.get_setting("매매전략", "트레일링하락률", s.trailing_stop_fall_rate)
+        s.partial_take_profit_rate = cfg.get_setting("매매전략", "익절_수익률", s.partial_take_profit_rate)
+        s.full_take_profit_target_rate = cfg.get_setting("매매전략", "최종_익절_수익률", s.full_take_profit_target_rate)
+        s.partial_sell_ratio = cfg.get_setting("매매전략", "익절_매도비율", s.partial_sell_ratio)
+        s.trailing_stop_activation_profit_rate = cfg.get_setting("매매전략", "트레일링_활성화_수익률", s.trailing_stop_activation_profit_rate)
+        s.trailing_stop_fall_rate = cfg.get_setting("매매전략", "트레일링_하락률", s.trailing_stop_fall_rate)
         s.market_open_time_str = cfg.get_setting("매매전략", "MarketOpenTime", s.market_open_time_str)
         s.market_close_time_str = cfg.get_setting("매매전략", "MarketCloseTime", s.market_close_time_str)
         s.periodic_report_enabled = cfg.get_setting("PeriodicStatusReport", "enabled", s.periodic_report_enabled)
@@ -686,7 +692,7 @@ class TradingStrategy(QObject):
         is_open = self.market_open_time <= now <= self.market_close_time
         return is_open
 
-    def _check_and_execute_stop_loss(self, code, stock_info: StockTrackingData, current_price, portfolio_item, avg_buy_price, holding_quantity):
+    def _check_and_execute_stop_loss(self, code, stock_info: StockTrackingData, current_price, avg_buy_price, holding_quantity):
         """손절 로직을 검사하고 실행합니다. (전일 종가 기준)"""
         if stock_info.yesterday_close_price == 0:
             self.log(f"[{code}] 손절 조건 검토 중단: 전일 종가 정보 없음.", "WARNING")
@@ -700,63 +706,96 @@ class TradingStrategy(QObject):
                 return True # 주문 실행됨
         return False # 주문 실행 안됨
 
-    def _check_and_execute_profit_taking(self, code, stock_info: StockTrackingData, current_price, portfolio_item, avg_buy_price, holding_quantity):
-        """목표 수익률 도달 시 전량 매도 로직을 검사하고 실행합니다. (BOUGHT 상태에서만 호출 가정)"""
-        target_profit_price = avg_buy_price * (1 + self.settings.target_profit_rate / 100)
-        # self.settings.partial_sell_ratio는 더 이상 이 로직에서 사용되지 않음.
-        self.log(f"[{code}] 목표수익률(전량매도) 조건 검토 (BOUGHT): 현재가({current_price:.2f}) vs 목표가({target_profit_price:.2f}) (매입가: {avg_buy_price:.2f}, 목표수익률설정: {self.settings.target_profit_rate}%) - 보유량({holding_quantity})", "DEBUG")
-        if current_price >= target_profit_price:
-            self.log(f"목표수익률(전량매도) 조건 충족: {code} ({stock_info.stock_name}), 현재가({current_price:.2f}) >= 목표가({target_profit_price:.2f}). 기준매입가({avg_buy_price:.2f}), 보유량({holding_quantity}). 전량매도 시도.", "INFO")
-            if self.execute_sell(code, reason="목표수익률달성(전량)", quantity_type="전량"):
-                return True # 주문 실행됨
+    def _check_and_execute_full_take_profit(self, code, stock_info: StockTrackingData, current_price, avg_buy_price, holding_quantity):
+        """최종 목표 수익률 도달 시 전량 매도 로직을 검사하고 실행합니다."""
+        if holding_quantity <= 0:
+            return False
+
+        target_price = avg_buy_price * (1 + self.settings.full_take_profit_target_rate / 100.0)
+        self.log(f"[{code}] 최종 익절 조건 검토: 현재가({current_price:.2f}) vs 최종목표가({target_price:.2f}) (매입가: {avg_buy_price:.2f}, 최종익절률: {self.settings.full_take_profit_target_rate}%) - 보유량({holding_quantity})", "DEBUG")
+
+        if current_price >= target_price:
+            self.log(f"최종 익절 조건 충족: {code} ({stock_info.stock_name}), 현재가({current_price:.2f}) >= 최종목표가({target_price:.2f}). 전량매도 시도.", "INFO")
+            if self.execute_sell(code, reason="최종익절(전량)", quantity_type="전량"):
+                return True
             else:
-                self.log(f"[{code}] 목표수익률(전량매도) 조건 충족했으나 매도 주문 실패.", "ERROR")
-        return False # 주문 실행 안됨
+                self.log(f"[{code}] 최종 익절 조건 충족했으나 매도 주문 실패.", "ERROR")
+        return False
 
-    def _check_and_execute_trailing_stop(self, code, stock_info: StockTrackingData, current_price, portfolio_item, avg_buy_price, holding_quantity):
-        """트레일링 스탑 로직을 검사하고 실행합니다 (첫 발동 50% 매도, 이후 전량 매도)."""
-        trailing_start_high = stock_info.current_high_price_after_buy
-        current_state = stock_info.strategy_state
+    def _check_and_execute_partial_take_profit(self, code, stock_info: StockTrackingData, current_price, avg_buy_price, holding_quantity):
+        """부분 익절(5% 수익 시 50% 매도) 로직을 검사하고 실행합니다."""
+        if holding_quantity <= 0 or stock_info.partial_take_profit_executed:
+            return False
 
-        self.log(f"[{code}] 트레일링 스탑 조건 검토 (상태: {current_state}, 부분매도여부: {stock_info.trailing_stop_partially_sold}): 현재가({current_price:.2f}), 고점({trailing_start_high:.2f}), 매입가({avg_buy_price:.2f}), 트레일링하락률({self.settings.trailing_stop_fall_rate}%) - 보유량({holding_quantity})", "DEBUG")
-        
-        # BOUGHT 또는 PARTIAL_SOLD 상태에서, 매수 이후 고점이 형성되었고, 그 고점이 매수가보다 높거나 이미 부분매도 상태일 때
-        if trailing_start_high > 0 and \
-           ((current_state == TradingState.BOUGHT and trailing_start_high > avg_buy_price) or \
-            current_state == TradingState.PARTIAL_SOLD):
+        target_price = avg_buy_price * (1 + self.settings.partial_take_profit_rate / 100.0)
+        self.log(f"[{code}] 부분 익절 조건 검토: 현재가({current_price:.2f}) vs 부분익절가({target_price:.2f}) (매입가: {avg_buy_price:.2f}, 부분익절률: {self.settings.partial_take_profit_rate}%) - 보유량({holding_quantity})", "DEBUG")
+
+        if current_price >= target_price:
+            sell_qty = int(holding_quantity * (self.settings.partial_sell_ratio / 100.0))
+            if sell_qty <= 0 and holding_quantity > 0:
+                sell_qty = holding_quantity
+                self.log(f"[{code}] 부분 익절: 계산된 매도 수량 0이나 보유량 있어 전량({sell_qty}) 매도 시도.", "WARNING")
+            elif sell_qty <= 0:
+                 self.log(f"[{code}] 부분 익절: 계산된 매도 수량 0. 진행 안함.", "DEBUG")
+                 return False
+
+            self.log(f"부분 익절 조건 충족: {code} ({stock_info.stock_name}), 현재가({current_price:.2f}) >= 부분익절가({target_price:.2f}). 매도수량({sell_qty} / 현재보유량 {holding_quantity}) 시도.", "INFO")
             
-            trailing_stop_trigger_price = trailing_start_high * (1 - self.settings.trailing_stop_fall_rate / 100)
-            self.log(f"[{code}] 트레일링 스탑 발동가 계산: {trailing_stop_trigger_price:.2f} (고점: {trailing_start_high:.2f}, 하락률: {self.settings.trailing_stop_fall_rate}%)", "DEBUG")
+            if self.execute_sell(code, reason="부분익절(5%)", quantity_type="수량", quantity_val=sell_qty):
+                stock_info.partial_take_profit_executed = True
+                self.log(f"[{code}] 부분 익절 주문 접수 성공. partial_take_profit_executed 플래그 True 설정.", "INFO")
+                return True
+            else:
+                self.log(f"[{code}] 부분 익절 조건 충족했으나 매도 주문 실패.", "ERROR")
+        return False
 
-            if current_price <= trailing_stop_trigger_price:
-                if not stock_info.trailing_stop_partially_sold:
-                    # 첫 번째 트레일링 스탑 발동: 50% 매도
-                    sell_qty = int(holding_quantity * 0.5)
-                    if sell_qty > 0:
-                        self.log(f"트레일링 스탑 (첫 발동 50%) 조건 충족: {code} ({stock_info.stock_name}), 현재가({current_price:.2f}) <= 트레일링가({trailing_stop_trigger_price:.2f}). 매도수량({sell_qty})", "INFO")
-                        if self.execute_sell(code, reason="트레일링스탑(50%)", quantity_type="수량", quantity_val=sell_qty):
-                            stock_info.trailing_stop_partially_sold = True # 50% 매도 플래그 설정
-                            # strategy_state는 execute_sell 이후 체결정보에 따라 PARTIAL_SOLD로 변경될 것임
-                            self.log(f"[{code}] 트레일링 스탑 (50%) 매도 주문 접수. trailing_stop_partially_sold 플래그 True로 설정.", "INFO")
-                            return True # 주문 실행됨
-                        else:
-                            self.log(f"[{code}] 트레일링 스탑 (50%) 매도 주문 실패.", "ERROR")
-                    else:
-                        self.log(f"[{code}] 트레일링 스탑 (첫 발동 50%) 조건 충족했으나 계산된 매도 수량 0. 전량 매도 시도.", "WARNING")
-                        # 이 경우, 남은 수량이 매우 적을 수 있으므로 그냥 전량 매도 시도
-                        self.log(f"트레일링 스탑 (잔량) 조건 충족 (50% 매도 수량 0으로 인한 전량매도): {code} ({stock_info.stock_name}), 현재가({current_price:.2f}) <= 트레일링가({trailing_stop_trigger_price:.2f}).", "INFO")
-                        if self.execute_sell(code, reason="트레일링스탑(잔량)", quantity_type="전량"):
-                            # 이 경우 trailing_stop_partially_sold는 굳이 True로 할 필요 없거나, 또는 하고 바로 리셋될 것임
-                            return True
+#    def _check_and_execute_profit_taking(self, code, stock_info: StockTrackingData, current_price, portfolio_item, avg_buy_price, holding_quantity):
+#        """목표 수익률 도달 시 전량 매도 로직을 검사하고 실행합니다. (BOUGHT 상태에서만 호출 가정)"""
+#        target_profit_price = avg_buy_price * (1 + self.settings.target_profit_rate / 100)
+#        # self.settings.partial_sell_ratio는 더 이상 이 로직에서 사용되지 않음.
+#        self.log(f"[{code}] 목표수익률(전량매도) 조건 검토 (BOUGHT): 현재가({current_price:.2f}) vs 목표가({target_profit_price:.2f}) (매입가: {avg_buy_price:.2f}, 목표수익률설정: {self.settings.target_profit_rate}%) - 보유량({holding_quantity})", "DEBUG")
+#        if current_price >= target_profit_price:
+#            self.log(f"목표수익률(전량매도) 조건 충족: {code} ({stock_info.stock_name}), 현재가({current_price:.2f}) >= 목표가({target_profit_price:.2f}). 기준매입가({avg_buy_price:.2f}), 보유량({holding_quantity}). 전량매도 시도.", "INFO")
+#            if self.execute_sell(code, reason="목표수익률달성(전량)", quantity_type="전량"):
+#                return True # 주문 실행됨
+#            else:
+#                self.log(f"[{code}] 목표수익률(전량매도) 조건 충족했으나 매도 주문 실패.", "ERROR")
+#        return False # 주문 실행 안됨
+
+    def _check_and_execute_trailing_stop(self, code, stock_info: StockTrackingData, current_price, avg_buy_price, holding_quantity):
+        """트레일링 스탑 로직을 검사하고 실행합니다 (활성화된 경우에만)."""
+        if not stock_info.is_trailing_stop_active or holding_quantity <= 0:
+            return False
+
+        high_since_buy_or_activation = stock_info.current_high_price_after_buy
+        trailing_stop_trigger_price = high_since_buy_or_activation * (1 - self.settings.trailing_stop_fall_rate / 100.0)
+
+        self.log(f"[{code}] 트레일링 스탑 조건 검토 (활성상태: {stock_info.is_trailing_stop_active}, 부분매도여부: {stock_info.trailing_stop_partially_sold}): 현재가({current_price:.2f}) vs 발동가({trailing_stop_trigger_price:.2f}). 기준고점({high_since_buy_or_activation:.2f}), 하락률({self.settings.trailing_stop_fall_rate}%)", "DEBUG")
+
+        if current_price <= trailing_stop_trigger_price:
+            if not stock_info.trailing_stop_partially_sold: # 첫 번째 트레일링 스탑 발동
+                sell_qty = int(holding_quantity * (self.settings.partial_sell_ratio / 100.0)) # 현재 보유량의 50%
+                if sell_qty <= 0 and holding_quantity > 0 : 
+                    sell_qty = holding_quantity
+                    self.log(f"[{code}] 트레일링 스탑 (첫 발동): 계산된 매도 수량 0이나 보유량({holding_quantity}) 있어 전량 매도 시도.", "WARNING")
+                elif sell_qty <=0:
+                    self.log(f"[{code}] 트레일링 스탑 (첫 발동): 계산된 매도 수량 0. 진행 안함.", "DEBUG")
+                    return False
+
+                self.log(f"트레일링 스탑 (첫 발동 50%) 조건 충족: {code} ({stock_info.stock_name}), 현재가({current_price:.2f}) <= 발동가({trailing_stop_trigger_price:.2f}). 매도수량({sell_qty}) 시도.", "INFO")
+                if self.execute_sell(code, reason="트레일링스탑(50%)", quantity_type="수량", quantity_val=sell_qty):
+                    stock_info.trailing_stop_partially_sold = True
+                    self.log(f"[{code}] 트레일링 스탑 (50%) 매도 주문 접수. trailing_stop_partially_sold 플래그 True 설정.", "INFO")
+                    return True
                 else:
-                    # 이미 50% 매도된 상태, 두 번째 (또는 그 이후) 트레일링 스탑 발동: 전량 매도
-                    self.log(f"트레일링 스탑 (잔량) 조건 충족: {code} ({stock_info.stock_name}), 현재가({current_price:.2f}) <= 트레일링가({trailing_stop_trigger_price:.2f}).", "INFO")
-                    if self.execute_sell(code, reason="트레일링스탑(잔량)", quantity_type="전량"):
-                        # 전량 매도 후에는 trailing_stop_partially_sold 플래그는 reset_stock_strategy_info에서 처리하거나,
-                        # 또는 여기서 False로 다시 설정 (새로운 매수 사이클을 위해)
-                        # stock_info.trailing_stop_partially_sold = False # 체결 완료 후 reset_stock_strategy_info에서 처리하는 것이 더 적합할 수 있음
-                        return True # 주문 실행됨
-        return False # 주문 실행 안됨
+                    self.log(f"[{code}] 트레일링 스탑 (50%) 매도 주문 실패.", "ERROR")
+            else: # 이미 부분 매도된 상태 (두 번째 트레일링 스탑 발동)
+                self.log(f"트레일링 스탑 (잔량 전량) 조건 충족: {code} ({stock_info.stock_name}), 현재가({current_price:.2f}) <= 발동가({trailing_stop_trigger_price:.2f}). 전량매도 시도.", "INFO")
+                if self.execute_sell(code, reason="트레일링스탑(잔량)", quantity_type="전량"):
+                    return True
+                else:
+                    self.log(f"[{code}] 트레일링 스탑 (잔량 전량) 매도 주문 실패.", "ERROR")
+        return False
 
     def _handle_waiting_state(self, code, stock_info: StockTrackingData, current_price):
         """매수 조건을 검사하고 매수 주문을 실행합니다 (WAITING 상태)."""
@@ -785,41 +824,58 @@ class TradingStrategy(QObject):
 
     def _handle_holding_state(self, code, stock_info: StockTrackingData, current_price):
         """매도 조건을 검사하고 매도 주문을 실행합니다 (BOUGHT 또는 PARTIAL_SOLD 상태)."""
-        portfolio_item = self.account_state.portfolio.get(code) # self.portfolio -> self.account_state.portfolio
+        portfolio_item = self.account_state.portfolio.get(code)
         if not portfolio_item:
-            self.log(f"매도 조건 검사 중단: {code} 포트폴리오 정보 없음.", "WARNING")
+            self.log(f"매도 조건 검사 중단 ({code}): 포트폴리오 정보 없음.", "WARNING")
             return False
 
         avg_buy_price = self._safe_to_float(portfolio_item.get('매입가'))
         holding_quantity = self._safe_to_int(portfolio_item.get('보유수량'))
 
         if avg_buy_price == 0 or holding_quantity == 0:
-            self.log(f"매도 조건 검사 중단: {code} 매수가 또는 보유수량 정보 없음 (매입가: {avg_buy_price}, 보유량: {holding_quantity}).", "WARNING")
+            self.log(f"매도 조건 검사 중단 ({code}): 매수가(0) 또는 보유수량(0) (매입가: {avg_buy_price}, 보유량: {holding_quantity}).", "WARNING")
             return False
 
-        # 고점 업데이트 (StockTrackingData 객체 사용)
-        stock_info.current_high_price_after_buy = max(stock_info.current_high_price_after_buy, current_price)
+        # 1. 고점 업데이트 (매수 후 또는 트레일링 스탑 활성화 후)
+        if stock_info.strategy_state == TradingState.BOUGHT or stock_info.strategy_state == TradingState.PARTIAL_SOLD:
+            stock_info.current_high_price_after_buy = max(stock_info.current_high_price_after_buy, current_price)
+        
+        # 2. 트레일링 스탑 활성화 조건 체크
+        if not stock_info.is_trailing_stop_active and \
+           (stock_info.strategy_state == TradingState.BOUGHT or stock_info.strategy_state == TradingState.PARTIAL_SOLD):
+            activation_target_price = avg_buy_price * (1 + self.settings.trailing_stop_activation_profit_rate / 100.0)
+            if current_price >= activation_target_price:
+                stock_info.is_trailing_stop_active = True
+                stock_info.current_high_price_after_buy = current_price 
+                self.log(f"[{code}] 트레일링 스탑 활성화! 현재가({current_price:.2f}) >= 활성화 목표가({activation_target_price:.2f}). 기준 고점({stock_info.current_high_price_after_buy:.2f})으로 설정.", "INFO")
 
-        if self._check_and_execute_stop_loss(code, stock_info, current_price, portfolio_item, avg_buy_price, holding_quantity):
+        # --- 매도 우선순위 적용 ---
+        # 1. 손절 (가장 먼저 체크)
+        if self._check_and_execute_stop_loss(code, stock_info, current_price, avg_buy_price, holding_quantity):
             return True
 
-        current_state = stock_info.strategy_state # self.strategy_state.get(code) 대신 사용
-        if current_state == TradingState.BOUGHT:
-            if self._check_and_execute_profit_taking(code, stock_info, current_price, portfolio_item, avg_buy_price, holding_quantity):
+        # 2. 최종 익절
+        if self._check_and_execute_full_take_profit(code, stock_info, current_price, avg_buy_price, holding_quantity):
+            return True
+
+        # 3. 부분 익절 (아직 실행 안했고, BOUGHT 또는 PARTIAL_SOLD 상태일 때)
+        if not stock_info.partial_take_profit_executed and \
+           (stock_info.strategy_state == TradingState.BOUGHT or stock_info.strategy_state == TradingState.PARTIAL_SOLD):
+            if self._check_and_execute_partial_take_profit(code, stock_info, current_price, avg_buy_price, holding_quantity):
                 return True
 
-        if self._check_and_execute_trailing_stop(code, stock_info, current_price, portfolio_item, avg_buy_price, holding_quantity):
-            return True
+        # 4. 트레일링 스탑 (활성화된 경우에만 작동)
+        if stock_info.is_trailing_stop_active:
+            if self._check_and_execute_trailing_stop(code, stock_info, current_price, avg_buy_price, holding_quantity):
+                return True
         
-        # --- 시간 경과 자동 청산 로직 추가 시작 ---
+        # 5. 시간 경과 자동 청산
         if self.settings.auto_liquidate_after_minutes_enabled and \
            stock_info.buy_timestamp and \
            (stock_info.strategy_state == TradingState.BOUGHT or stock_info.strategy_state == TradingState.PARTIAL_SOLD) :
             
             elapsed_time = datetime.now() - stock_info.buy_timestamp
             elapsed_minutes = elapsed_time.total_seconds() / 60
-            
-            # 분 단위로 비교를 위해 초 제거 (선택적, 로깅 가독성)
             buy_time_str = stock_info.buy_timestamp.strftime('%Y-%m-%d %H:%M:%S') if stock_info.buy_timestamp else 'N/A'
 
             self.log(f"[{code}] 시간 경과 자동 청산 조건 검토: 경과 시간({elapsed_minutes:.2f}분) vs 설정 시간({self.settings.auto_liquidate_after_minutes}분), 매수시간({buy_time_str})", "DEBUG")
@@ -827,10 +883,9 @@ class TradingStrategy(QObject):
             if elapsed_minutes >= self.settings.auto_liquidate_after_minutes:
                 self.log(f"시간 경과 자동 청산 조건 충족: {code} ({stock_info.stock_name}), 경과 시간({elapsed_minutes:.2f}분) >= 설정 시간({self.settings.auto_liquidate_after_minutes}분). 전량 매도 시도.", "INFO")
                 if self.execute_sell(code, reason="시간경과자동청산", quantity_type="전량"):
-                    return True # 주문 실행됨
+                    return True
                 else:
                     self.log(f"[{code}] 시간 경과 자동 청산 조건 충족했으나 매도 주문 실패.", "ERROR")
-        # --- 시간 경과 자동 청산 로직 추가 끝 ---
             
         return False
 
@@ -1061,6 +1116,8 @@ class TradingStrategy(QObject):
             stock_data.current_high_price_after_buy = 0.0
             stock_data.last_order_rq_name = None
             stock_data.trailing_stop_partially_sold = False # 트레일링 스탑 부분 매도 플래그 초기화
+            stock_data.is_trailing_stop_active = False # 트레일링 스탑 활성화 플래그 초기화
+            stock_data.partial_take_profit_executed = False # 부분 익절 실행 플래그 초기화
             stock_data.buy_timestamp = None # 매수 시간 초기화
             # stock_data.is_yesterday_close_broken_today = False # 필요시 초기화
             self.log(f"{code} ({stock_data.stock_name}) 전략 정보 초기화 완료. 상태: {stock_data.strategy_state}, 트레일링부분매도: {stock_data.trailing_stop_partially_sold}", "INFO")
@@ -1523,6 +1580,32 @@ class TradingStrategy(QObject):
             else: # 매수/매도가 아닌 다른 주문 유형 (이론상 없어야 함)
                 self.log(f"주문 전량 체결 완료 후 상태 변경 로직에서 알 수 없는 주문 유형: {active_order_entry['order_type']} ({code})", "WARNING")
             self.log(f"{code} ({stock_name}) 상태 변경: -> {stock_info.strategy_state} (사유: 전량체결)", "INFO")
+
+        # === 추가된 로직 시작 ===
+        # 주문이 어떤 형태로든 종료되었는지 (미체결 0) 확인하여 last_order_rq_name 정리
+        # active_order_entry가 None이 아니고, stock_info도 None이 아닌 경우에만 실행
+        if active_order_entry and stock_info and active_order_entry.get('unfilled_qty', -1) == 0:
+            current_rq_name_key = active_order_entry.get('rq_name_key') # _find_active_order_entry에서 설정한 키
+            
+            # 현재 처리 중인 주문의 rq_name과 stock_info에 기록된 last_order_rq_name이 일치할 때만 초기화
+            if stock_info.last_order_rq_name == current_rq_name_key:
+                stock_info.last_order_rq_name = None
+                self.log(f"{code}의 last_order_rq_name을 None으로 설정 (unfilled_qty 0 처리). 이전 RQName: {current_rq_name_key}", "INFO")
+            elif stock_info.last_order_rq_name and stock_info.last_order_rq_name != current_rq_name_key:
+                self.log(f"{code}의 last_order_rq_name ({stock_info.last_order_rq_name})이 현재 처리 중인 주문의 RQName ({current_rq_name_key})과 다릅니다. last_order_rq_name 변경 안함.", "DEBUG")
+            elif not stock_info.last_order_rq_name:
+                 self.log(f"{code}의 last_order_rq_name이 이미 None입니다. 추가 변경 없음 (unfilled_qty 0 처리).", "DEBUG")
+
+
+            # active_orders 딕셔너리에서도 해당 주문 제거
+            if current_rq_name_key and current_rq_name_key in self.account_state.active_orders:
+                self.log(f"active_orders에서 {current_rq_name_key} 제거 시도 (unfilled_qty 0 처리)", "DEBUG")
+                del self.account_state.active_orders[current_rq_name_key]
+                self.log(f"active_orders에서 {current_rq_name_key} 제거 완료.", "INFO")
+            elif current_rq_name_key:
+                self.log(f"active_orders에서 {current_rq_name_key}를 찾을 수 없어 제거 못함 (unfilled_qty 0 처리). active_orders: {list(self.account_state.active_orders.keys())}", "WARNING")
+            # else: current_rq_name_key가 없는 경우, active_orders에서 제거할 키 특정 불가
+        # === 추가된 로직 끝 ===
 
 
     def _handle_balance_update_report(self, chejan_data, active_order_entry, rq_name, code, stock_name, stock_info: StockTrackingData):
