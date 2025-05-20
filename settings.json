@@ -13,7 +13,7 @@
         "손절손실률_전일종가기준": 2.0,
         "MarketOpenTime": "09:00:00",
         "MarketCloseTime": "15:30:00",
-        "dry_run_mode": true
+        "dry_run_mode": false
     },
     "Database": {
         "path": "logs/trading_data.test.db"
@@ -37,10 +37,7 @@
         { "code": "086060", "name": "진바이오텍", "yesterday_close_price": 4115 },
         { "code": "217330", "name": "싸이토젠", "yesterday_close_price": 4405 },
         { "code": "246250", "name": "에스엘에스바이오", "yesterday_close_price": 2420 },
-        { "code": "291650", "name": "압타머사이언스", "yesterday_close_price": 1046 },
-        { "code": "005930", "name": "삼성전자", "yesterday_close_price": 70000 },
-        { "code": "035720", "name": "카카오", "yesterday_close_price": 49000 },
-        { "code": "105560", "name": "AP시스템", "yesterday_close_price": 98000 }
+        { "code": "291650", "name": "압타머사이언스", "yesterday_close_price": 1046 }
     ],
     "PeriodicStatusReport": {
         "enabled": true,
