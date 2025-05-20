@@ -1,0 +1,201 @@
+2025-05-20 21:35:15,172 - AppLogger - INFO - logger:84 - 로깅 시스템 초기화 완료 (콘솔 및 파일 핸들러)
+2025-05-20 21:35:15,172 - AppLogger - INFO - logger:84 - Logger 초기화 완료.
+2025-05-20 21:39:01,556 - AppLogger - INFO - logger:84 - 로깅 시스템 초기화 완료 (콘솔 및 파일 핸들러)
+2025-05-20 21:39:01,556 - AppLogger - INFO - logger:84 - Logger 초기화 완료.
+2025-05-20 21:39:35,865 - AppLogger - INFO - logger:84 - 로깅 시스템 초기화 완료 (콘솔 및 파일 핸들러)
+2025-05-20 21:39:35,866 - AppLogger - INFO - logger:84 - Logger 초기화 완료.
+2025-05-20 21:39:35,867 - AppLogger - INFO - logger:84 - 'settings.json' 파일에서 설정을 로드했습니다.
+2025-05-20 21:39:35,867 - AppLogger - DEBUG - logger:81 - 로드된 설정과 기본 설정 병합 완료. 유효성 검사 시작...
+2025-05-20 21:39:35,868 - AppLogger - DEBUG - logger:81 - 설정값 유효성 검사 시작...
+2025-05-20 21:39:35,868 - AppLogger - DEBUG - logger:81 - 설정값 유효성 검사 완료.
+2025-05-20 21:39:35,868 - AppLogger - DEBUG - logger:81 - 최종 적용된 설정: {'계좌정보': {'계좌번호': '8101891811', '비밀번호': ''}, '매수금액': 1000000, '매매전략': {'익절_수익률': 5.0, '익절_매도비율': 50, '트레일링_하락률': 1.5, '손절_손실률': 3.0, 'MarketOpenTime': '09:00:00', 'MarketCloseTime': '15:30:00', 'dry_run_mode': True, '최종_익절_수익률': 9.0, '트레일링_활성화_수익률': 2.0, '손절손실률_전일종가기준': 2.0}, 'watchlist': [{'code': '253840', 'name': '수젠텍', 'yesterday_close_price': 7160.0}, {'code': '376900', 'name': '로킷헬스케어', 'yesterday_close_price': 19950.0}, {'code': '389260', 'name': '대명에너지', 'yesterday_close_price': 24900.0}, {'code': '032940', 'name': '원익', 'yesterday_close_price': 3790.0}, {'code': '086060', 'name': '진바이오텍', 'yesterday_close_price': 4115.0}, {'code': '217330', 'name': '싸이토젠', 'yesterday_close_price': 4405.0}, {'code': '246250', 'name': '에스엘에스바이오', 'yesterday_close_price': 2420.0}, {'code': '291650', 'name': '압타머사이언스', 'yesterday_close_price': 1046.0}, {'code': '005930', 'name': '삼성전자', 'yesterday_close_price': 70000.0}, {'code': '035720', 'name': '카카오', 'yesterday_close_price': 49000.0}, {'code': '105560', 'name': 'AP시스템', 'yesterday_close_price': 98000.0}], 'Database': {'path': 'logs/trading_data.test.db'}, 'Logging': {'level': 'DEBUG', 'max_bytes': 10485760, 'backup_count': 5}, 'API_Limit': {'tr_request_interval_ms': 210}, 'AutoTrading': {'start_automatically': False}, 'PeriodicStatusReport': {'enabled': True, 'interval_seconds': 60}}
+2025-05-20 21:39:35,869 - AppLogger - INFO - logger:84 - ConfigManager 초기화 완료.
+2025-05-20 21:39:35,869 - AppLogger - INFO - logger:84 - 드라이런 모드 활성화 확인됨: True
+2025-05-20 21:40:14,977 - AppLogger - INFO - logger:84 - 로깅 시스템 초기화 완료 (콘솔 및 파일 핸들러)
+2025-05-20 21:40:14,977 - AppLogger - INFO - logger:84 - Logger 초기화 완료.
+2025-05-20 21:40:14,977 - AppLogger - INFO - logger:84 - 'settings.json' 파일에서 설정을 로드했습니다.
+2025-05-20 21:40:14,977 - AppLogger - DEBUG - logger:81 - 로드된 설정과 기본 설정 병합 완료. 유효성 검사 시작...
+2025-05-20 21:40:14,977 - AppLogger - DEBUG - logger:81 - 설정값 유효성 검사 시작...
+2025-05-20 21:40:14,977 - AppLogger - DEBUG - logger:81 - 설정값 유효성 검사 완료.
+2025-05-20 21:40:14,977 - AppLogger - DEBUG - logger:81 - 최종 적용된 설정: {'계좌정보': {'계좌번호': '8101891811', '비밀번호': ''}, '매수금액': 1000000, '매매전략': {'익절_수익률': 5.0, '익절_매도비율': 50, '트레일링_하락률': 1.5, '손절_손실률': 3.0, 'MarketOpenTime': '09:00:00', 'MarketCloseTime': '15:30:00', 'dry_run_mode': True, '최종_익절_수익률': 9.0, '트레일링_활성화_수익률': 2.0, '손절손실률_전일종가기준': 2.0}, 'watchlist': [{'code': '253840', 'name': '수젠텍', 'yesterday_close_price': 7160.0}, {'code': '376900', 'name': '로킷헬스케어', 'yesterday_close_price': 19950.0}, {'code': '389260', 'name': '대명에너지', 'yesterday_close_price': 24900.0}, {'code': '032940', 'name': '원익', 'yesterday_close_price': 3790.0}, {'code': '086060', 'name': '진바이오텍', 'yesterday_close_price': 4115.0}, {'code': '217330', 'name': '싸이토젠', 'yesterday_close_price': 4405.0}, {'code': '246250', 'name': '에스엘에스바이오', 'yesterday_close_price': 2420.0}, {'code': '291650', 'name': '압타머사이언스', 'yesterday_close_price': 1046.0}, {'code': '005930', 'name': '삼성전자', 'yesterday_close_price': 70000.0}, {'code': '035720', 'name': '카카오', 'yesterday_close_price': 49000.0}, {'code': '105560', 'name': 'AP시스템', 'yesterday_close_price': 98000.0}], 'Database': {'path': 'logs/trading_data.test.db'}, 'Logging': {'level': 'DEBUG', 'max_bytes': 10485760, 'backup_count': 5}, 'API_Limit': {'tr_request_interval_ms': 210}, 'AutoTrading': {'start_automatically': False}, 'PeriodicStatusReport': {'enabled': True, 'interval_seconds': 60}}
+2025-05-20 21:40:14,992 - AppLogger - INFO - logger:84 - ConfigManager 초기화 완료.
+2025-05-20 21:40:14,992 - AppLogger - INFO - logger:84 - 드라이런 모드 활성화 확인됨: True
+2025-05-20 21:46:03,898 - AppLogger - INFO - logger:84 - 로깅 시스템 초기화 완료 (콘솔 및 파일 핸들러)
+2025-05-20 21:46:03,898 - AppLogger - INFO - logger:84 - Logger 초기화 완료.
+2025-05-20 21:46:03,899 - AppLogger - INFO - logger:84 - 'settings.json' 파일에서 설정을 로드했습니다.
+2025-05-20 21:46:03,899 - AppLogger - DEBUG - logger:81 - 로드된 설정과 기본 설정 병합 완료. 유효성 검사 시작...
+2025-05-20 21:46:03,900 - AppLogger - DEBUG - logger:81 - 설정값 유효성 검사 시작...
+2025-05-20 21:46:03,900 - AppLogger - DEBUG - logger:81 - 설정값 유효성 검사 완료.
+2025-05-20 21:46:03,900 - AppLogger - DEBUG - logger:81 - 최종 적용된 설정: {'계좌정보': {'계좌번호': '8101891811', '비밀번호': ''}, '매수금액': 1000000, '매매전략': {'익절_수익률': 5.0, '익절_매도비율': 50, '트레일링_하락률': 1.5, '손절_손실률': 3.0, 'MarketOpenTime': '09:00:00', 'MarketCloseTime': '15:30:00', 'dry_run_mode': True, '최종_익절_수익률': 9.0, '트레일링_활성화_수익률': 2.0, '손절손실률_전일종가기준': 2.0}, 'watchlist': [{'code': '253840', 'name': '수젠텍', 'yesterday_close_price': 7160.0}, {'code': '376900', 'name': '로킷헬스케어', 'yesterday_close_price': 19950.0}, {'code': '389260', 'name': '대명에너지', 'yesterday_close_price': 24900.0}, {'code': '032940', 'name': '원익', 'yesterday_close_price': 3790.0}, {'code': '086060', 'name': '진바이오텍', 'yesterday_close_price': 4115.0}, {'code': '217330', 'name': '싸이토젠', 'yesterday_close_price': 4405.0}, {'code': '246250', 'name': '에스엘에스바이오', 'yesterday_close_price': 2420.0}, {'code': '291650', 'name': '압타머사이언스', 'yesterday_close_price': 1046.0}, {'code': '005930', 'name': '삼성전자', 'yesterday_close_price': 70000.0}, {'code': '035720', 'name': '카카오', 'yesterday_close_price': 49000.0}, {'code': '105560', 'name': 'AP시스템', 'yesterday_close_price': 98000.0}], 'Database': {'path': 'logs/trading_data.test.db'}, 'Logging': {'level': 'DEBUG', 'max_bytes': 10485760, 'backup_count': 5}, 'API_Limit': {'tr_request_interval_ms': 210}, 'AutoTrading': {'start_automatically': False}, 'PeriodicStatusReport': {'enabled': True, 'interval_seconds': 60}}
+2025-05-20 21:46:03,901 - AppLogger - INFO - logger:84 - ConfigManager 초기화 완료.
+2025-05-20 21:46:03,902 - AppLogger - INFO - logger:84 - 드라이런 모드 활성화 확인됨: True
+2025-05-20 21:46:03,902 - AppLogger - INFO - logger:84 - 데이터베이스 (logs/trading_data.test.db) 초기화 성공
+2025-05-20 21:46:03,902 - AppLogger - INFO - logger:84 - DatabaseManager 초기화 완료 (DB 경로: logs/trading_data.test.db)
+2025-05-20 21:46:03,902 - AppLogger - DEBUG - logger:81 - ScreenManager 초기화 완료. 사용 가능 화면: 100개 (2000~2099)
+2025-05-20 21:46:03,902 - AppLogger - INFO - logger:84 - ScreenManager 초기화 완료.
+2025-05-20 21:46:03,902 - AppLogger - DEBUG - logger:81 - [KiwoomAPI] 키움 API 초기화 시작
+2025-05-20 21:46:04,009 - AppLogger - DEBUG - logger:81 - [KiwoomAPI] ScreenManager 초기화 완료 (외부 제공: True, OCX 전달됨)
+2025-05-20 21:46:04,009 - AppLogger - DEBUG - logger:81 - [KiwoomAPI] TR 요청 간격 설정됨: 기본 0.21초, 연속 1.0초
+2025-05-20 21:46:04,010 - AppLogger - DEBUG - logger:81 - [KiwoomAPI] 설정에서 계좌 비밀번호 로드: 비밀번호 없음
+2025-05-20 21:46:04,010 - AppLogger - INFO - logger:84 - KiwoomAPI 초기화 시작됨.
+2025-05-20 21:46:04,011 - AppLogger - INFO - logger:84 - [Strategy][2025-05-20 21:46:04] 전략 설정 로딩 시작...
+2025-05-20 21:46:04,013 - AppLogger - INFO - logger:84 - [Strategy][2025-05-20 21:46:04] 장운영시간 설정: 시작(09:00:00), 종료(15:30:00)
+2025-05-20 21:46:04,013 - AppLogger - INFO - logger:84 - [Strategy][2025-05-20 21:46:04] 전략 설정 로드 완료: StrategySettings(buy_amount_per_stock=1000000.0, stop_loss_rate_from_yesterday_close=2.0, partial_take_profit_rate=5.0, full_take_profit_target_rate=9.0, partial_sell_ratio=50, trailing_stop_activation_profit_rate=2.0, trailing_stop_fall_rate=1.5, market_open_time_str='09:00:00', market_close_time_str='15:30:00', periodic_report_enabled=True, periodic_report_interval_seconds=60, max_daily_buy_count=10, cancel_pending_orders_on_exit=True, auto_liquidate_after_minutes_enabled=False, auto_liquidate_after_minutes=60)
+2025-05-20 21:46:04,014 - AppLogger - INFO - logger:84 - [Strategy][2025-05-20 21:46:04] 전략 설정 로드 완료.
+2025-05-20 21:46:04,015 - AppLogger - INFO - logger:84 - [Strategy][2025-05-20 21:46:04] 장운영시간 초기화: 09:00:00 - 15:30:00
+2025-05-20 21:46:04,015 - AppLogger - INFO - logger:84 - [Strategy][2025-05-20 21:46:04] TradingStrategy 객체 생성 완료. 추가 초기화가 필요합니다.
+2025-05-20 21:46:04,015 - AppLogger - INFO - logger:84 - TradingStrategy 초기화 완료.
+2025-05-20 21:46:04,015 - AppLogger - INFO - logger:84 - KiwoomAPI에 Strategy 인스턴스 연결 완료.
+2025-05-20 21:46:04,016 - AppLogger - INFO - logger:84 - [KiwoomAPI] [Dry Run] 로그인 처리 시작...
+2025-05-20 21:46:04,016 - AppLogger - INFO - logger:84 - [KiwoomAPI] [Dry Run] 설정 파일에서 계좌번호 사용: 8101891811
+2025-05-20 21:46:04,016 - AppLogger - INFO - logger:84 - [KiwoomAPI] [Dry Run] 가상 로그인 성공. 계좌번호: 8101891811
+2025-05-20 21:46:04,017 - AppLogger - DEBUG - logger:81 - [KiwoomAPI] [Dry Run] Strategy의 _on_login_completed 호출 예정 (비동기)
+2025-05-20 21:46:04,018 - AppLogger - INFO - logger:84 - 드라이런 가상 로그인 성공. 계좌번호: 8101891811
+2025-05-20 21:46:04,019 - AppLogger - INFO - logger:84 - 테스트 시나리오 실행 준비...
+2025-05-20 21:46:04,019 - AppLogger - INFO - logger:84 - [Strategy][2025-05-20 21:46:04] === 드라이런 테스트 시나리오 시작: 손절매_시나리오1(전일종가기준) ===
+2025-05-20 21:46:04,020 - AppLogger - INFO - logger:84 - [Strategy][2025-05-20 21:46:04] 드라이런 모드를 위한 강제 초기화 상태 설정...
+2025-05-20 21:46:04,021 - AppLogger - INFO - logger:84 - [Strategy][2025-05-20 21:46:04] 드라이런용 임시 계좌번호 설정: DRYRUN_ACCOUNT
+2025-05-20 21:46:04,021 - AppLogger - DEBUG - logger:81 - [Strategy][2025-05-20 21:46:04] [WATCHLIST_ADD_START] 관심종목 추가/업데이트 시작: 코드(005930), 이름(삼성전자(DryRun)), 설정된 전일종가(70000.0)
+2025-05-20 21:46:04,022 - AppLogger - INFO - logger:84 - [Strategy][2025-05-20 21:46:04] 관심종목 신규 추가: 삼성전자(DryRun)(005930), 전일종가: 70000.0, 초기상태: WAITING
+2025-05-20 21:46:04,022 - AppLogger - DEBUG - logger:81 - [Strategy][2025-05-20 21:46:04] [WATCHLIST_ADD_END] 관심종목 추가/업데이트 완료: 코드(005930) - 현재 self.watchlist에 1개 항목
+2025-05-20 21:46:04,022 - AppLogger - WARNING - logger:87 - [Strategy][2025-05-20 21:46:04] 경고: StockTrackingData에 없는 필드(buy_timestamp_str) 설정 시도.
+2025-05-20 21:46:04,024 - AppLogger - INFO - logger:84 - [Strategy][2025-05-20 21:46:04] 가상 포트폴리오 설정 (005930): {'stock_name': '삼성전자(DryRun)', '보유수량': 10, '매입가': 71000.0, '현재가': 71000.0, '평가금액': 710000.0, '매입금액': 710000.0, '평가손익': 0, '수익률': 0.0}
+2025-05-20 21:46:04,024 - AppLogger - INFO - logger:84 - [Strategy][2025-05-20 21:46:04] StockTrackingData 설정 (005930): 상태(BOUGHT), 매수가(71000.0), 수량(10), 고점(71000.0), 부분익절(False), 트레일링활성(False), 트레일링부분매도(False), 매수시간(2025-05-20 21:36:04)
+2025-05-20 21:46:04,024 - AppLogger - INFO - logger:84 - [Strategy][2025-05-20 21:46:04] 테스트 현재가 설정 (005930): 68000.0
+2025-05-20 21:46:04,025 - AppLogger - INFO - logger:84 - [Strategy][2025-05-20 21:46:04] process_strategy(005930) 호출 중...
+2025-05-20 21:46:04,025 - AppLogger - DEBUG - logger:81 - [Strategy][2025-05-20 21:46:04] [005930] 손절 조건 검토(전일종가기준): 현재가(68000.00) vs 손절가(68600.00) (전일종가: 70000.00, 손절률설정: 2.0%) - 보유량(10)
+2025-05-20 21:46:04,025 - AppLogger - INFO - logger:84 - [Strategy][2025-05-20 21:46:04] 손절 조건 충족(전일종가기준): 005930 (삼성전자(DryRun)), 현재가(68000.00) <= 손절가(68600.00). 기준(전일종가: 70000.00), 보유량(10).
+2025-05-20 21:46:04,026 - AppLogger - DEBUG - logger:81 - [Strategy][2025-05-20 21:46:04] [Strategy_EXECUTE_SELL_DEBUG] execute_sell 호출. 계좌번호: 'DRYRUN_ACCOUNT'
+2025-05-20 21:46:04,026 - AppLogger - DEBUG - logger:81 - [KiwoomAPI] _parse_stock_code: ATS 접미사 없음. 입력 '005930'를 순수 코드로 간주.
+2025-05-20 22:02:19,296 - AppLogger - INFO - logger:84 - 로깅 시스템 초기화 완료 (콘솔 및 파일 핸들러)
+2025-05-20 22:02:19,296 - AppLogger - INFO - logger:84 - Logger 초기화 완료.
+2025-05-20 22:02:19,296 - AppLogger - INFO - logger:84 - 'settings.json' 파일에서 설정을 로드했습니다.
+2025-05-20 22:02:19,296 - AppLogger - DEBUG - logger:81 - 로드된 설정과 기본 설정 병합 완료. 유효성 검사 시작...
+2025-05-20 22:02:19,296 - AppLogger - DEBUG - logger:81 - 설정값 유효성 검사 시작...
+2025-05-20 22:02:19,296 - AppLogger - DEBUG - logger:81 - 설정값 유효성 검사 완료.
+2025-05-20 22:02:19,296 - AppLogger - DEBUG - logger:81 - 최종 적용된 설정: {'계좌정보': {'계좌번호': '8101891811', '비밀번호': ''}, '매수금액': 1000000, '매매전략': {'익절_수익률': 5.0, '익절_매도비율': 50, '트레일링_하락률': 1.5, '손절_손실률': 3.0, 'MarketOpenTime': '09:00:00', 'MarketCloseTime': '15:30:00', 'dry_run_mode': True, '최종_익절_수익률': 9.0, '트레일링_활성화_수익률': 2.0, '손절손실률_전일종가기준': 2.0}, 'watchlist': [{'code': '253840', 'name': '수젠텍', 'yesterday_close_price': 7160.0}, {'code': '376900', 'name': '로킷헬스케어', 'yesterday_close_price': 19950.0}, {'code': '389260', 'name': '대명에너지', 'yesterday_close_price': 24900.0}, {'code': '032940', 'name': '원익', 'yesterday_close_price': 3790.0}, {'code': '086060', 'name': '진바이오텍', 'yesterday_close_price': 4115.0}, {'code': '217330', 'name': '싸이토젠', 'yesterday_close_price': 4405.0}, {'code': '246250', 'name': '에스엘에스바이오', 'yesterday_close_price': 2420.0}, {'code': '291650', 'name': '압타머사이언스', 'yesterday_close_price': 1046.0}, {'code': '005930', 'name': '삼성전자', 'yesterday_close_price': 70000.0}, {'code': '035720', 'name': '카카오', 'yesterday_close_price': 49000.0}, {'code': '105560', 'name': 'AP시스템', 'yesterday_close_price': 98000.0}], 'Database': {'path': 'logs/trading_data.test.db'}, 'Logging': {'level': 'DEBUG', 'max_bytes': 10485760, 'backup_count': 5}, 'API_Limit': {'tr_request_interval_ms': 210}, 'AutoTrading': {'start_automatically': False}, 'PeriodicStatusReport': {'enabled': True, 'interval_seconds': 60}}
+2025-05-20 22:02:19,296 - AppLogger - INFO - logger:84 - ConfigManager 초기화 완료.
+2025-05-20 22:02:19,296 - AppLogger - INFO - logger:84 - 드라이런 모드 활성화 확인됨: True
+2025-05-20 22:02:19,296 - AppLogger - INFO - logger:84 - 데이터베이스 (logs/trading_data.test.db) 초기화 성공
+2025-05-20 22:02:19,296 - AppLogger - INFO - logger:84 - DatabaseManager 초기화 완료 (DB 경로: logs/trading_data.test.db)
+2025-05-20 22:02:19,296 - AppLogger - DEBUG - logger:81 - ScreenManager 초기화 완료. 사용 가능 화면: 100개 (2000~2099)
+2025-05-20 22:02:19,296 - AppLogger - INFO - logger:84 - ScreenManager 초기화 완료.
+2025-05-20 22:02:19,296 - AppLogger - DEBUG - logger:81 - [KiwoomAPI] 키움 API 초기화 시작
+2025-05-20 22:02:19,395 - AppLogger - DEBUG - logger:81 - [KiwoomAPI] ScreenManager 초기화 완료 (외부 제공: True, OCX 전달됨)
+2025-05-20 22:02:19,396 - AppLogger - DEBUG - logger:81 - [KiwoomAPI] TR 요청 간격 설정됨: 기본 0.21초, 연속 1.0초
+2025-05-20 22:02:19,396 - AppLogger - DEBUG - logger:81 - [KiwoomAPI] 설정에서 계좌 비밀번호 로드: 비밀번호 없음
+2025-05-20 22:02:19,398 - AppLogger - INFO - logger:84 - KiwoomAPI 초기화 시작됨.
+2025-05-20 22:02:19,398 - AppLogger - INFO - logger:84 - [Strategy][2025-05-20 22:02:19] 전략 설정 로딩 시작...
+2025-05-20 22:02:19,400 - AppLogger - INFO - logger:84 - [Strategy][2025-05-20 22:02:19] 장운영시간 설정: 시작(09:00:00), 종료(15:30:00)
+2025-05-20 22:02:19,400 - AppLogger - INFO - logger:84 - [Strategy][2025-05-20 22:02:19] 전략 설정 로드 완료: StrategySettings(buy_amount_per_stock=1000000.0, stop_loss_rate_from_yesterday_close=2.0, partial_take_profit_rate=5.0, full_take_profit_target_rate=9.0, partial_sell_ratio=50, trailing_stop_activation_profit_rate=2.0, trailing_stop_fall_rate=1.5, market_open_time_str='09:00:00', market_close_time_str='15:30:00', periodic_report_enabled=True, periodic_report_interval_seconds=60, max_daily_buy_count=10, cancel_pending_orders_on_exit=True, auto_liquidate_after_minutes_enabled=False, auto_liquidate_after_minutes=60)
+2025-05-20 22:02:19,400 - AppLogger - INFO - logger:84 - [Strategy][2025-05-20 22:02:19] 전략 설정 로드 완료.
+2025-05-20 22:02:19,400 - AppLogger - INFO - logger:84 - [Strategy][2025-05-20 22:02:19] 장운영시간 초기화: 09:00:00 - 15:30:00
+2025-05-20 22:02:19,400 - AppLogger - INFO - logger:84 - [Strategy][2025-05-20 22:02:19] TradingStrategy 객체 생성 완료. 추가 초기화가 필요합니다.
+2025-05-20 22:02:19,400 - AppLogger - INFO - logger:84 - TradingStrategy 초기화 완료.
+2025-05-20 22:02:19,405 - AppLogger - INFO - logger:84 - KiwoomAPI에 Strategy 인스턴스 연결 완료.
+2025-05-20 22:02:19,405 - AppLogger - INFO - logger:84 - [KiwoomAPI] [Dry Run] 로그인 처리 시작...
+2025-05-20 22:02:19,405 - AppLogger - INFO - logger:84 - [KiwoomAPI] [Dry Run] 설정 파일에서 계좌번호 사용: 8101891811
+2025-05-20 22:02:19,405 - AppLogger - INFO - logger:84 - [KiwoomAPI] [Dry Run] 가상 로그인 성공. 계좌번호: 8101891811
+2025-05-20 22:02:19,407 - AppLogger - DEBUG - logger:81 - [KiwoomAPI] [Dry Run] Strategy의 _on_login_completed 호출 예정 (비동기)
+2025-05-20 22:02:19,407 - AppLogger - INFO - logger:84 - 드라이런 가상 로그인 성공. 계좌번호: 8101891811
+2025-05-20 22:02:19,407 - AppLogger - INFO - logger:84 - 테스트 시나리오 실행 준비...
+2025-05-20 22:02:19,408 - AppLogger - INFO - logger:84 - [Strategy][2025-05-20 22:02:19] === 드라이런 테스트 시나리오 시작: 손절매_시나리오1(전일종가기준) ===
+2025-05-20 22:02:19,408 - AppLogger - INFO - logger:84 - [Strategy][2025-05-20 22:02:19] 드라이런 모드를 위한 강제 초기화 상태 설정...
+2025-05-20 22:02:19,408 - AppLogger - INFO - logger:84 - [Strategy][2025-05-20 22:02:19] 드라이런용 임시 계좌번호 설정: DRYRUN_ACCOUNT
+2025-05-20 22:02:19,409 - AppLogger - DEBUG - logger:81 - [Strategy][2025-05-20 22:02:19] [WATCHLIST_ADD_START] 관심종목 추가/업데이트 시작: 코드(005930), 이름(삼성전자(DryRun)), 설정된 전일종가(70000.0)
+2025-05-20 22:02:19,409 - AppLogger - INFO - logger:84 - [Strategy][2025-05-20 22:02:19] 관심종목 신규 추가: 삼성전자(DryRun)(005930), 전일종가: 70000.0, 초기상태: WAITING
+2025-05-20 22:02:19,410 - AppLogger - DEBUG - logger:81 - [Strategy][2025-05-20 22:02:19] [WATCHLIST_ADD_END] 관심종목 추가/업데이트 완료: 코드(005930) - 현재 self.watchlist에 1개 항목
+2025-05-20 22:02:19,410 - AppLogger - WARNING - logger:87 - [Strategy][2025-05-20 22:02:19] 경고: StockTrackingData에 없는 필드(buy_timestamp_str) 설정 시도.
+2025-05-20 22:02:19,411 - AppLogger - INFO - logger:84 - [Strategy][2025-05-20 22:02:19] 가상 포트폴리오 설정 (005930): {'stock_name': '삼성전자(DryRun)', '보유수량': 10, '매입가': 71000.0, '현재가': 71000.0, '평가금액': 710000.0, '매입금액': 710000.0, '평가손익': 0, '수익률': 0.0}
+2025-05-20 22:02:19,411 - AppLogger - INFO - logger:84 - [Strategy][2025-05-20 22:02:19] StockTrackingData 설정 (005930): 상태(BOUGHT), 매수가(71000.0), 수량(10), 고점(71000.0), 부분익절(False), 트레일링활성(False), 트레일링부분매도(False), 매수시간(2025-05-20 21:52:19)
+2025-05-20 22:02:19,412 - AppLogger - INFO - logger:84 - [Strategy][2025-05-20 22:02:19] 테스트 현재가 설정 (005930): 68000.0
+2025-05-20 22:02:19,412 - AppLogger - INFO - logger:84 - [Strategy][2025-05-20 22:02:19] process_strategy(005930) 호출 중...
+2025-05-20 22:02:19,413 - AppLogger - DEBUG - logger:81 - [Strategy][2025-05-20 22:02:19] [005930] 손절 조건 검토(전일종가기준): 현재가(68000.00) vs 손절가(68600.00) (전일종가: 70000.00, 손절률설정: 2.0%) - 보유량(10)
+2025-05-20 22:02:19,414 - AppLogger - INFO - logger:84 - [Strategy][2025-05-20 22:02:19] 손절 조건 충족(전일종가기준): 005930 (삼성전자(DryRun)), 현재가(68000.00) <= 손절가(68600.00). 기준(전일종가: 70000.00), 보유량(10).
+2025-05-20 22:02:19,414 - AppLogger - DEBUG - logger:81 - [Strategy][2025-05-20 22:02:19] [Strategy_EXECUTE_SELL_DEBUG] execute_sell 호출. 계좌번호: 'DRYRUN_ACCOUNT'
+2025-05-20 22:02:19,415 - AppLogger - DEBUG - logger:81 - [KiwoomAPI] _parse_stock_code: ATS 접미사 없음. 입력 '005930'를 순수 코드로 간주.
+2025-05-20 22:02:19,426 - AppLogger - INFO - logger:84 - 매매 결정 기록 추가 성공: 매도 - 005930, 이유: 매도 (손절(전일종가기준)): 현재가(68000.0), 보유수량(10), 시장(KRX), 주문타입(2)
+2025-05-20 22:02:19,428 - AppLogger - INFO - logger:84 - [ScreenManager_GET] 새 화면 할당: Identifier='매도_005930_220219427294_손절(전일종가기준)' -> ScreenNo='2000'. 사용중: 1, 사용가능: 99
+2025-05-20 22:02:19,428 - AppLogger - INFO - logger:84 - [Strategy][2025-05-20 22:02:19] 매도 주문 시도 (사유: 손절(전일종가기준)): 삼성전자(DryRun) (005930, 원본:005930), 시장컨텍스트: KRX, 주문유형: 2, 수량: 10, 가격: 68000.0, 화면: 2000
+2025-05-20 22:02:19,429 - AppLogger - DEBUG - logger:81 - [KiwoomAPI] [KiwoomAPI_SEND_ORDER_ENTRY_DEBUG] send_order 진입. acc_no: 'DRYRUN_ACCOUNT', order_type: 2, code: 005930
+2025-05-20 22:02:19,429 - AppLogger - DEBUG - logger:81 - [KiwoomAPI] _parse_stock_code: ATS 접미사 없음. 입력 '005930'를 순수 코드로 간주.
+2025-05-20 22:02:19,429 - AppLogger - INFO - logger:84 - [KiwoomAPI] 주문 처리: 최종 API 전달 종목코드='005930' (원본: '005930'), 주문유형='2' (시장 정보 포함 가정)
+2025-05-20 22:02:19,430 - AppLogger - DEBUG - logger:81 - [KiwoomAPI] [KiwoomAPI_SEND_ORDER_ARGS_DEBUG] SendOrder 인자 리스트 (ATS 처리 후): ['매도_005930_220219427294_손절(전일종가기준)', '2000', 'DRYRUN_ACCOUNT', 2, '005930', 10, 68000, '03', '']
+2025-05-20 22:02:19,430 - AppLogger - INFO - logger:84 - [KiwoomAPI] [Dry Run] 주문 요청: ['매도_005930_220219427294_손절(전일종가기준)', '2000', 'DRYRUN_ACCOUNT', 2, '005930', 10, 68000, '03', '']
+2025-05-20 22:02:19,431 - AppLogger - DEBUG - logger:81 - [KiwoomAPI] [Dry Run] 가상 체결 데이터 생성: {'gubun': '0', '9201': 'DRYRUN_ACCOUNT', '9001': '005930', '913': '2', '908': '220219', '9203': 'DRYRUN_005930_1747746139', '904': '68000', '905': '10', '906': '0', '910': '68000', '911': '10', '902': '-매도', '919': '03', 'original_rq_name': '매도_005930_220219427294_손절(전일종가기준)'}
+2025-05-20 22:02:19,432 - AppLogger - DEBUG - logger:81 - [KiwoomAPI] [Dry Run] 가상 체결 전달 예정
+2025-05-20 22:02:19,432 - AppLogger - INFO - logger:84 - [Strategy][2025-05-20 22:02:19] 매도 주문 접수 성공: 005930 (원본:005930), RQName: 매도_005930_220219427294_손절(전일종가기준)
+2025-05-20 22:02:19,433 - AppLogger - DEBUG - logger:81 - [Strategy][2025-05-20 22:02:19] active_orders에 매도 주문 추가: 매도_005930_220219427294_손절(전일종가기준), 상세: {'order_no': None, 'code': '005930', 'stock_name': '삼성전자(DryRun)', 'order_type': '매도', 'order_qty': 10, 'unfilled_qty': 10, 'order_price': 68000.0, 'order_status': '접수요청', 'timestamp': '2025-05-20 22:02:19', 'reason': '손절(전일종가기준)'}
+2025-05-20 22:02:19,433 - AppLogger - INFO - logger:84 - [Strategy][2025-05-20 22:02:19] --- 테스트 시나리오 '손절매_시나리오1(전일종가기준)' 실행 후 상태 (005930) ---
+2025-05-20 22:02:19,433 - AppLogger - INFO - logger:84 - [Strategy][2025-05-20 22:02:19] StockTrackingData: 상태(BOUGHT), 매수가(71000.0), 수량(10), 부분익절(False), 트레일링활성(False), 트레일링부분매도(False)
+2025-05-20 22:02:19,434 - AppLogger - INFO - logger:84 - [Strategy][2025-05-20 22:02:19] 포트폴리오: 보유수량(10), 매입가(71000.0)
+2025-05-20 22:02:19,434 - AppLogger - INFO - logger:84 - [Strategy][2025-05-20 22:02:19] === 드라이런 테스트 시나리오 종료: 손절매_시나리오1(전일종가기준) ===\n
+2025-05-20 22:02:19,435 - AppLogger - INFO - logger:84 - [Strategy][2025-05-20 22:02:19] === 드라이런 테스트 시나리오 시작: 부분익절_시나리오2 ===
+2025-05-20 22:02:19,435 - AppLogger - INFO - logger:84 - [Strategy][2025-05-20 22:02:19] 드라이런 모드를 위한 강제 초기화 상태 설정...
+2025-05-20 22:02:19,436 - AppLogger - DEBUG - logger:81 - [Strategy][2025-05-20 22:02:19] [WATCHLIST_ADD_START] 관심종목 추가/업데이트 시작: 코드(035720), 이름(카카오(DryRun)), 설정된 전일종가(49000.0)
+2025-05-20 22:02:19,436 - AppLogger - INFO - logger:84 - [Strategy][2025-05-20 22:02:19] 관심종목 신규 추가: 카카오(DryRun)(035720), 전일종가: 49000.0, 초기상태: WAITING
+2025-05-20 22:02:19,437 - AppLogger - DEBUG - logger:81 - [Strategy][2025-05-20 22:02:19] [WATCHLIST_ADD_END] 관심종목 추가/업데이트 완료: 코드(035720) - 현재 self.watchlist에 2개 항목
+2025-05-20 22:02:19,437 - AppLogger - WARNING - logger:87 - [Strategy][2025-05-20 22:02:19] 경고: StockTrackingData에 없는 필드(buy_timestamp_str) 설정 시도.
+2025-05-20 22:02:19,438 - AppLogger - INFO - logger:84 - [Strategy][2025-05-20 22:02:19] 가상 포트폴리오 설정 (035720): {'stock_name': '카카오(DryRun)', '보유수량': 20, '매입가': 50000.0, '현재가': 50000.0, '평가금액': 1000000.0, '매입금액': 1000000.0, '평가손익': 0, '수익률': 0.0}
+2025-05-20 22:02:19,439 - AppLogger - INFO - logger:84 - [Strategy][2025-05-20 22:02:19] StockTrackingData 설정 (035720): 상태(BOUGHT), 매수가(50000.0), 수량(20), 고점(50000.0), 부분익절(False), 트레일링활성(False), 트레일링부분매도(False), 매수시간(2025-05-20 21:32:19)
+2025-05-20 22:02:19,440 - AppLogger - INFO - logger:84 - [Strategy][2025-05-20 22:02:19] 테스트 현재가 설정 (035720): 53000.0
+2025-05-20 22:02:19,440 - AppLogger - INFO - logger:84 - [Strategy][2025-05-20 22:02:19] process_strategy(035720) 호출 중...
+2025-05-20 22:02:19,440 - AppLogger - INFO - logger:84 - [Strategy][2025-05-20 22:02:19] [035720] 트레일링 스탑 활성화! 현재가(53000.00) >= 활성화 목표가(51000.00). 기준 고점(53000.00)으로 설정.
+2025-05-20 22:02:19,441 - AppLogger - DEBUG - logger:81 - [Strategy][2025-05-20 22:02:19] [035720] 손절 조건 검토(전일종가기준): 현재가(53000.00) vs 손절가(48020.00) (전일종가: 49000.00, 손절률설정: 2.0%) - 보유량(20)
+2025-05-20 22:02:19,441 - AppLogger - DEBUG - logger:81 - [Strategy][2025-05-20 22:02:19] [035720] 최종 익절 조건 검토: 현재가(53000.00) vs 최종목표가(54500.00) (매입가: 50000.00, 최종익절률: 9.0%) - 보유량(20)
+2025-05-20 22:02:19,442 - AppLogger - DEBUG - logger:81 - [Strategy][2025-05-20 22:02:19] [035720] 부분 익절 조건 검토: 현재가(53000.00) vs 부분익절가(52500.00) (매입가: 50000.00, 부분익절률: 5.0%) - 보유량(20)
+2025-05-20 22:02:19,442 - AppLogger - INFO - logger:84 - [Strategy][2025-05-20 22:02:19] 부분 익절 조건 충족: 035720 (카카오(DryRun)), 현재가(53000.00) >= 부분익절가(52500.00). 매도수량(10 / 현재보유량 20) 시도.
+2025-05-20 22:02:19,443 - AppLogger - DEBUG - logger:81 - [Strategy][2025-05-20 22:02:19] [Strategy_EXECUTE_SELL_DEBUG] execute_sell 호출. 계좌번호: 'DRYRUN_ACCOUNT'
+2025-05-20 22:02:19,444 - AppLogger - DEBUG - logger:81 - [KiwoomAPI] _parse_stock_code: ATS 접미사 없음. 입력 '035720'를 순수 코드로 간주.
+2025-05-20 22:02:19,450 - AppLogger - INFO - logger:84 - 매매 결정 기록 추가 성공: 매도 - 035720, 이유: 매도 (부분익절(5%)): 현재가(53000.0), 보유수량(20), 시장(KRX), 주문타입(2)
+2025-05-20 22:02:19,451 - AppLogger - INFO - logger:84 - [ScreenManager_GET] 새 화면 할당: Identifier='매도_035720_220219450289_부분익절(5%)' -> ScreenNo='2001'. 사용중: 2, 사용가능: 98
+2025-05-20 22:02:19,453 - AppLogger - INFO - logger:84 - [Strategy][2025-05-20 22:02:19] 매도 주문 시도 (사유: 부분익절(5%)): 카카오(DryRun) (035720, 원본:035720), 시장컨텍스트: KRX, 주문유형: 2, 수량: 10, 가격: 53000.0, 화면: 2001
+2025-05-20 22:02:19,454 - AppLogger - DEBUG - logger:81 - [KiwoomAPI] [KiwoomAPI_SEND_ORDER_ENTRY_DEBUG] send_order 진입. acc_no: 'DRYRUN_ACCOUNT', order_type: 2, code: 035720
+2025-05-20 22:02:19,454 - AppLogger - DEBUG - logger:81 - [KiwoomAPI] _parse_stock_code: ATS 접미사 없음. 입력 '035720'를 순수 코드로 간주.
+2025-05-20 22:02:19,455 - AppLogger - INFO - logger:84 - [KiwoomAPI] 주문 처리: 최종 API 전달 종목코드='035720' (원본: '035720'), 주문유형='2' (시장 정보 포함 가정)
+2025-05-20 22:02:19,455 - AppLogger - DEBUG - logger:81 - [KiwoomAPI] [KiwoomAPI_SEND_ORDER_ARGS_DEBUG] SendOrder 인자 리스트 (ATS 처리 후): ['매도_035720_220219450289_부분익절(5%)', '2001', 'DRYRUN_ACCOUNT', 2, '035720', 10, 53000, '03', '']
+2025-05-20 22:02:19,456 - AppLogger - INFO - logger:84 - [KiwoomAPI] [Dry Run] 주문 요청: ['매도_035720_220219450289_부분익절(5%)', '2001', 'DRYRUN_ACCOUNT', 2, '035720', 10, 53000, '03', '']
+2025-05-20 22:02:19,456 - AppLogger - DEBUG - logger:81 - [KiwoomAPI] [Dry Run] 가상 체결 데이터 생성: {'gubun': '0', '9201': 'DRYRUN_ACCOUNT', '9001': '035720', '913': '2', '908': '220219', '9203': 'DRYRUN_035720_1747746139', '904': '53000', '905': '10', '906': '0', '910': '53000', '911': '10', '902': '-매도', '919': '03', 'original_rq_name': '매도_035720_220219450289_부분익절(5%)'}
+2025-05-20 22:02:19,457 - AppLogger - DEBUG - logger:81 - [KiwoomAPI] [Dry Run] 가상 체결 전달 예정
+2025-05-20 22:02:19,458 - AppLogger - INFO - logger:84 - [Strategy][2025-05-20 22:02:19] 매도 주문 접수 성공: 035720 (원본:035720), RQName: 매도_035720_220219450289_부분익절(5%)
+2025-05-20 22:02:19,458 - AppLogger - DEBUG - logger:81 - [Strategy][2025-05-20 22:02:19] active_orders에 매도 주문 추가: 매도_035720_220219450289_부분익절(5%), 상세: {'order_no': None, 'code': '035720', 'stock_name': '카카오(DryRun)', 'order_type': '매도', 'order_qty': 10, 'unfilled_qty': 10, 'order_price': 53000.0, 'order_status': '접수요청', 'timestamp': '2025-05-20 22:02:19', 'reason': '부분익절(5%)'}
+2025-05-20 22:02:19,459 - AppLogger - INFO - logger:84 - [Strategy][2025-05-20 22:02:19] [035720] 부분 익절 주문 접수 성공. partial_take_profit_executed 플래그 True 설정.
+2025-05-20 22:02:19,460 - AppLogger - INFO - logger:84 - [Strategy][2025-05-20 22:02:19] --- 테스트 시나리오 '부분익절_시나리오2' 실행 후 상태 (035720) ---
+2025-05-20 22:02:19,460 - AppLogger - INFO - logger:84 - [Strategy][2025-05-20 22:02:19] StockTrackingData: 상태(BOUGHT), 매수가(50000.0), 수량(20), 부분익절(True), 트레일링활성(True), 트레일링부분매도(False)
+2025-05-20 22:02:19,461 - AppLogger - INFO - logger:84 - [Strategy][2025-05-20 22:02:19] 포트폴리오: 보유수량(20), 매입가(50000.0)
+2025-05-20 22:02:19,462 - AppLogger - INFO - logger:84 - [Strategy][2025-05-20 22:02:19] === 드라이런 테스트 시나리오 종료: 부분익절_시나리오2 ===\n
+2025-05-20 22:02:19,463 - AppLogger - INFO - logger:84 - [Strategy][2025-05-20 22:02:19] === 드라이런 테스트 시나리오 시작: 트레일링스탑_첫발동_시나리오3 ===
+2025-05-20 22:02:19,463 - AppLogger - INFO - logger:84 - [Strategy][2025-05-20 22:02:19] 드라이런 모드를 위한 강제 초기화 상태 설정...
+2025-05-20 22:02:19,464 - AppLogger - DEBUG - logger:81 - [Strategy][2025-05-20 22:02:19] [WATCHLIST_ADD_START] 관심종목 추가/업데이트 시작: 코드(105560), 이름(AP시스템(DryRun)), 설정된 전일종가(98000.0)
+2025-05-20 22:02:19,464 - AppLogger - INFO - logger:84 - [Strategy][2025-05-20 22:02:19] 관심종목 신규 추가: AP시스템(DryRun)(105560), 전일종가: 98000.0, 초기상태: WAITING
+2025-05-20 22:02:19,465 - AppLogger - DEBUG - logger:81 - [Strategy][2025-05-20 22:02:19] [WATCHLIST_ADD_END] 관심종목 추가/업데이트 완료: 코드(105560) - 현재 self.watchlist에 3개 항목
+2025-05-20 22:02:19,465 - AppLogger - WARNING - logger:87 - [Strategy][2025-05-20 22:02:19] 경고: StockTrackingData에 없는 필드(buy_timestamp_str) 설정 시도.
+2025-05-20 22:02:19,465 - AppLogger - INFO - logger:84 - [Strategy][2025-05-20 22:02:19] 가상 포트폴리오 설정 (105560): {'stock_name': 'AP시스템(DryRun)', '보유수량': 5, '매입가': 100000.0, '현재가': 100000.0, '평가금액': 500000.0, '매입금액': 500000.0, '평가손익': 0, '수익률': 0.0}
+2025-05-20 22:02:19,466 - AppLogger - INFO - logger:84 - [Strategy][2025-05-20 22:02:19] StockTrackingData 설정 (105560): 상태(BOUGHT), 매수가(100000.0), 수량(5), 고점(105000.0), 부분익절(False), 트레일링활성(True), 트레일링부분매도(False), 매수시간(2025-05-20 21:02:19)
+2025-05-20 22:02:19,466 - AppLogger - INFO - logger:84 - [Strategy][2025-05-20 22:02:19] 테스트 현재가 설정 (105560): 103000.0
+2025-05-20 22:02:19,467 - AppLogger - INFO - logger:84 - [Strategy][2025-05-20 22:02:19] process_strategy(105560) 호출 중...
+2025-05-20 22:02:19,467 - AppLogger - DEBUG - logger:81 - [Strategy][2025-05-20 22:02:19] [105560] 손절 조건 검토(전일종가기준): 현재가(103000.00) vs 손절가(96040.00) (전일종가: 98000.00, 손절률설정: 2.0%) - 보유량(5)
+2025-05-20 22:02:19,467 - AppLogger - DEBUG - logger:81 - [Strategy][2025-05-20 22:02:19] [105560] 최종 익절 조건 검토: 현재가(103000.00) vs 최종목표가(109000.00) (매입가: 100000.00, 최종익절률: 9.0%) - 보유량(5)
+2025-05-20 22:02:19,468 - AppLogger - DEBUG - logger:81 - [Strategy][2025-05-20 22:02:19] [105560] 부분 익절 조건 검토: 현재가(103000.00) vs 부분익절가(105000.00) (매입가: 100000.00, 부분익절률: 5.0%) - 보유량(5)
+2025-05-20 22:02:19,468 - AppLogger - DEBUG - logger:81 - [Strategy][2025-05-20 22:02:19] [105560] 트레일링 스탑 조건 검토 (활성상태: True, 부분매도여부: False): 현재가(103000.00) vs 발동가(103425.00). 기준고점(105000.00), 하락률(1.5%)
+2025-05-20 22:02:19,468 - AppLogger - INFO - logger:84 - [Strategy][2025-05-20 22:02:19] 트레일링 스탑 (첫 발동 50%) 조건 충족: 105560 (AP시스템(DryRun)), 현재가(103000.00) <= 발동가(103425.00). 매도수량(2) 시도.
+2025-05-20 22:02:19,470 - AppLogger - DEBUG - logger:81 - [Strategy][2025-05-20 22:02:19] [Strategy_EXECUTE_SELL_DEBUG] execute_sell 호출. 계좌번호: 'DRYRUN_ACCOUNT'
+2025-05-20 22:02:19,470 - AppLogger - DEBUG - logger:81 - [KiwoomAPI] _parse_stock_code: ATS 접미사 없음. 입력 '105560'를 순수 코드로 간주.
+2025-05-20 22:02:19,475 - AppLogger - INFO - logger:84 - 매매 결정 기록 추가 성공: 매도 - 105560, 이유: 매도 (트레일링스탑(50%)): 현재가(103000.0), 보유수량(5), 시장(KRX), 주문타입(2)
+2025-05-20 22:02:19,476 - AppLogger - INFO - logger:84 - [ScreenManager_GET] 새 화면 할당: Identifier='매도_105560_220219476290_트레일링스탑(50%)' -> ScreenNo='2002'. 사용중: 3, 사용가능: 97
+2025-05-20 22:02:19,477 - AppLogger - INFO - logger:84 - [Strategy][2025-05-20 22:02:19] 매도 주문 시도 (사유: 트레일링스탑(50%)): AP시스템(DryRun) (105560, 원본:105560), 시장컨텍스트: KRX, 주문유형: 2, 수량: 2, 가격: 103000.0, 화면: 2002
+2025-05-20 22:02:19,479 - AppLogger - DEBUG - logger:81 - [KiwoomAPI] [KiwoomAPI_SEND_ORDER_ENTRY_DEBUG] send_order 진입. acc_no: 'DRYRUN_ACCOUNT', order_type: 2, code: 105560
+2025-05-20 22:02:19,480 - AppLogger - DEBUG - logger:81 - [KiwoomAPI] _parse_stock_code: ATS 접미사 없음. 입력 '105560'를 순수 코드로 간주.
+2025-05-20 22:02:19,481 - AppLogger - INFO - logger:84 - [KiwoomAPI] 주문 처리: 최종 API 전달 종목코드='105560' (원본: '105560'), 주문유형='2' (시장 정보 포함 가정)
+2025-05-20 22:02:19,481 - AppLogger - DEBUG - logger:81 - [KiwoomAPI] [KiwoomAPI_SEND_ORDER_ARGS_DEBUG] SendOrder 인자 리스트 (ATS 처리 후): ['매도_105560_220219476290_트레일링스탑(50%)', '2002', 'DRYRUN_ACCOUNT', 2, '105560', 2, 103000, '03', '']
+2025-05-20 22:02:19,482 - AppLogger - INFO - logger:84 - [KiwoomAPI] [Dry Run] 주문 요청: ['매도_105560_220219476290_트레일링스탑(50%)', '2002', 'DRYRUN_ACCOUNT', 2, '105560', 2, 103000, '03', '']
+2025-05-20 22:02:19,483 - AppLogger - DEBUG - logger:81 - [KiwoomAPI] [Dry Run] 가상 체결 데이터 생성: {'gubun': '0', '9201': 'DRYRUN_ACCOUNT', '9001': '105560', '913': '2', '908': '220219', '9203': 'DRYRUN_105560_1747746139', '904': '103000', '905': '2', '906': '0', '910': '103000', '911': '2', '902': '-매도', '919': '03', 'original_rq_name': '매도_105560_220219476290_트레일링스탑(50%)'}
+2025-05-20 22:02:19,484 - AppLogger - DEBUG - logger:81 - [KiwoomAPI] [Dry Run] 가상 체결 전달 예정
+2025-05-20 22:02:19,484 - AppLogger - INFO - logger:84 - [Strategy][2025-05-20 22:02:19] 매도 주문 접수 성공: 105560 (원본:105560), RQName: 매도_105560_220219476290_트레일링스탑(50%)
+2025-05-20 22:02:19,485 - AppLogger - DEBUG - logger:81 - [Strategy][2025-05-20 22:02:19] active_orders에 매도 주문 추가: 매도_105560_220219476290_트레일링스탑(50%), 상세: {'order_no': None, 'code': '105560', 'stock_name': 'AP시스템(DryRun)', 'order_type': '매도', 'order_qty': 2, 'unfilled_qty': 2, 'order_price': 103000.0, 'order_status': '접수요청', 'timestamp': '2025-05-20 22:02:19', 'reason': '트레일링스탑(50%)'}
+2025-05-20 22:02:19,486 - AppLogger - INFO - logger:84 - [Strategy][2025-05-20 22:02:19] [105560] 트레일링 스탑 (50%) 매도 주문 접수. trailing_stop_partially_sold 플래그 True 설정.
+2025-05-20 22:02:19,486 - AppLogger - INFO - logger:84 - [Strategy][2025-05-20 22:02:19] --- 테스트 시나리오 '트레일링스탑_첫발동_시나리오3' 실행 후 상태 (105560) ---
+2025-05-20 22:02:19,487 - AppLogger - INFO - logger:84 - [Strategy][2025-05-20 22:02:19] StockTrackingData: 상태(BOUGHT), 매수가(100000.0), 수량(5), 부분익절(False), 트레일링활성(True), 트레일링부분매도(True)
+2025-05-20 22:02:19,488 - AppLogger - INFO - logger:84 - [Strategy][2025-05-20 22:02:19] 포트폴리오: 보유수량(5), 매입가(100000.0)
+2025-05-20 22:02:19,488 - AppLogger - INFO - logger:84 - [Strategy][2025-05-20 22:02:19] === 드라이런 테스트 시나리오 종료: 트레일링스탑_첫발동_시나리오3 ===\n
+2025-05-20 22:02:19,489 - AppLogger - INFO - logger:84 - 모든 드라이런 테스트 시나리오 실행 완료.

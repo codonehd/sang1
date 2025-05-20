@@ -1052,7 +1052,8 @@ class TradingStrategy(QObject):
             "quantity_val_param": quantity_val,
             "strategy_settings": {
                 "stop_loss_rate_from_yesterday_close": self.settings.stop_loss_rate_from_yesterday_close,
-                "target_profit_rate": self.settings.target_profit_rate,
+                "full_take_profit_target_rate": self.settings.full_take_profit_target_rate, # 수정됨
+                "partial_take_profit_rate": self.settings.partial_take_profit_rate, 
                 "partial_sell_ratio": self.settings.partial_sell_ratio,
                 "trailing_stop_fall_rate": self.settings.trailing_stop_fall_rate,
                 "high_price_for_trailing": stock_info.current_high_price_after_buy
@@ -1889,42 +1890,26 @@ class TradingStrategy(QObject):
         self.log(f"반환될 미체결 주문 상세: {pending_orders_details}", "DEBUG")
         return pending_orders_details
 
-    def _handle_opt10001_response(self, rq_name, data):
-        """ opt10001 (주식기본정보) 응답 처리 """
-        self.log(f"TR 데이터 수신 (opt10001 - {rq_name}): 처리는 get_stock_basic_info 내부에서 완료.", "DEBUG")
-        # get_stock_basic_info 또는 이와 유사한 함수 호출 결과로 이미 처리되었을 수 있음.
-        # KiwoomAPI에서 캐시에 저장하므로, Strategy에서 별도 처리 안 할 수도 있음.
-        # 필요시 여기서 추가 로직 (예: stock_data 업데이트)
-        code_match = re.search(r"opt10001_([A-Za-z0-9]+)_", rq_name) # RQName의 종목코드 부분만 추출하도록 수정
-        if code_match:
-            code = code_match.group(1)
-            stock_info = self.watchlist.get(code) # self.stock_data -> self.watchlist.get(code)
-            if stock_info:
-                # 예시: 현재가, 종목명 등 주요 정보 업데이트
-                single_data = data.get('single_data', {})
-                if single_data:
-                    stock_info.stock_name = single_data.get('종목명', stock_info.stock_name) # stock_data[code] -> stock_info
-                    stock_info.current_price = self._safe_to_float(single_data.get('현재가', stock_info.current_price)) # stock_data[code] -> stock_info
-                    self.log(f"opt10001 응답으로 {code} 기본 정보 일부 업데이트: {stock_info.stock_name}, 현재가: {stock_info.current_price}", "DEBUG")
-            else:
-                self.log(f"opt10001 응답 처리 중: RQName {rq_name}에 해당하는 종목({code})이 watchlist에 없음", "WARNING")
-        else:
-            self.log(f"opt10001 응답 처리 중: RQName {rq_name}에서 종목코드를 추출할 수 없음", "WARNING")
-
     def _handle_opw00001_response(self, rq_name, data):
         """ opw00001 (예수금 상세현황) 응답 처리 """
         if 'single_data' in data:
             deposit_info = self._ensure_numeric_fields(data['single_data'])
             self.account_state.account_summary.update(deposit_info)
             self.log(f"예수금 정보 업데이트 (opw00001): {deposit_info}", "INFO")
-            self.account_info_requested_time = None # 요청 완료 처리
+            # self.account_info_requested_time = None # 실제 API 호출 시 사용되던 변수, 드라이런에서는 불필요할 수 있음
+        self.initialization_status["deposit_info_loaded"] = True # 핸들러 호출 시 로드된 것으로 간주
+        self.log(f"opw00001 핸들러 완료. deposit_info_loaded: {self.initialization_status['deposit_info_loaded']}", "DEBUG")
+        self._check_all_data_loaded_and_start_strategy()
+
 
     def _handle_opw00018_response(self, rq_name, data):
         """ opw00018 (계좌평가잔고내역) 응답 처리 """
         if 'single_data' in data:
             summary_info = self._ensure_numeric_fields(data['single_data'])
+            # 필요한 키만 선택적으로 업데이트 하거나, 전체를 업데이트 할 수 있습니다.
+            # 예: self.account_state.account_summary['총매입금액'] = summary_info.get('총매입금액')
             self.account_state.account_summary.update(summary_info)
-            self.log(f"계좌 평가 요약 정보 업데이트 (opw00018): {summary_info}", "INFO")
+            self.log(f"계좌 평가 요약 정보 업데이트 (opw00018 single_data): {summary_info}", "INFO")
 
         if 'multi_data' in data:
             current_portfolio = {}
@@ -1933,19 +1918,203 @@ class TradingStrategy(QObject):
                 code = item.get("종목번호")
                 if code:
                     code = code.replace('A', '').strip() # 종목코드 클리닝 (A 제거)
-                    if '수익률(%)' in item: # API 응답 필드명 확인 필요
+                    # API 응답 필드명에 맞춰 '수익률(%)' -> '수익률' 변환 및 숫자형 변환
+                    if '수익률(%)' in item:
                         item['수익률'] = self._safe_to_float(item['수익률(%)'])
+                    elif '수익률' in item: # 이미 '수익률' 필드가 있다면 숫자형 변환만 시도
+                        item['수익률'] = self._safe_to_float(item['수익률'])
+                    
                     current_portfolio[code] = {
                         'stock_name': item.get("종목명"),
                         '보유수량': self._safe_to_int(item.get("보유수량")),
-                        '매입가': self._safe_to_float(item.get("매입가")),
+                        '매입가': self._safe_to_float(item.get("매입단가", item.get("매입가"))), # '매입단가' 또는 '매입가' 사용
                         '현재가': self._safe_to_float(item.get("현재가")),
                         '평가금액': self._safe_to_float(item.get("평가금액")),
                         '매입금액': self._safe_to_float(item.get("매입금액")),
                         '평가손익': self._safe_to_float(item.get("평가손익")),
-                        '수익률': self._safe_to_float(item.get("수익률", item.get("수익률(%)"))),
+                        '수익률': item.get('수익률', 0.0), # 이미 위에서 처리되었거나, 없다면 0.0
+                        # 추가적으로 필요한 필드들 (예: '대출일', '만기일' 등)이 있다면 여기서 포함
                     }
             self.account_state.portfolio = current_portfolio
-            self.log(f"계좌 잔고(포트폴리오) 업데이트 (opw00018): {len(self.account_state.portfolio)} 종목", "INFO")
-            # self.update_portfolio_and_log() # 포트폴리오 업데이트 후 로깅 - 해당 메서드 없음, 관련 로깅은 이미 수행됨
-        self.portfolio_requested_time = None # 요청 완료 처리
+            self.log(f"계좌 잔고(포트폴리오) 업데이트 (opw00018 multi_data): {len(self.account_state.portfolio)} 종목", "INFO")
+            for code, detail in self.account_state.portfolio.items():
+                self.log(f"  - {detail.get('stock_name', code)}({code}): {detail.get('보유수량')}주 @ {detail.get('매입가')} (현:{detail.get('현재가')})", "DEBUG")
+
+        # KiwoomAPI에서 연속조회 여부(prev_next)를 보고 '2'가 아니면 is_continuous=False로 설정
+        # 여기서는 is_continuous 플래그를 직접 받지 않으므로, 모든 opw00018 응답 시 로드 완료로 간주
+        # (kiwoom_api.py의 _emulate_tr_receive_for_dry_run에서 연속조회는 시뮬레이션하지 않음)
+        self.initialization_status["portfolio_loaded"] = True
+        self.log(f"opw00018 핸들러 완료. portfolio_loaded: {self.initialization_status['portfolio_loaded']}", "DEBUG")
+        self._check_all_data_loaded_and_start_strategy()
+
+    def run_dry_run_test_scenario(self, scenario_name: str, test_params: dict):
+        self.log(f"=== 드라이런 테스트 시나리오 시작: {scenario_name} ===", "IMPORTANT")
+        
+        # 0. 드라이런 모드 확인 (필수)
+        is_dry_run = self.modules.config_manager.get_setting("매매전략", "dry_run_mode", False)
+        if not is_dry_run:
+            self.log("오류: 드라이런 테스트는 settings.json에서 'dry_run_mode': true 로 설정해야 합니다.", "ERROR")
+            return
+
+        # 드라이런 모드를 위한 강제 초기화 상태 설정
+        self.log("드라이런 모드를 위한 강제 초기화 상태 설정...", "INFO")
+        self.initialization_status = {
+            "account_info_loaded": True,
+            "deposit_info_loaded": True,
+            "portfolio_loaded": True,
+            "settings_loaded": True, 
+            "market_hours_initialized": True 
+        }
+        if not self.account_state.account_number:
+            self.account_state.account_number = "DRYRUN_ACCOUNT"
+            self.log(f"드라이런용 임시 계좌번호 설정: {self.account_state.account_number}", "INFO")
+        
+        if self.modules.kiwoom_api and not self.modules.kiwoom_api.account_number:
+             self.modules.kiwoom_api.account_number = self.account_state.account_number
+             self.log(f"KiwoomAPI에도 드라이런용 계좌번호 전달: {self.modules.kiwoom_api.account_number}", "INFO")
+
+        self.is_initialized_successfully = True 
+        # self.start() # 타이머 시작 등은 실제 시나리오에서는 불필요할 수 있음
+
+        code = test_params.get("code")
+        stock_name = test_params.get("stock_name", code)
+        
+        yesterday_cp = test_params.get("yesterday_close_price", 0)
+        self.add_to_watchlist(code, stock_name, yesterday_close_price=yesterday_cp)
+        
+        stock_info = self.watchlist.get(code)
+        if not stock_info:
+            self.log(f"테스트 실패: {code}를 watchlist에 추가할 수 없습니다.", "ERROR")
+            return
+
+        initial_portfolio = test_params.get("initial_portfolio")
+        if initial_portfolio:
+            self.account_state.portfolio[code] = copy.deepcopy(initial_portfolio)
+            stock_info.strategy_state = TradingState.BOUGHT 
+            stock_info.avg_buy_price = self._safe_to_float(initial_portfolio.get('매입가'))
+            stock_info.total_buy_quantity = self._safe_to_int(initial_portfolio.get('보유수량'))
+            stock_info.current_high_price_after_buy = stock_info.avg_buy_price 
+            
+            st_data_override = test_params.get("stock_tracking_data_override", {})
+            for key, value in st_data_override.items():
+                if hasattr(stock_info, key):
+                    # TradingState enum 값 변환 처리
+                    if key == "strategy_state" and isinstance(value, str):
+                        try:
+                            setattr(stock_info, key, TradingState[value.upper()])
+                        except KeyError:
+                            self.log(f"경고: 유효하지 않은 TradingState 문자열 값({value})입니다. 기본 상태 유지.", "WARNING")
+                    else:
+                        setattr(stock_info, key, value)
+                else:
+                    self.log(f"경고: StockTrackingData에 없는 필드({key}) 설정 시도.", "WARNING")
+            
+            if 'buy_timestamp_str' in st_data_override:
+                ts_str = st_data_override['buy_timestamp_str']
+                try:
+                    if ts_str.startswith("now-"):
+                        if 'm' in ts_str:
+                            minutes_ago = int(ts_str.split('-')[1].replace('m', ''))
+                            stock_info.buy_timestamp = datetime.now() - timedelta(minutes=minutes_ago)
+                        elif 'h' in ts_str:
+                            hours_ago = int(ts_str.split('-')[1].replace('h', ''))
+                            stock_info.buy_timestamp = datetime.now() - timedelta(hours=hours_ago)
+                        else: # "now-"만 있는 경우 또는 잘못된 형식
+                            self.log(f"buy_timestamp_str 형식 오류 ('now-'): {ts_str}. 현재 시간으로 설정.", "ERROR")
+                            stock_info.buy_timestamp = datetime.now()
+                    else:
+                         stock_info.buy_timestamp = datetime.strptime(ts_str, "%Y-%m-%d %H:%M:%S")
+                except Exception as e:
+                    self.log(f"buy_timestamp_str 파싱 오류: {e} (입력값: {ts_str}). 현재 시간으로 설정.", "ERROR")
+                    stock_info.buy_timestamp = datetime.now()
+            elif not stock_info.buy_timestamp: 
+                 stock_info.buy_timestamp = datetime.now()
+
+            self.log(f"가상 포트폴리오 설정 ({code}): {self.account_state.portfolio[code]}", "INFO")
+            self.log(f"StockTrackingData 설정 ({code}): 상태({stock_info.strategy_state.name if stock_info.strategy_state else 'N/A'}), 매수가({stock_info.avg_buy_price}), 수량({stock_info.total_buy_quantity}), 고점({stock_info.current_high_price_after_buy}), 부분익절({stock_info.partial_take_profit_executed}), 트레일링활성({stock_info.is_trailing_stop_active}), 트레일링부분매도({stock_info.trailing_stop_partially_sold}), 매수시간({stock_info.buy_timestamp.strftime('%Y-%m-%d %H:%M:%S') if stock_info.buy_timestamp else 'N/A'})", "INFO")
+
+        test_current_price = test_params.get("test_current_price")
+        if test_current_price is not None:
+            stock_info.current_price = self._safe_to_float(test_current_price)
+            self.log(f"테스트 현재가 설정 ({code}): {stock_info.current_price}", "INFO")
+        else:
+            self.log(f"경고: 테스트 현재가가 제공되지 않았습니다 ({code}).", "WARNING")
+
+        self.log(f"process_strategy({code}) 호출 중...", "INFO")
+        # 장운영시간 체크를 드라이런 시에는 우회하거나, 테스트 파라미터로 제어할 수 있게 하는 것이 좋음.
+        # 여기서는 is_market_hours()가 True를 반환한다고 가정하거나, check_conditions 대신 process_strategy를 직접 호출하므로 영향이 적을 수 있음.
+        # 만약 is_market_hours()가 False면 process_strategy 내부 로직이 실행 안 될 수 있으니 주의.
+        # 임시로 is_market_hours를 오버라이드하거나, check_conditions 대신 process_strategy를 사용.
+        # 현재 process_strategy는 is_market_hours와 직접적 연관은 없음. check_conditions가 is_market_hours 사용.
+        self.process_strategy(code) 
+
+        self.log(f"--- 테스트 시나리오 '{scenario_name}' 실행 후 상태 ({code}) ---", "INFO")
+        self.log(f"StockTrackingData: 상태({stock_info.strategy_state.name if stock_info.strategy_state else 'N/A'}), 매수가({stock_info.avg_buy_price}), 수량({stock_info.total_buy_quantity}), 부분익절({stock_info.partial_take_profit_executed}), 트레일링활성({stock_info.is_trailing_stop_active}), 트레일링부분매도({stock_info.trailing_stop_partially_sold})", "INFO")
+        portfolio_after = self.account_state.portfolio.get(code)
+        if portfolio_after:
+            self.log(f"포트폴리오: 보유수량({portfolio_after.get('보유수량')}), 매입가({portfolio_after.get('매입가')})", "INFO")
+        else:
+            self.log(f"포트폴리오에 {code} 정보 없음 (전량 매도된 경우 정상)", "INFO")
+        
+        self.log(f"=== 드라이런 테스트 시나리오 종료: {scenario_name} ===\\n", "IMPORTANT") # 로그 구분을 위해 개행 추가
+
+        def _handle_opt10001_response(self, rq_name, data):
+            """ opt10001 (주식기본정보) 응답 처리 """
+            self.log(f"TR 데이터 수신 (opt10001 - {rq_name}): 처리는 get_stock_basic_info 내부에서 완료.", "DEBUG")
+            # get_stock_basic_info 또는 이와 유사한 함수 호출 결과로 이미 처리되었을 수 있음.
+            # KiwoomAPI에서 캐시에 저장하므로, Strategy에서 별도 처리 안 할 수도 있음.
+            # 필요시 여기서 추가 로직 (예: stock_data 업데이트)
+            code_match = re.search(r"opt10001_([A-Za-z0-9]+)_", rq_name) # RQName의 종목코드 부분만 추출하도록 수정
+            if code_match:
+                code = code_match.group(1)
+                stock_info = self.watchlist.get(code) # self.stock_data -> self.watchlist.get(code)
+                if stock_info:
+                    # 예시: 현재가, 종목명 등 주요 정보 업데이트
+                    single_data = data.get('single_data', {})
+                    if single_data:
+                        stock_info.stock_name = single_data.get('종목명', stock_info.stock_name) # stock_data[code] -> stock_info
+                        stock_info.current_price = self._safe_to_float(single_data.get('현재가', stock_info.current_price)) # stock_data[code] -> stock_info
+                        self.log(f"opt10001 응답으로 {code} 기본 정보 일부 업데이트: {stock_info.stock_name}, 현재가: {stock_info.current_price}", "DEBUG")
+                else:
+                    self.log(f"opt10001 응답 처리 중: RQName {rq_name}에 해당하는 종목({code})이 watchlist에 없음", "WARNING")
+            else:
+                self.log(f"opt10001 응답 처리 중: RQName {rq_name}에서 종목코드를 추출할 수 없음", "WARNING")
+
+        def _handle_opw00001_response(self, rq_name, data):
+            """ opw00001 (예수금 상세현황) 응답 처리 """
+            if 'single_data' in data:
+                deposit_info = self._ensure_numeric_fields(data['single_data'])
+                self.account_state.account_summary.update(deposit_info)
+                self.log(f"예수금 정보 업데이트 (opw00001): {deposit_info}", "INFO")
+                self.account_info_requested_time = None # 요청 완료 처리
+
+        def _handle_opw00018_response(self, rq_name, data):
+            """ opw00018 (계좌평가잔고내역) 응답 처리 """
+            if 'single_data' in data:
+                summary_info = self._ensure_numeric_fields(data['single_data'])
+                self.account_state.account_summary.update(summary_info)
+                self.log(f"계좌 평가 요약 정보 업데이트 (opw00018): {summary_info}", "INFO")
+
+            if 'multi_data' in data:
+                current_portfolio = {}
+                for item_raw in data['multi_data']:
+                    item = self._ensure_numeric_fields(item_raw)
+                    code = item.get("종목번호")
+                    if code:
+                        code = code.replace('A', '').strip() # 종목코드 클리닝 (A 제거)
+                        if '수익률(%)' in item: # API 응답 필드명 확인 필요
+                            item['수익률'] = self._safe_to_float(item['수익률(%)'])
+                        current_portfolio[code] = {
+                            'stock_name': item.get("종목명"),
+                            '보유수량': self._safe_to_int(item.get("보유수량")),
+                            '매입가': self._safe_to_float(item.get("매입가")),
+                            '현재가': self._safe_to_float(item.get("현재가")),
+                            '평가금액': self._safe_to_float(item.get("평가금액")),
+                            '매입금액': self._safe_to_float(item.get("매입금액")),
+                            '평가손익': self._safe_to_float(item.get("평가손익")),
+                            '수익률': self._safe_to_float(item.get("수익률", item.get("수익률(%)"))),
+                        }
+                self.account_state.portfolio = current_portfolio
+                self.log(f"계좌 잔고(포트폴리오) 업데이트 (opw00018): {len(self.account_state.portfolio)} 종목", "INFO")
+                # self.update_portfolio_and_log() # 포트폴리오 업데이트 후 로깅 - 해당 메서드 없음, 관련 로깅은 이미 수행됨
+            self.portfolio_requested_time = None # 요청 완료 처리

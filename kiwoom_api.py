@@ -335,6 +335,34 @@ class KiwoomAPI(QObject):
         self.ocx.OnReceiveMsg.connect(self.on_receive_msg)
         
     def login(self):
+        is_dry_run = False
+        if self.config_manager:
+            is_dry_run = self.config_manager.get_setting("매매전략", "dry_run_mode", False)
+
+        if is_dry_run:
+            self.log("[Dry Run] 로그인 처리 시작...", "INFO")
+            self.connected = True
+            
+            configured_account = ""
+            if self.config_manager:
+                configured_account = self.config_manager.get_setting('계좌정보', '계좌번호', "")
+            
+            if configured_account and configured_account.strip():
+                self.account_number = configured_account.strip()
+                self.log(f"[Dry Run] 설정 파일에서 계좌번호 사용: {self.account_number}", "INFO")
+            else:
+                self.account_number = "DRYRUN_ACCOUNT_001" # 임시 계좌번호
+                self.log(f"[Dry Run] 설정 파일에 계좌번호 없음. 임시 계좌번호 사용: {self.account_number}", "INFO")
+
+            self.log(f"[Dry Run] 가상 로그인 성공. 계좌번호: {self.account_number}", "IMPORTANT")
+            if self.strategy_instance and hasattr(self.strategy_instance, '_on_login_completed'):
+                # QTimer를 사용하여 비동기적으로 _on_login_completed 호출 (실제 API와 유사한 흐름)
+                QTimer.singleShot(100, lambda: self.strategy_instance._on_login_completed(self.account_number))
+                self.log("[Dry Run] Strategy의 _on_login_completed 호출 예정 (비동기)", "DEBUG")
+            else:
+                self.log("[Dry Run] Strategy 인스턴스 또는 _on_login_completed 콜백 없음.", "WARNING")
+            return True
+
         if self.connected:
             self.log(f"이미 로그인됨. 계좌번호: {self.account_number}")
             if self.strategy_instance and hasattr(self.strategy_instance, '_on_login_completed'):
@@ -427,9 +455,46 @@ class KiwoomAPI(QObject):
         if input_values_override is not None:
             self.log(f"[KiwoomAPI] comm_rq_data PARAMS CHECK: input_values_override CONTENT: {input_values_override}", "DEBUG")
 
+        # === 드라이런 모드 TR 요청 처리 시작 ===
+        is_dry_run = False
+        if self.config_manager:
+            is_dry_run = self.config_manager.get_setting("매매전략", "dry_run_mode", False)
+
+        if is_dry_run and tr_code in ["opw00001", "opw00018"]: # 계좌 정보 관련 TR만 우선 처리
+            self.log(f"[Dry Run] TR 요청 ({rq_name}, {tr_code}) 가상 처리 시작...", "INFO")
+            
+            current_time = time.time()
+            if rq_name not in self.tr_data_cache or not isinstance(self.tr_data_cache.get(rq_name), dict):
+                self.tr_data_cache[rq_name] = {} 
+            
+            self.tr_data_cache[rq_name].update({
+                'status': 'pending_dry_run_callback', 
+                'request_time': current_time,
+                'tr_code': tr_code,
+                'screen_no': screen_no,
+                'params': { 
+                    'rq_name': rq_name, 
+                    'tr_code': tr_code, 
+                    'prev_next': prev_next, 
+                    'screen_no': screen_no, 
+                    'input_values': input_values_override if input_values_override is not None else (getattr(self, 'tr_input_values', {}).copy() if hasattr(self, 'tr_input_values') else {}),
+                    'market_context': market_context
+                },
+                'single_data': {}, 
+                'multi_data': [],
+                'error_code': None, 
+                'error_message': None
+            })
+            self.log(f"[Dry Run] TR 요청 '{rq_name}'에 대한 캐시 준비 완료 (status: pending_dry_run_callback).", "DEBUG")
+
+            QTimer.singleShot(50, lambda: self._emulate_tr_receive_for_dry_run(screen_no, rq_name, tr_code))
+            self.log(f"[Dry Run] {tr_code} TR에 대한 가상 응답 콜백이 예약되었습니다 (RQName: {rq_name}, ScreenNo: {screen_no}).", "DEBUG")
+            return 0 
+        # === 드라이런 모드 TR 요청 처리 끝 ===
+
         if self.shutdown_mode:
             self.log(f"종료 모드 활성화 중. TR 요청 ({rq_name}, {tr_code})을 보내지 않습니다.", "WARNING")
-            return -999 # 종료 모드 시 요청 거부 코드 (임의)
+            return -999 
 
         self.log(f"[KiwoomAPI] comm_rq_data 호출 시작: RQName={rq_name}, TRCode={tr_code}, PrevNext={prev_next}, ScreenNo={screen_no}, OverrideInputs={input_values_override is not None}, MarketCtx={market_context}", "CRITICAL" if self.logger.log_level <= logging.DEBUG else "DEBUG")
 
@@ -445,15 +510,12 @@ class KiwoomAPI(QObject):
         try:
             self.log(f"[KiwoomAPI] CommRqData TR요청 시작: {rq_name}, {tr_code}, scr:{screen_no}", "DEBUG")
             
-            # self.cache_tr_request(rq_name, tr_code, screen_no, input_values_override if input_values_override else {}) # 이전 호출 제거
-
-            # 캐시 직접 업데이트 로직 시작
             if rq_name not in self.tr_data_cache or not isinstance(self.tr_data_cache.get(rq_name), dict) or \
                self.tr_data_cache[rq_name].get('status') in ['completed', 'error', 'exception']:
                 self.log(f"[KiwoomAPI][CACHE_SETUP] RQName '{rq_name}' 캐시 초기화/재초기화.", "DEBUG")
                 self.tr_data_cache[rq_name] = {}
 
-            if not isinstance(self.tr_data_cache.get(rq_name), dict): # 방어 코드
+            if not isinstance(self.tr_data_cache.get(rq_name), dict): 
                 self.log(f"[KiwoomAPI][CACHE_CRITICAL_ERROR] '{rq_name}' 캐시가 dict가 아님! 강제 초기화.", "CRITICAL")
                 self.tr_data_cache[rq_name] = {}
 
@@ -477,7 +539,6 @@ class KiwoomAPI(QObject):
                 'error_message': None
             })
             self.log(f"[KiwoomAPI][CACHE_SETUP_SUCCESS] RQName: '{rq_name}' 캐시 업데이트 완료 (status: pending_api_call).", "DEBUG")
-            # 캐시 직접 업데이트 로직 끝
 
             current_inputs = {}
             if hasattr(self, 'tr_input_values') and self.tr_input_values:
@@ -489,20 +550,17 @@ class KiwoomAPI(QObject):
             self.log(f"[KiwoomAPI] [CommRqData_INPUT_PREP] 최종 입력값 설정 전: {current_inputs}", "DEBUG")
             
             original_stock_code_from_inputs = current_inputs.get("종목코드")
-            market_for_code = None # market_for_code 초기화
+            market_for_code = None 
             if original_stock_code_from_inputs:
-                # _determine_code_for_tr_input는 최종 종목코드만 반환한다고 가정
                 final_stock_code = self._determine_code_for_tr_input(tr_code, original_stock_code_from_inputs)
-                # market_for_code는 _parse_stock_code 또는 market_context 인자로부터 결정되어야 함
                 _pure_code, _suffix, market_context_from_suffix, _ = self._parse_stock_code(original_stock_code_from_inputs)
-                market_for_code = market_context if market_context else market_context_from_suffix # 명시적 market_context 우선
+                market_for_code = market_context if market_context else market_context_from_suffix 
 
                 if final_stock_code:
                     current_inputs["종목코드"] = final_stock_code
                     self.log(f"[KiwoomAPI] ATS 종목코드 자동 조정: TR='{tr_code}', 원본코드='{original_stock_code_from_inputs}', 조정코드='{final_stock_code}', 최종 사용 컨텍스트 추정='{market_for_code if market_for_code else DEFAULT_MARKET_CONTEXT}'", "DEBUG")
 
             if tr_code in TR_MARKET_PARAM_CONFIG:
-                # market_for_code가 None일 경우 DEFAULT_MARKET_CONTEXT를 사용하도록 수정
                 param_name, param_value = self._get_api_market_param_value(tr_code, market_context if market_context else (market_for_code if market_for_code else DEFAULT_MARKET_CONTEXT))
                 if param_name and param_value is not None:
                     current_inputs[param_name] = param_value
@@ -518,7 +576,7 @@ class KiwoomAPI(QObject):
             
             self.log(f"[KiwoomAPI] [CommRqData_CALL] CommRqData 호출: RQName='{rq_name}', TRCode='{tr_code}', PrevNext={prev_next}, ScreenNo='{screen_no}', ReturnCode={ret}", "CRITICAL")
 
-            if hasattr(self, 'tr_input_values'): # 요청 후 tr_input_values 초기화 (다음 요청에 영향 없도록)
+            if hasattr(self, 'tr_input_values'): 
                 self.tr_input_values.clear()
 
             if ret != 0:
@@ -533,17 +591,16 @@ class KiwoomAPI(QObject):
                 if rq_name in self.tr_data_cache:
                      self.tr_data_cache[rq_name]['status'] = 'pending_response'
             
-            self.last_request_time = time.time() # 마지막 요청 시간 업데이트 (요청 성공/실패 무관하게)
+            self.last_request_time = time.time() 
             return ret
 
         except Exception as e:
             detailed_error = traceback.format_exc()
-            self.log(f"[KiwoomAPI] comm_rq_data 중 예외 발생: {e}\\n{detailed_error}", "ERROR")
-            if rq_name in self.tr_data_cache: # Null check for rq_name, though it's unlikely to be None here
+            self.log(f"[KiwoomAPI] comm_rq_data 중 예외 발생: {e}\n{detailed_error}", "ERROR")
+            if rq_name in self.tr_data_cache: 
                 self.tr_data_cache[rq_name]['status'] = 'exception'
                 self.tr_data_cache[rq_name]['error_message'] = str(e)
-            # self.screen_manager.release_screen(screen_no, rq_name) # 예외 발생 시 화면 반환 고려 (이미 사용 중이라면)
-            return -999 # 예외 발생 시 사용자 정의 에러 코드 반환
+            return -999
 
     def get_repeat_cnt(self, tr_code, rq_name):
         return self.ocx.dynamicCall("GetRepeatCnt(QString, QString)", tr_code, rq_name)
@@ -1582,23 +1639,62 @@ class KiwoomAPI(QObject):
             self.screen_manager.release_screen(screen_no, rq_name) # 실패 시 화면 반환
             return 0
 
+    def _emulate_tr_receive_for_dry_run(self, screen_no, rq_name, tr_code):
+        """드라이런 모드에서 TR 요청에 대한 가상 응답을 생성하고 on_receive_tr_data를 호출합니다."""
+        self.log(f"[Dry Run] _emulate_tr_receive_for_dry_run 호출됨: ScreenNo='{screen_no}', RQName='{rq_name}', TRCode='{tr_code}'", "DEBUG")
+
+        if rq_name not in self.tr_data_cache or not isinstance(self.tr_data_cache.get(rq_name), dict):
+            self.log(f"[Dry Run] _emulate_tr_receive_for_dry_run: {rq_name}에 대한 캐시 정보를 찾을 수 없음. 가상 응답 생성 불가.", "ERROR")
+            return
+
+        cached_request_info = self.tr_data_cache[rq_name]
+        original_input_values = cached_request_info.get('params', {}).get('input_values', {})
+        self.log(f"[Dry Run] 가상 응답 생성 시작. 원본 입력값: {original_input_values}", "DEBUG")
+
+        sPrevNext = '0' 
+        simulated_error_code = "0" 
+        simulated_message = "DRYRUN_OK"
+        simulated_splm_msg = "DryRun Success"
+
+        if tr_code == "opw00001": 
+            cached_request_info['single_data'] = {
+                "예수금": "10000000", "d+1추정예수금": "10000000", "d+2추정예수금": "10000000",
+                "출금가능금액": "10000000", "미수금": "0", "대용금": "0", "권리대용금": "0",
+                "주문가능금액": "10000000", "예탁자산평가액": "10000000", "총매입금액": "0",
+                "총평가금액": "0", "총손익금액": "0", "총손익률": "0.00", "총재사용금액": "0"
+            }
+            self.log(f"[Dry Run] opw00001 가상 데이터 생성 완료.", "DEBUG")
+        elif tr_code == "opw00018": 
+            cached_request_info['single_data'] = {
+                "총매입금액": "0", "총평가금액": "0", "총평가손익금액": "0", "총수익률(%)": "0.00",
+                "추정예탁자산": "10000000", "총대출금": "0", "총융자금액": "0", "총대주금액": "0", "조회건수": "0"
+            }
+            cached_request_info['multi_data'] = [] 
+            self.log(f"[Dry Run] opw00018 가상 데이터 생성 완료 (보유 종목 없음 초기 상태).", "DEBUG")
+        else:
+            self.log(f"[Dry Run] TR 코드 '{tr_code}'에 대한 특정 가상 데이터 생성 로직 없음. 기본 성공으로 처리.", "WARNING")
+
+        cached_request_info['status'] = 'simulating_callback' 
+        self.log(f"[Dry Run] {rq_name} 캐시 상태 업데이트: simulating_callback", "DEBUG")
+
+        self.on_receive_tr_data(
+            screen_no, rq_name, tr_code, tr_code, sPrevNext, "0", 
+            simulated_error_code, simulated_message, simulated_splm_msg
+        )
+        self.log(f"[Dry Run] on_receive_tr_data 가상 호출 완료 for {rq_name}.", "DEBUG")
+
     def disconnect_api(self):
-        """Kiwoom API 연결 종료 절차를 수행합니다."""
         self.log("Kiwoom API 연결 종료 절차 시작...", "INFO")
         
-        # 1. 새로운 TR/주문 요청 차단
         self.set_shutdown_mode(True)
-        # self.log("종료 모드 활성화됨. 새로운 API 요청이 차단됩니다.", "INFO") # set_shutdown_mode 내부에서 로깅
 
-        # 2. 모든 실시간 데이터 구독 해제 (API 직접 호출)
         self.log("모든 실시간 데이터 구독 해제 시도...", "INFO")
         try:
-            self.unsubscribe_all_real_data() # 내부적으로 SetRealRemove("ALL", "ALL") 호출
+            self.unsubscribe_all_real_data() 
             self.log("모든 실시간 데이터 구독 해제 요청 완료.", "INFO")
         except Exception as e:
             self.log(f"모든 실시간 데이터 구독 해제 중 예외 발생: {e}", "ERROR", exc_info=True)
 
-        # 3. ScreenManager를 통해 현재 사용 중인 모든 화면 리소스 해제 (DisconnectRealData 호출 포함)
         if self.screen_manager and hasattr(self.screen_manager, 'release_all_managed_screens'):
             self.log("ScreenManager를 통해 모든 화면 리소스 해제 시도...", "INFO")
             try:
@@ -1609,24 +1705,27 @@ class KiwoomAPI(QObject):
         else:
             self.log("ScreenManager 또는 release_all_managed_screens 메소드를 찾을 수 없어 화면 리소스 자동 해제 스킵.", "WARNING")
 
-        # 4. API 연결 종료 (CommTerminate)
-        # CommTerminate는 일반적으로 애플리케이션 종료 시 자동으로 호출될 수 있으나, 명시적으로 호출하여 정리 시도.
-        # 주의: CommTerminate 이후 OCX 객체 사용 불가할 수 있음.
         try:
             self.log("Kiwoom OpenAPI CommTerminate 호출 시도...", "INFO")
-            self.ocx.dynamicCall("CommTerminate()")
-            self.connected = False # 연결 상태 업데이트
-            self.log("CommTerminate 호출 완료. API 연결이 종료되었을 것입니다.", "INFO")
+            is_dry_run = False
+            if self.config_manager:
+                 is_dry_run = self.config_manager.get_setting("매매전략", "dry_run_mode", False)
+            
+            if not is_dry_run: 
+                self.ocx.dynamicCall("CommTerminate()")
+                self.log("CommTerminate 호출 완료. API 연결이 종료되었을 것입니다.", "INFO")
+            else:
+                self.log("[Dry Run] CommTerminate 호출 스킵.", "INFO")
+            self.connected = False 
         except Exception as e:
-            self.log(f"CommTerminate 호출 중 예외 발생: {e}", "ERROR", exc_info=True)
+            self.log(f"CommTerminate 호출 중 예외 발생 (또는 드라이런 스킵 중): {e}", "ERROR", exc_info=True)
         
         self.log("Kiwoom API 연결 종료 절차 완료됨.", "INFO")
 
 if __name__ == '__main__':
     app = QApplication(sys.argv)
-    kiwoom = KiwoomAPI()
+    kiwoom = KiwoomAPI() 
     kiwoom.login()
     if kiwoom.connected:
-        # 필요한 경우 여기에 간단한 테스트 코드 추가 가능
         pass
     sys.exit(app.exec_())
