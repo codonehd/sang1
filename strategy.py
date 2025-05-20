@@ -54,7 +54,7 @@ class StockTrackingData:
     current_price: float = 0.0
     yesterday_close_price: float = 0.0
     today_open_price: float = 0.0
-    strategy_state: TradingState = TradingState.IDLE
+    strategy_state: TradingState = TradingState.WAITING # 기본 상태를 WAITING으로 변경
     avg_buy_price: float = 0.0
     total_buy_quantity: int = 0
     current_high_price_after_buy: float = 0.0
@@ -612,57 +612,58 @@ class TradingStrategy(QObject):
             self.modules.screen_manager.release_screen(screen_no)
 
     def check_initial_conditions(self, code):
-        stock_info = self.watchlist.get(code)
-        if not stock_info:
-            self.log(f"Cannot check initial conditions for {code}: not in watchlist.", "ERROR")
-            return
+        # stock_info = self.watchlist.get(code)
+        # if not stock_info:
+        #     self.log(f"Cannot check initial conditions for {code}: not in watchlist.", "ERROR")
+        #     return
 
-        # 이미 매매가 진행 중이거나 완료된 상태면 초기 조건 검사 불필요
-        if stock_info.strategy_state not in [TradingState.IDLE, TradingState.READY]:
-            self.log(f"Skipping initial condition check for {code}. Current state: {stock_info.strategy_state}", "DEBUG")
-            return
+        # # 이미 매매가 진행 중이거나 완료된 상태면 초기 조건 검사 불필요
+        # if stock_info.strategy_state not in [TradingState.IDLE, TradingState.READY]:
+        #     self.log(f"Skipping initial condition check for {code}. Current state: {stock_info.strategy_state}", "DEBUG")
+        #     return
 
-        self.log(f"Checking initial conditions for {code}... Current state: {stock_info.strategy_state}", "INFO")
-        # 예시: 갭 상승 후 시가 위로 올라오면 WAITING 상태로 변경
-        # 이 로직은 실제 전략에 따라 매우 다양해질 수 있음
+        # self.log(f"Checking initial conditions for {code}... Current state: {stock_info.strategy_state}", "INFO")
+        # # 예시: 갭 상승 후 시가 위로 올라오면 WAITING 상태로 변경
+        # # 이 로직은 실제 전략에 따라 매우 다양해질 수 있음
 
-        # 필요한 데이터가 모두 로드되었는지 확인 (예: 전일종가, 당일시가)
-        if stock_info.yesterday_close_price == 0 or stock_info.today_open_price == 0:
-            self.log(f"Initial condition check for {code} deferred: yesterday_close_price or today_open_price is zero.", "WARNING")
-            # stock_info.daily_chart_error 가 True일 수 있음. 이 경우 재시도 로직 필요.
-            if stock_info.daily_chart_error:
-                 self.log(f"{code}의 일봉 데이터 로드에 오류가 있어 초기 조건 검사를 진행할 수 없습니다. 재시도 필요.", "ERROR")
-            return
+        # # 필요한 데이터가 모두 로드되었는지 확인 (예: 전일종가, 당일시가)
+        # if stock_info.yesterday_close_price == 0 or stock_info.today_open_price == 0:
+        #     self.log(f"Initial condition check for {code} deferred: yesterday_close_price or today_open_price is zero.", "WARNING")
+        #     # stock_info.daily_chart_error 가 True일 수 있음. 이 경우 재시도 로직 필요.
+        #     if stock_info.daily_chart_error:
+        #          self.log(f"{code}의 일봉 데이터 로드에 오류가 있어 초기 조건 검사를 진행할 수 없습니다. 재시도 필요.", "ERROR")
+        #     return
         
-        # --- 사용자 정의 초기 진입 조건 시작 ---
-        # 예시 1: 특정 가격 조건 (여기서는 단순 예시로, 실제 사용 시 구체적인 전략 로직으로 대체)
-        # if stock_info.current_price > stock_info.today_open_price * 1.01: # 시가보다 1% 이상 상승 시
-        # stock_info.strategy_state = TradingState.WAITING
-        # self.log(f"{code} state changed to WAITING based on initial price condition.", "INFO")
+        # # --- 사용자 정의 초기 진입 조건 시작 ---
+        # # 예시 1: 특정 가격 조건 (여기서는 단순 예시로, 실제 사용 시 구체적인 전략 로직으로 대체)
+        # # if stock_info.current_price > stock_info.today_open_price * 1.01: # 시가보다 1% 이상 상승 시
+        # # stock_info.strategy_state = TradingState.WAITING
+        # # self.log(f"{code} state changed to WAITING based on initial price condition.", "INFO")
 
-        # 예시 2: 갭 상승 종목에 대한 기본 전략 상태 설정
-        # (on_daily_chart_data_ready 에서 is_gap_up_today가 설정되었다고 가정)
-        if stock_info.is_gap_up_today:
-            self.log(f"{code} is identified as a gap-up stock. Initial strategy state might be set to WAITING or READY.", "INFO")
-            # 기본적으로 WAITING 상태로 설정하고, process_strategy에서 추가 조건 확인 후 매수 시도
-            stock_info.strategy_state = TradingState.WAITING 
-            self.log(f"{code} (갭상승) state changed to {stock_info.strategy_state}. is_gap_up_today: {stock_info.is_gap_up_today}", "INFO")
-        else:
-            # 갭 상승이 아닌 경우, 다른 조건을 보거나 IDLE 상태 유지
-            # 필요하다면 다른 초기 조건 검사 로직 추가
-            # 여기서는 IDLE 상태를 유지하고, 실시간 데이터 기반으로 process_strategy에서 판단.
-            if stock_info.strategy_state == TradingState.IDLE:
-                 self.log(f"{code} (갭상승 아님) state remains {stock_info.strategy_state}. is_gap_up_today: {stock_info.is_gap_up_today}", "INFO")
-            # else: # IDLE이 아닌 다른 상태 (예: READY)라면 특별한 로깅 없이 넘어감 (필요시 추가)
-            #     pass
-        # --- 사용자 정의 초기 진입 조건 끝 ---
+        # # 예시 2: 갭 상승 종목에 대한 기본 전략 상태 설정
+        # # (on_daily_chart_data_ready 에서 is_gap_up_today가 설정되었다고 가정)
+        # if stock_info.is_gap_up_today:
+        #     self.log(f"{code} is identified as a gap-up stock. Initial strategy state might be set to WAITING or READY.", "INFO")
+        #     # 기본적으로 WAITING 상태로 설정하고, process_strategy에서 추가 조건 확인 후 매수 시도
+        #     stock_info.strategy_state = TradingState.WAITING 
+        #     self.log(f"{code} (갭상승) state changed to {stock_info.strategy_state}. is_gap_up_today: {stock_info.is_gap_up_today}", "INFO")
+        # else:
+        #     # 갭 상승이 아닌 경우, 다른 조건을 보거나 IDLE 상태 유지
+        #     # 필요하다면 다른 초기 조건 검사 로직 추가
+        #     # 여기서는 IDLE 상태를 유지하고, 실시간 데이터 기반으로 process_strategy에서 판단.
+        #     if stock_info.strategy_state == TradingState.IDLE:
+        #          self.log(f"{code} (갭상승 아님) state remains {stock_info.strategy_state}. is_gap_up_today: {stock_info.is_gap_up_today}", "INFO")
+        #     # else: # IDLE이 아닌 다른 상태 (예: READY)라면 특별한 로깅 없이 넘어감 (필요시 추가)
+        #     #     pass
+        # # --- 사용자 정의 초기 진입 조건 끝 ---
 
-        # 초기 조건 만족 시 DB에 상태 업데이트 (필요시)
-        # self.modules.db_manager.update_stock_strategy_state(code, stock_info.strategy_state)
+        # # 초기 조건 만족 시 DB에 상태 업데이트 (필요시)
+        # # self.modules.db_manager.update_stock_strategy_state(code, stock_info.strategy_state)
 
-        # 조건 검사 후, process_strategy를 호출하여 즉시 다음 액션 고려
-        if stock_info.strategy_state != TradingState.IDLE:
-            self.process_strategy(code)
+        # # 조건 검사 후, process_strategy를 호출하여 즉시 다음 액션 고려
+        # if stock_info.strategy_state != TradingState.IDLE:
+        #     self.process_strategy(code)
+        pass # 함수 내용을 비우고 pass만 남김
 
     def check_conditions(self):
         # 일일 매수 횟수 제한을 위한 날짜 확인 및 카운트 초기화
@@ -759,25 +760,25 @@ class TradingStrategy(QObject):
 
     def _handle_waiting_state(self, code, stock_info: StockTrackingData, current_price):
         """매수 조건을 검사하고 매수 주문을 실행합니다 (WAITING 상태)."""
-        is_gap_up = stock_info.is_gap_up_today
+        #is_gap_up = stock_info.is_gap_up_today
         yesterday_cp = stock_info.yesterday_close_price 
         is_broken = stock_info.is_yesterday_close_broken_today
 
-        if not is_gap_up:
-            return False
+        #if not is_gap_up:
+        #    return False
 
         if yesterday_cp == 0:
             return False
 
-        if current_price < yesterday_cp and not is_broken:
-            stock_info.is_yesterday_close_broken_today = True
+        if current_price < yesterday_cp and not is_broken: # (3) 현재가가 전일 종가 미만이고, 아직 하회 기록이 없으면
+            stock_info.is_yesterday_close_broken_today = True # 하회 기록 플래그 설정
             self.log(f"[{code}] 전일 종가 하회 기록 (전일종가: {yesterday_cp}, 현재가: {current_price})", "INFO")
             return False
 
-        elif is_broken and current_price > yesterday_cp:
+        elif is_broken and current_price > yesterday_cp: # (4) 하회 기록이 있고, 현재가가 전일 종가 초과 시 (돌파)
             self.log(f"[{code}] 전일 종가 재돌파, 매수 조건 충족 (전일종가: {yesterday_cp}, 현재가: {current_price})", "INFO")
-            if self.execute_buy(code):
-                stock_info.is_yesterday_close_broken_today = False # 매수 성공 시 리셋
+            if self.execute_buy(code): # 매수 실행
+                stock_info.is_yesterday_close_broken_today = False # 매수 성공 시 플래그 리셋
                 self.log(f"[{code}] 매수 주문 접수 성공 후 'is_yesterday_close_broken_today' 플래그 리셋.", "DEBUG")
                 return True
         return False
