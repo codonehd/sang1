@@ -19,7 +19,7 @@
         "path": "logs/trading_data.test.db"
     },
     "Logging": {
-        "level": "DEBUG",
+        "level": "INFO",
         "max_bytes": 10485760,
         "backup_count": 5
     },
@@ -30,14 +30,8 @@
         "start_automatically": false
     },
     "watchlist": [
-        { "code": "253840", "name": "수젠텍", "yesterday_close_price": 7160 },
-        { "code": "376900", "name": "로킷헬스케어", "yesterday_close_price": 19950 },
-        { "code": "389260", "name": "대명에너지", "yesterday_close_price": 24900 },
-        { "code": "032940", "name": "원익", "yesterday_close_price": 3790 },
-        { "code": "086060", "name": "진바이오텍", "yesterday_close_price": 4115 },
-        { "code": "217330", "name": "싸이토젠", "yesterday_close_price": 4405 },
-        { "code": "246250", "name": "에스엘에스바이오", "yesterday_close_price": 2420 },
-        { "code": "291650", "name": "압타머사이언스", "yesterday_close_price": 1046 }
+        
+	    { "code": "439580", "name": "블루엠텍", "yesterday_close_price": 7400 }
     ],
     "PeriodicStatusReport": {
         "enabled": true,

@@ -1,694 +1,355 @@
-2025-05-20 21:09:52,579 - AppLogger - INFO - logger:84 - 로깅 시스템 초기화 완료 (콘솔 및 파일 핸들러)
-2025-05-20 21:09:52,590 - AppLogger - INFO - logger:84 - Using settings file: settings.json
-2025-05-20 21:09:52,590 - AppLogger - INFO - logger:84 - 프로그램 시작 (콘솔 모드)
-2025-05-20 21:09:52,591 - AppLogger - DEBUG - logger:81 - ScreenManager 초기화 완료. 사용 가능 화면: 100개 (2000~2099)
-2025-05-20 21:09:52,591 - AppLogger - INFO - logger:84 - ScreenManager 단일 인스턴스 생성 완료
-2025-05-20 21:09:52,658 - AppLogger - INFO - logger:84 - Using settings file: settings.json
-2025-05-20 21:09:52,658 - AppLogger - INFO - logger:84 - 데이터베이스 (logs/trading_data.test.db) 초기화 성공
-2025-05-20 21:09:52,658 - AppLogger - INFO - logger:84 - 데이터베이스 초기화 완료
-2025-05-20 21:09:52,674 - AppLogger - INFO - logger:84 - [Strategy][2025-05-20 21:09:52] 전략 설정 로딩 시작...
-2025-05-20 21:09:52,680 - AppLogger - INFO - logger:84 - [Strategy][2025-05-20 21:09:52] 장운영시간 설정: 시작(09:00:00), 종료(15:30:00)
-2025-05-20 21:09:52,681 - AppLogger - INFO - logger:84 - [Strategy][2025-05-20 21:09:52] 전략 설정 로드 완료: StrategySettings(buy_amount_per_stock=1000000.0, stop_loss_rate_from_yesterday_close=2.0, partial_take_profit_rate=5.0, full_take_profit_target_rate=9.0, partial_sell_ratio=50, trailing_stop_activation_profit_rate=2.0, trailing_stop_fall_rate=1.5, market_open_time_str='09:00:00', market_close_time_str='15:30:00', periodic_report_enabled=True, periodic_report_interval_seconds=60, max_daily_buy_count=10, cancel_pending_orders_on_exit=True, auto_liquidate_after_minutes_enabled=False, auto_liquidate_after_minutes=60)
-2025-05-20 21:09:52,682 - AppLogger - INFO - logger:84 - [Strategy][2025-05-20 21:09:52] 전략 설정 로드 완료.
-2025-05-20 21:09:52,682 - AppLogger - INFO - logger:84 - [Strategy][2025-05-20 21:09:52] 장운영시간 초기화: 09:00:00 - 15:30:00
-2025-05-20 21:09:52,683 - AppLogger - INFO - logger:84 - [Strategy][2025-05-20 21:09:52] TradingStrategy 객체 생성 완료. 추가 초기화가 필요합니다.
-2025-05-20 21:09:52,683 - AppLogger - INFO - logger:84 - 매매 전략 초기화 (KiwoomAPI 주입 전, ScreenManager 주입 완료)
-2025-05-20 21:09:52,684 - AppLogger - DEBUG - logger:81 - [KiwoomAPI] 키움 API 초기화 시작
-2025-05-20 21:09:52,700 - AppLogger - DEBUG - logger:81 - [KiwoomAPI] ScreenManager 초기화 완료 (외부 제공: True, OCX 전달됨)
-2025-05-20 21:09:52,700 - AppLogger - DEBUG - logger:81 - [KiwoomAPI] TR 요청 간격 설정됨: 기본 0.21초, 연속 1.0초
-2025-05-20 21:09:52,700 - AppLogger - DEBUG - logger:81 - [KiwoomAPI] 설정에서 계좌 비밀번호 로드: 비밀번호 없음
-2025-05-20 21:09:52,703 - AppLogger - INFO - logger:84 - KiwoomAPI 초기화 및 Strategy에 주입 완료
-2025-05-20 21:09:52,704 - AppLogger - INFO - logger:84 - 키움 API 로그인 시도
-2025-05-20 21:09:52,704 - AppLogger - INFO - logger:84 - [KiwoomAPI] [Dry Run] 로그인 처리 시작...
-2025-05-20 21:09:52,704 - AppLogger - INFO - logger:84 - [KiwoomAPI] [Dry Run] 설정 파일에서 계좌번호 사용: 8101891811
-2025-05-20 21:09:52,704 - AppLogger - INFO - logger:84 - [KiwoomAPI] [Dry Run] 가상 로그인 성공. 계좌번호: 8101891811
-2025-05-20 21:09:52,705 - AppLogger - DEBUG - logger:81 - [KiwoomAPI] [Dry Run] Strategy의 _on_login_completed 호출 예정 (비동기)
-2025-05-20 21:09:52,705 - AppLogger - INFO - logger:84 - 키움 API 로그인 성공
-2025-05-20 21:09:52,706 - AppLogger - INFO - logger:84 - 매매 전략 최종 초기화 완료
-2025-05-20 21:09:52,754 - AppLogger - INFO - logger:84 - 설정 파일에서 11개의 관심종목 로드 및 전략에 추가 시작...
-2025-05-20 21:09:52,754 - AppLogger - DEBUG - logger:81 - [MAIN_WATCHLIST_ADD] 항목 1: 코드(253840), 이름(수젠텍), 전일종가(7160.0)
-2025-05-20 21:09:52,755 - AppLogger - DEBUG - logger:81 - [Strategy][2025-05-20 21:09:52] [WATCHLIST_ADD_START] 관심종목 추가/업데이트 시작: 코드(253840), 이름(수젠텍), 설정된 전일종가(7160.0)
-2025-05-20 21:09:52,755 - AppLogger - INFO - logger:84 - [Strategy][2025-05-20 21:09:52] 관심종목 신규 추가: 수젠텍(253840), 전일종가: 7160.0, 초기상태: WAITING
-2025-05-20 21:09:52,755 - AppLogger - DEBUG - logger:81 - [Strategy][2025-05-20 21:09:52] [WATCHLIST_ADD_END] 관심종목 추가/업데이트 완료: 코드(253840) - 현재 self.watchlist에 1개 항목
-2025-05-20 21:09:52,756 - AppLogger - DEBUG - logger:81 - [MAIN_WATCHLIST_ADD] 항목 2: 코드(376900), 이름(로킷헬스케어), 전일종가(19950.0)
-2025-05-20 21:09:52,756 - AppLogger - DEBUG - logger:81 - [Strategy][2025-05-20 21:09:52] [WATCHLIST_ADD_START] 관심종목 추가/업데이트 시작: 코드(376900), 이름(로킷헬스케어), 설정된 전일종가(19950.0)
-2025-05-20 21:09:52,756 - AppLogger - INFO - logger:84 - [Strategy][2025-05-20 21:09:52] 관심종목 신규 추가: 로킷헬스케어(376900), 전일종가: 19950.0, 초기상태: WAITING
-2025-05-20 21:09:52,757 - AppLogger - DEBUG - logger:81 - [Strategy][2025-05-20 21:09:52] [WATCHLIST_ADD_END] 관심종목 추가/업데이트 완료: 코드(376900) - 현재 self.watchlist에 2개 항목
-2025-05-20 21:09:52,757 - AppLogger - DEBUG - logger:81 - [MAIN_WATCHLIST_ADD] 항목 3: 코드(389260), 이름(대명에너지), 전일종가(24900.0)
-2025-05-20 21:09:52,758 - AppLogger - DEBUG - logger:81 - [Strategy][2025-05-20 21:09:52] [WATCHLIST_ADD_START] 관심종목 추가/업데이트 시작: 코드(389260), 이름(대명에너지), 설정된 전일종가(24900.0)
-2025-05-20 21:09:52,758 - AppLogger - INFO - logger:84 - [Strategy][2025-05-20 21:09:52] 관심종목 신규 추가: 대명에너지(389260), 전일종가: 24900.0, 초기상태: WAITING
-2025-05-20 21:09:52,758 - AppLogger - DEBUG - logger:81 - [Strategy][2025-05-20 21:09:52] [WATCHLIST_ADD_END] 관심종목 추가/업데이트 완료: 코드(389260) - 현재 self.watchlist에 3개 항목
-2025-05-20 21:09:52,758 - AppLogger - DEBUG - logger:81 - [MAIN_WATCHLIST_ADD] 항목 4: 코드(032940), 이름(원익), 전일종가(3790.0)
-2025-05-20 21:09:52,759 - AppLogger - DEBUG - logger:81 - [Strategy][2025-05-20 21:09:52] [WATCHLIST_ADD_START] 관심종목 추가/업데이트 시작: 코드(032940), 이름(원익), 설정된 전일종가(3790.0)
-2025-05-20 21:09:52,759 - AppLogger - INFO - logger:84 - [Strategy][2025-05-20 21:09:52] 관심종목 신규 추가: 원익(032940), 전일종가: 3790.0, 초기상태: WAITING
-2025-05-20 21:09:52,759 - AppLogger - DEBUG - logger:81 - [Strategy][2025-05-20 21:09:52] [WATCHLIST_ADD_END] 관심종목 추가/업데이트 완료: 코드(032940) - 현재 self.watchlist에 4개 항목
-2025-05-20 21:09:52,760 - AppLogger - DEBUG - logger:81 - [MAIN_WATCHLIST_ADD] 항목 5: 코드(086060), 이름(진바이오텍), 전일종가(4115.0)
-2025-05-20 21:09:52,760 - AppLogger - DEBUG - logger:81 - [Strategy][2025-05-20 21:09:52] [WATCHLIST_ADD_START] 관심종목 추가/업데이트 시작: 코드(086060), 이름(진바이오텍), 설정된 전일종가(4115.0)
-2025-05-20 21:09:52,760 - AppLogger - INFO - logger:84 - [Strategy][2025-05-20 21:09:52] 관심종목 신규 추가: 진바이오텍(086060), 전일종가: 4115.0, 초기상태: WAITING
-2025-05-20 21:09:52,761 - AppLogger - DEBUG - logger:81 - [Strategy][2025-05-20 21:09:52] [WATCHLIST_ADD_END] 관심종목 추가/업데이트 완료: 코드(086060) - 현재 self.watchlist에 5개 항목
-2025-05-20 21:09:52,761 - AppLogger - DEBUG - logger:81 - [MAIN_WATCHLIST_ADD] 항목 6: 코드(217330), 이름(싸이토젠), 전일종가(4405.0)
-2025-05-20 21:09:52,761 - AppLogger - DEBUG - logger:81 - [Strategy][2025-05-20 21:09:52] [WATCHLIST_ADD_START] 관심종목 추가/업데이트 시작: 코드(217330), 이름(싸이토젠), 설정된 전일종가(4405.0)
-2025-05-20 21:09:52,761 - AppLogger - INFO - logger:84 - [Strategy][2025-05-20 21:09:52] 관심종목 신규 추가: 싸이토젠(217330), 전일종가: 4405.0, 초기상태: WAITING
-2025-05-20 21:09:52,762 - AppLogger - DEBUG - logger:81 - [Strategy][2025-05-20 21:09:52] [WATCHLIST_ADD_END] 관심종목 추가/업데이트 완료: 코드(217330) - 현재 self.watchlist에 6개 항목
-2025-05-20 21:09:52,762 - AppLogger - DEBUG - logger:81 - [MAIN_WATCHLIST_ADD] 항목 7: 코드(246250), 이름(에스엘에스바이오), 전일종가(2420.0)
-2025-05-20 21:09:52,762 - AppLogger - DEBUG - logger:81 - [Strategy][2025-05-20 21:09:52] [WATCHLIST_ADD_START] 관심종목 추가/업데이트 시작: 코드(246250), 이름(에스엘에스바이오), 설정된 전일종가(2420.0)
-2025-05-20 21:09:52,762 - AppLogger - INFO - logger:84 - [Strategy][2025-05-20 21:09:52] 관심종목 신규 추가: 에스엘에스바이오(246250), 전일종가: 2420.0, 초기상태: WAITING
-2025-05-20 21:09:52,763 - AppLogger - DEBUG - logger:81 - [Strategy][2025-05-20 21:09:52] [WATCHLIST_ADD_END] 관심종목 추가/업데이트 완료: 코드(246250) - 현재 self.watchlist에 7개 항목
-2025-05-20 21:09:52,763 - AppLogger - DEBUG - logger:81 - [MAIN_WATCHLIST_ADD] 항목 8: 코드(291650), 이름(압타머사이언스), 전일종가(1046.0)
-2025-05-20 21:09:52,763 - AppLogger - DEBUG - logger:81 - [Strategy][2025-05-20 21:09:52] [WATCHLIST_ADD_START] 관심종목 추가/업데이트 시작: 코드(291650), 이름(압타머사이언스), 설정된 전일종가(1046.0)
-2025-05-20 21:09:52,763 - AppLogger - INFO - logger:84 - [Strategy][2025-05-20 21:09:52] 관심종목 신규 추가: 압타머사이언스(291650), 전일종가: 1046.0, 초기상태: WAITING
-2025-05-20 21:09:52,764 - AppLogger - DEBUG - logger:81 - [Strategy][2025-05-20 21:09:52] [WATCHLIST_ADD_END] 관심종목 추가/업데이트 완료: 코드(291650) - 현재 self.watchlist에 8개 항목
-2025-05-20 21:09:52,764 - AppLogger - DEBUG - logger:81 - [MAIN_WATCHLIST_ADD] 항목 9: 코드(005930), 이름(삼성전자), 전일종가(70000.0)
-2025-05-20 21:09:52,764 - AppLogger - DEBUG - logger:81 - [Strategy][2025-05-20 21:09:52] [WATCHLIST_ADD_START] 관심종목 추가/업데이트 시작: 코드(005930), 이름(삼성전자), 설정된 전일종가(70000.0)
-2025-05-20 21:09:52,765 - AppLogger - INFO - logger:84 - [Strategy][2025-05-20 21:09:52] 관심종목 신규 추가: 삼성전자(005930), 전일종가: 70000.0, 초기상태: WAITING
-2025-05-20 21:09:52,765 - AppLogger - DEBUG - logger:81 - [Strategy][2025-05-20 21:09:52] [WATCHLIST_ADD_END] 관심종목 추가/업데이트 완료: 코드(005930) - 현재 self.watchlist에 9개 항목
-2025-05-20 21:09:52,765 - AppLogger - DEBUG - logger:81 - [MAIN_WATCHLIST_ADD] 항목 10: 코드(035720), 이름(카카오), 전일종가(49000.0)
-2025-05-20 21:09:52,766 - AppLogger - DEBUG - logger:81 - [Strategy][2025-05-20 21:09:52] [WATCHLIST_ADD_START] 관심종목 추가/업데이트 시작: 코드(035720), 이름(카카오), 설정된 전일종가(49000.0)
-2025-05-20 21:09:52,766 - AppLogger - INFO - logger:84 - [Strategy][2025-05-20 21:09:52] 관심종목 신규 추가: 카카오(035720), 전일종가: 49000.0, 초기상태: WAITING
-2025-05-20 21:09:52,766 - AppLogger - DEBUG - logger:81 - [Strategy][2025-05-20 21:09:52] [WATCHLIST_ADD_END] 관심종목 추가/업데이트 완료: 코드(035720) - 현재 self.watchlist에 10개 항목
-2025-05-20 21:09:52,767 - AppLogger - DEBUG - logger:81 - [MAIN_WATCHLIST_ADD] 항목 11: 코드(105560), 이름(AP시스템), 전일종가(98000.0)
-2025-05-20 21:09:52,767 - AppLogger - DEBUG - logger:81 - [Strategy][2025-05-20 21:09:52] [WATCHLIST_ADD_START] 관심종목 추가/업데이트 시작: 코드(105560), 이름(AP시스템), 설정된 전일종가(98000.0)
-2025-05-20 21:09:52,767 - AppLogger - INFO - logger:84 - [Strategy][2025-05-20 21:09:52] 관심종목 신규 추가: AP시스템(105560), 전일종가: 98000.0, 초기상태: WAITING
-2025-05-20 21:09:52,767 - AppLogger - DEBUG - logger:81 - [Strategy][2025-05-20 21:09:52] [WATCHLIST_ADD_END] 관심종목 추가/업데이트 완료: 코드(105560) - 현재 self.watchlist에 11개 항목
-2025-05-20 21:09:52,767 - AppLogger - INFO - logger:84 - 11개의 관심종목이 전략에 추가되었습니다.
-2025-05-20 21:09:52,768 - AppLogger - INFO - logger:84 - [Strategy][2025-05-20 21:09:52] TradingStrategy 시작 요청 접수...
-2025-05-20 21:09:52,768 - AppLogger - DEBUG - logger:81 - [Strategy][2025-05-20 21:09:52] [STRATEGY_DEBUG] ENTERING start() method. is_running=False, init_status={'account_info_loaded': False, 'deposit_info_loaded': False, 'portfolio_loaded': False, 'settings_loaded': True, 'market_hours_initialized': True}, watchlist_items=11
-2025-05-20 21:09:52,768 - AppLogger - ERROR - logger:90 - [Strategy][2025-05-20 21:09:52] 시작 실패: 계좌번호가 로드되지 않았습니다.
-2025-05-20 21:09:52,769 - AppLogger - INFO - logger:84 - 매매 전략 시작됨. Ctrl+C로 종료하세요.
-2025-05-20 21:09:52,770 - AppLogger - INFO - logger:84 - Ctrl+C (SIGINT) 핸들러 최종 설정 완료. 이벤트 루프 시작 직전.
-2025-05-20 21:09:52,806 - AppLogger - DEBUG - logger:81 - [Strategy][2025-05-20 21:09:52] [STRATEGY_LOGIN_DEBUG] _on_login_completed 호출됨. account_number_from_signal: '8101891811'
-2025-05-20 21:09:52,807 - AppLogger - INFO - logger:84 - [Strategy][2025-05-20 21:09:52] API로부터 계좌번호 수신: '8101891811'
-2025-05-20 21:09:52,807 - AppLogger - INFO - logger:84 - [Strategy][2025-05-20 21:09:52] 최종 계좌번호 설정(TradingStrategy & KiwoomAPI): '8101891811'. 계좌 정보 요청 시작.
-2025-05-20 21:09:52,808 - AppLogger - INFO - logger:84 - [Strategy][2025-05-20 21:09:52] 예수금 상세정보 요청 시작 (opw00001). 계좌번호: 8101891811
-2025-05-20 21:09:52,808 - AppLogger - INFO - logger:84 - [ScreenManager_GET] 새 화면 할당: Identifier='account_info' -> ScreenNo='2000'. 사용중: 1, 사용가능: 99
-2025-05-20 21:09:52,809 - AppLogger - DEBUG - logger:81 - [KiwoomAPI] [KiwoomAPI] comm_rq_data PARAMS CHECK: rq_name='예수금상세현황요청', tr_code='opw00001', input_values_override IS NOT None, market_context='None'
-2025-05-20 21:09:52,809 - AppLogger - DEBUG - logger:81 - [KiwoomAPI] [KiwoomAPI] comm_rq_data PARAMS CHECK: input_values_override CONTENT: {'계좌번호': '8101891811', '비밀번호': '', '비밀번호입력매체구분': '00', '조회구분': '2'}
-2025-05-20 21:09:52,809 - AppLogger - INFO - logger:84 - [KiwoomAPI] [Dry Run] TR 요청 (예수금상세현황요청, opw00001) 가상 처리 시작...
-2025-05-20 21:09:52,809 - AppLogger - DEBUG - logger:81 - [KiwoomAPI] [Dry Run] TR 요청 '예수금상세현황요청'에 대한 캐시 준비 완료 (status: pending_dry_run_callback).
-2025-05-20 21:09:52,811 - AppLogger - DEBUG - logger:81 - [KiwoomAPI] [Dry Run] opw00001 TR에 대한 가상 응답 콜백이 예약되었습니다 (RQName: 예수금상세현황요청, ScreenNo: 2000).
-2025-05-20 21:09:52,811 - AppLogger - DEBUG - logger:81 - [Strategy][2025-05-20 21:09:52] opw00001 TR 요청 전송 완료. 요청명: 예수금상세현황요청, 화면번호: 2000
-2025-05-20 21:09:52,811 - AppLogger - INFO - logger:84 - [Strategy][2025-05-20 21:09:52] 계좌 포트폴리오 정보 요청 시작 (opw00018). 계좌번호: 8101891811
-2025-05-20 21:09:52,812 - AppLogger - INFO - logger:84 - [ScreenManager_GET] 새 화면 할당: Identifier='portfolio_info' -> ScreenNo='2001'. 사용중: 2, 사용가능: 98
-2025-05-20 21:09:52,812 - AppLogger - DEBUG - logger:81 - [KiwoomAPI] [KiwoomAPI] comm_rq_data PARAMS CHECK: rq_name='계좌잔고조회_8101891811', tr_code='opw00018', input_values_override IS NOT None, market_context='None'
-2025-05-20 21:09:52,812 - AppLogger - DEBUG - logger:81 - [KiwoomAPI] [KiwoomAPI] comm_rq_data PARAMS CHECK: input_values_override CONTENT: {'계좌번호': '8101891811', '비밀번호': '', '비밀번호입력매체구분': '00', '조회구분': '1'}
-2025-05-20 21:09:52,813 - AppLogger - INFO - logger:84 - [KiwoomAPI] [Dry Run] TR 요청 (계좌잔고조회_8101891811, opw00018) 가상 처리 시작...
-2025-05-20 21:09:52,813 - AppLogger - DEBUG - logger:81 - [KiwoomAPI] [Dry Run] TR 요청 '계좌잔고조회_8101891811'에 대한 캐시 준비 완료 (status: pending_dry_run_callback).
-2025-05-20 21:09:52,813 - AppLogger - DEBUG - logger:81 - [KiwoomAPI] [Dry Run] opw00018 TR에 대한 가상 응답 콜백이 예약되었습니다 (RQName: 계좌잔고조회_8101891811, ScreenNo: 2001).
-2025-05-20 21:09:52,814 - AppLogger - DEBUG - logger:81 - [Strategy][2025-05-20 21:09:52] opw00018 TR 요청 전송 완료. 요청명: 계좌잔고조회_8101891811, 화면번호: 2001
-2025-05-20 21:09:52,860 - AppLogger - DEBUG - logger:81 - [KiwoomAPI] [Dry Run] _emulate_tr_receive_for_dry_run 호출됨: ScreenNo='2000', RQName='예수금상세현황요청', TRCode='opw00001'
-2025-05-20 21:09:52,861 - AppLogger - DEBUG - logger:81 - [KiwoomAPI] [Dry Run] 가상 응답 생성 시작. 원본 입력값: {'계좌번호': '8101891811', '비밀번호': '', '비밀번호입력매체구분': '00', '조회구분': '2'}
-2025-05-20 21:09:52,861 - AppLogger - DEBUG - logger:81 - [KiwoomAPI] [Dry Run] opw00001 가상 데이터 생성 완료.
-2025-05-20 21:09:52,862 - AppLogger - DEBUG - logger:81 - [KiwoomAPI] [Dry Run] 예수금상세현황요청 캐시 상태 업데이트: simulating_callback
-2025-05-20 21:09:52,862 - AppLogger - CRITICAL - logger:93 - [KiwoomAPI] [EVENT_HANDLER_ENTRY] on_receive_tr_data: Scr='2000', RQ='예수금상세현황요청', TR='opw00001', PrevNext='0', ErrCode='0', Msg='DRYRUN_OK'
-2025-05-20 21:09:52,862 - AppLogger - DEBUG - logger:81 - [KiwoomAPI] _parse_tr_data: TR Code 'opw00001', RQName '예수금상세현황요청'
-2025-05-20 21:09:52,864 - AppLogger - DEBUG - logger:81 - [KiwoomAPI] _parse_tr_data 완료: TR(opw00001), RQName(예수금상세현황요청), SingleDataKeys(14), MultiDataCount(0)
-2025-05-20 21:09:52,864 - AppLogger - INFO - logger:84 - [KiwoomAPI] opw00001 (계좌정보) 수신 및 저장: 예수금() - RQ: 예수금상세현황요청
-2025-05-20 21:09:52,865 - AppLogger - DEBUG - logger:81 - [Strategy][2025-05-20 21:09:52] TR 데이터 수신 시작 - rq_name: 예수금상세현황요청, tr_code: opw00001, 연속조회: 0
-2025-05-20 21:09:52,865 - AppLogger - INFO - logger:84 - [Strategy][2025-05-20 21:09:52] TR 수신 (opw00001) - 예수금 데이터 (요약 로깅)
-2025-05-20 21:09:52,865 - AppLogger - INFO - logger:84 - [Strategy][2025-05-20 21:09:52] 예수금 정보 업데이트 (opw00001): {'예수금': 0.0, 'd+1추정예수금': '', 'd+2추정예수금': 0.0, '출금가능금액': '', '미수금': '', '대용금': '', '권리대용금': '', '주문가능금액': '', '예탁자산평가액': '', '총매입금액': 0.0, '총평가금액': 0.0, '총손익금액': '', '총손익률': '', '총재사용금액': '', '계좌번호': '8101891811'}
-2025-05-20 21:09:52,866 - AppLogger - DEBUG - logger:81 - [Strategy][2025-05-20 21:09:52] opw00001 핸들러 완료. deposit_info_loaded: True
-2025-05-20 21:09:52,866 - AppLogger - DEBUG - logger:81 - [Strategy][2025-05-20 21:09:52] [STRATEGY_INTERNAL] _check_all_data_loaded_and_start_strategy 호출됨. is_running: False
-2025-05-20 21:09:52,866 - AppLogger - WARNING - logger:87 - [Strategy][2025-05-20 21:09:52] 계좌, 예수금 또는 포트폴리오 정보가 아직 모두 로드되지 않아 전략을 시작할 수 없습니다.
-2025-05-20 21:09:52,867 - AppLogger - DEBUG - logger:81 - [Strategy][2025-05-20 21:09:52] 누락된 초기 정보: 포트폴리오
-2025-05-20 21:09:52,867 - AppLogger - INFO - logger:84 - [Strategy][2025-05-20 21:09:52] 예수금 정보 로드 완료.
-2025-05-20 21:09:52,867 - AppLogger - INFO - logger:84 - [Strategy][2025-05-20 21:09:52] 예수금 로드 완료. 포트폴리오 정보 로딩 대기 중...
-2025-05-20 21:09:52,867 - AppLogger - DEBUG - logger:81 - [Strategy][2025-05-20 21:09:52] [STRATEGY_INTERNAL] _check_all_data_loaded_and_start_strategy 호출됨. is_running: False
-2025-05-20 21:09:52,868 - AppLogger - WARNING - logger:87 - [Strategy][2025-05-20 21:09:52] 계좌, 예수금 또는 포트폴리오 정보가 아직 모두 로드되지 않아 전략을 시작할 수 없습니다.
-2025-05-20 21:09:52,868 - AppLogger - DEBUG - logger:81 - [Strategy][2025-05-20 21:09:52] 누락된 초기 정보: 포트폴리오
-2025-05-20 21:09:52,868 - AppLogger - DEBUG - logger:81 - [KiwoomAPI] TR(opw00001, RQ='예수금상세현황요청') 단일/최종 응답. 화면번호(2000) 반환 예정.
-2025-05-20 21:09:52,869 - AppLogger - INFO - logger:84 - [ScreenManager_RELEASE] 화면 반환 완료: ScreenNo='2000', Identifier='예수금상세현황요청'. 사용중: 1, 사용가능: 99
-2025-05-20 21:09:52,869 - AppLogger - DEBUG - logger:81 - [KiwoomAPI] [Dry Run] on_receive_tr_data 가상 호출 완료 for 예수금상세현황요청.
-2025-05-20 21:09:52,869 - AppLogger - DEBUG - logger:81 - [KiwoomAPI] [Dry Run] _emulate_tr_receive_for_dry_run 호출됨: ScreenNo='2001', RQName='계좌잔고조회_8101891811', TRCode='opw00018'
-2025-05-20 21:09:52,870 - AppLogger - DEBUG - logger:81 - [KiwoomAPI] [Dry Run] 가상 응답 생성 시작. 원본 입력값: {'계좌번호': '8101891811', '비밀번호': '', '비밀번호입력매체구분': '00', '조회구분': '1'}
-2025-05-20 21:09:52,870 - AppLogger - DEBUG - logger:81 - [KiwoomAPI] [Dry Run] opw00018 가상 데이터 생성 완료 (보유 종목 없음 초기 상태).
-2025-05-20 21:09:52,870 - AppLogger - DEBUG - logger:81 - [KiwoomAPI] [Dry Run] 계좌잔고조회_8101891811 캐시 상태 업데이트: simulating_callback
-2025-05-20 21:09:52,870 - AppLogger - CRITICAL - logger:93 - [KiwoomAPI] [EVENT_HANDLER_ENTRY] on_receive_tr_data: Scr='2001', RQ='계좌잔고조회_8101891811', TR='opw00018', PrevNext='0', ErrCode='0', Msg='DRYRUN_OK'
-2025-05-20 21:09:52,871 - AppLogger - DEBUG - logger:81 - [KiwoomAPI] _parse_tr_data: TR Code 'opw00018', RQName '계좌잔고조회_8101891811'
-2025-05-20 21:09:52,871 - AppLogger - DEBUG - logger:81 - [KiwoomAPI] _parse_tr_data 완료: TR(opw00018), RQName(계좌잔고조회_8101891811), SingleDataKeys(9), MultiDataCount(0)
-2025-05-20 21:09:52,871 - AppLogger - DEBUG - logger:81 - [KiwoomAPI] opw00018 데이터 캐시 저장: 계좌잔고조회_8101891811 - 보유종목 0건, 총매입 
-2025-05-20 21:09:52,871 - AppLogger - DEBUG - logger:81 - [Strategy][2025-05-20 21:09:52] TR 데이터 수신 시작 - rq_name: 계좌잔고조회_8101891811, tr_code: opw00018, 연속조회: 0
-2025-05-20 21:09:52,871 - AppLogger - INFO - logger:84 - [Strategy][2025-05-20 21:09:52] TR 수신 (opw00018) - 계좌잔고 데이터 (요약 로깅)
-2025-05-20 21:09:52,871 - AppLogger - INFO - logger:84 - [Strategy][2025-05-20 21:09:52] 계좌 평가 요약 정보 업데이트 (opw00018 single_data): {'총매입금액': 0.0, '총평가금액': 0.0, '총평가손익금액': 0.0, '총수익률(%)': 0.0, '추정예탁자산': 0.0, '총대출금': '', '총융자금액': '', '총대주금액': '', '조회건수': ''}
-2025-05-20 21:09:52,873 - AppLogger - INFO - logger:84 - [Strategy][2025-05-20 21:09:52] 계좌 잔고(포트폴리오) 업데이트 (opw00018 multi_data): 0 종목
-2025-05-20 21:09:52,873 - AppLogger - DEBUG - logger:81 - [Strategy][2025-05-20 21:09:52] opw00018 핸들러 완료. portfolio_loaded: True
-2025-05-20 21:09:52,873 - AppLogger - DEBUG - logger:81 - [Strategy][2025-05-20 21:09:52] [STRATEGY_INTERNAL] _check_all_data_loaded_and_start_strategy 호출됨. is_running: False
-2025-05-20 21:09:52,874 - AppLogger - DEBUG - logger:81 - [Strategy][2025-05-20 21:09:52] 현재 관심종목 11개 로드됨. 목록:
-2025-05-20 21:09:52,874 - AppLogger - DEBUG - logger:81 - [Strategy][2025-05-20 21:09:52]   - 수젠텍(253840): 전일종가(7160.0), 상태(WAITING)
-2025-05-20 21:09:52,874 - AppLogger - DEBUG - logger:81 - [Strategy][2025-05-20 21:09:52]   - 로킷헬스케어(376900): 전일종가(19950.0), 상태(WAITING)
-2025-05-20 21:09:52,875 - AppLogger - DEBUG - logger:81 - [Strategy][2025-05-20 21:09:52]   - 대명에너지(389260): 전일종가(24900.0), 상태(WAITING)
-2025-05-20 21:09:52,875 - AppLogger - DEBUG - logger:81 - [Strategy][2025-05-20 21:09:52]   - 원익(032940): 전일종가(3790.0), 상태(WAITING)
-2025-05-20 21:09:52,875 - AppLogger - DEBUG - logger:81 - [Strategy][2025-05-20 21:09:52]   - 진바이오텍(086060): 전일종가(4115.0), 상태(WAITING)
-2025-05-20 21:09:52,875 - AppLogger - DEBUG - logger:81 - [Strategy][2025-05-20 21:09:52]   - 싸이토젠(217330): 전일종가(4405.0), 상태(WAITING)
-2025-05-20 21:09:52,877 - AppLogger - DEBUG - logger:81 - [Strategy][2025-05-20 21:09:52]   - 에스엘에스바이오(246250): 전일종가(2420.0), 상태(WAITING)
-2025-05-20 21:09:52,877 - AppLogger - DEBUG - logger:81 - [Strategy][2025-05-20 21:09:52]   - 압타머사이언스(291650): 전일종가(1046.0), 상태(WAITING)
-2025-05-20 21:09:52,877 - AppLogger - DEBUG - logger:81 - [Strategy][2025-05-20 21:09:52]   - 삼성전자(005930): 전일종가(70000.0), 상태(WAITING)
-2025-05-20 21:09:52,878 - AppLogger - DEBUG - logger:81 - [Strategy][2025-05-20 21:09:52]   - 카카오(035720): 전일종가(49000.0), 상태(WAITING)
-2025-05-20 21:09:52,878 - AppLogger - DEBUG - logger:81 - [Strategy][2025-05-20 21:09:52]   - AP시스템(105560): 전일종가(98000.0), 상태(WAITING)
-2025-05-20 21:09:52,878 - AppLogger - INFO - logger:84 - [Strategy][2025-05-20 21:09:52] 모든 계좌/포트폴리오/관심종목(설정) 데이터 준비 완료. 실제 전략 시작 로직 수행.
-2025-05-20 21:09:52,878 - AppLogger - INFO - logger:84 - [ScreenManager_GET] 새 화면 할당: Identifier='real_253840' -> ScreenNo='2002'. 사용중: 2, 사용가능: 98
-2025-05-20 21:09:52,879 - AppLogger - INFO - logger:84 - [KiwoomAPI] 실시간 데이터 등록 요청: 화면(2002), 종목(253840), FID(10;11;12;13), 타입(1)
-2025-05-20 21:09:52,883 - AppLogger - INFO - logger:84 - [KiwoomAPI] 실시간 데이터 등록 성공: 화면(2002)
-2025-05-20 21:09:52,883 - AppLogger - INFO - logger:84 - [Strategy][2025-05-20 21:09:52] 실시간 데이터 구독 요청 성공 (화면: 2002, 종목: 253840) - SetRealReg 호출 자체는 성공으로 간주. 실제 구독 성공은 이벤트로 확인.
-2025-05-20 21:09:52,883 - AppLogger - INFO - logger:84 - [ScreenManager_GET] 새 화면 할당: Identifier='real_376900' -> ScreenNo='2003'. 사용중: 3, 사용가능: 97
-2025-05-20 21:09:52,883 - AppLogger - INFO - logger:84 - [KiwoomAPI] 실시간 데이터 등록 요청: 화면(2003), 종목(376900), FID(10;11;12;13), 타입(1)
-2025-05-20 21:09:52,886 - AppLogger - INFO - logger:84 - [KiwoomAPI] 실시간 데이터 등록 성공: 화면(2003)
-2025-05-20 21:09:52,886 - AppLogger - INFO - logger:84 - [Strategy][2025-05-20 21:09:52] 실시간 데이터 구독 요청 성공 (화면: 2003, 종목: 376900) - SetRealReg 호출 자체는 성공으로 간주. 실제 구독 성공은 이벤트로 확인.
-2025-05-20 21:09:52,886 - AppLogger - INFO - logger:84 - [ScreenManager_GET] 새 화면 할당: Identifier='real_389260' -> ScreenNo='2004'. 사용중: 4, 사용가능: 96
-2025-05-20 21:09:52,887 - AppLogger - INFO - logger:84 - [KiwoomAPI] 실시간 데이터 등록 요청: 화면(2004), 종목(389260), FID(10;11;12;13), 타입(1)
-2025-05-20 21:09:52,888 - AppLogger - INFO - logger:84 - [KiwoomAPI] 실시간 데이터 등록 성공: 화면(2004)
-2025-05-20 21:09:52,888 - AppLogger - INFO - logger:84 - [Strategy][2025-05-20 21:09:52] 실시간 데이터 구독 요청 성공 (화면: 2004, 종목: 389260) - SetRealReg 호출 자체는 성공으로 간주. 실제 구독 성공은 이벤트로 확인.
-2025-05-20 21:09:52,888 - AppLogger - INFO - logger:84 - [ScreenManager_GET] 새 화면 할당: Identifier='real_032940' -> ScreenNo='2005'. 사용중: 5, 사용가능: 95
-2025-05-20 21:09:52,888 - AppLogger - INFO - logger:84 - [KiwoomAPI] 실시간 데이터 등록 요청: 화면(2005), 종목(032940), FID(10;11;12;13), 타입(1)
-2025-05-20 21:09:52,889 - AppLogger - INFO - logger:84 - [KiwoomAPI] 실시간 데이터 등록 성공: 화면(2005)
-2025-05-20 21:09:52,890 - AppLogger - INFO - logger:84 - [Strategy][2025-05-20 21:09:52] 실시간 데이터 구독 요청 성공 (화면: 2005, 종목: 032940) - SetRealReg 호출 자체는 성공으로 간주. 실제 구독 성공은 이벤트로 확인.
-2025-05-20 21:09:52,890 - AppLogger - INFO - logger:84 - [ScreenManager_GET] 새 화면 할당: Identifier='real_086060' -> ScreenNo='2006'. 사용중: 6, 사용가능: 94
-2025-05-20 21:09:52,890 - AppLogger - INFO - logger:84 - [KiwoomAPI] 실시간 데이터 등록 요청: 화면(2006), 종목(086060), FID(10;11;12;13), 타입(1)
-2025-05-20 21:09:52,893 - AppLogger - INFO - logger:84 - [KiwoomAPI] 실시간 데이터 등록 성공: 화면(2006)
-2025-05-20 21:09:52,893 - AppLogger - INFO - logger:84 - [Strategy][2025-05-20 21:09:52] 실시간 데이터 구독 요청 성공 (화면: 2006, 종목: 086060) - SetRealReg 호출 자체는 성공으로 간주. 실제 구독 성공은 이벤트로 확인.
-2025-05-20 21:09:52,894 - AppLogger - INFO - logger:84 - [ScreenManager_GET] 새 화면 할당: Identifier='real_217330' -> ScreenNo='2007'. 사용중: 7, 사용가능: 93
-2025-05-20 21:09:52,894 - AppLogger - INFO - logger:84 - [KiwoomAPI] 실시간 데이터 등록 요청: 화면(2007), 종목(217330), FID(10;11;12;13), 타입(1)
-2025-05-20 21:09:52,896 - AppLogger - INFO - logger:84 - [KiwoomAPI] 실시간 데이터 등록 성공: 화면(2007)
-2025-05-20 21:09:52,896 - AppLogger - INFO - logger:84 - [Strategy][2025-05-20 21:09:52] 실시간 데이터 구독 요청 성공 (화면: 2007, 종목: 217330) - SetRealReg 호출 자체는 성공으로 간주. 실제 구독 성공은 이벤트로 확인.
-2025-05-20 21:09:52,897 - AppLogger - INFO - logger:84 - [ScreenManager_GET] 새 화면 할당: Identifier='real_246250' -> ScreenNo='2008'. 사용중: 8, 사용가능: 92
-2025-05-20 21:09:52,897 - AppLogger - INFO - logger:84 - [KiwoomAPI] 실시간 데이터 등록 요청: 화면(2008), 종목(246250), FID(10;11;12;13), 타입(1)
-2025-05-20 21:09:52,898 - AppLogger - INFO - logger:84 - [KiwoomAPI] 실시간 데이터 등록 성공: 화면(2008)
-2025-05-20 21:09:52,899 - AppLogger - INFO - logger:84 - [Strategy][2025-05-20 21:09:52] 실시간 데이터 구독 요청 성공 (화면: 2008, 종목: 246250) - SetRealReg 호출 자체는 성공으로 간주. 실제 구독 성공은 이벤트로 확인.
-2025-05-20 21:09:52,899 - AppLogger - INFO - logger:84 - [ScreenManager_GET] 새 화면 할당: Identifier='real_291650' -> ScreenNo='2009'. 사용중: 9, 사용가능: 91
-2025-05-20 21:09:52,899 - AppLogger - INFO - logger:84 - [KiwoomAPI] 실시간 데이터 등록 요청: 화면(2009), 종목(291650), FID(10;11;12;13), 타입(1)
-2025-05-20 21:09:52,900 - AppLogger - INFO - logger:84 - [KiwoomAPI] 실시간 데이터 등록 성공: 화면(2009)
-2025-05-20 21:09:52,901 - AppLogger - INFO - logger:84 - [Strategy][2025-05-20 21:09:52] 실시간 데이터 구독 요청 성공 (화면: 2009, 종목: 291650) - SetRealReg 호출 자체는 성공으로 간주. 실제 구독 성공은 이벤트로 확인.
-2025-05-20 21:09:52,901 - AppLogger - INFO - logger:84 - [ScreenManager_GET] 새 화면 할당: Identifier='real_005930' -> ScreenNo='2010'. 사용중: 10, 사용가능: 90
-2025-05-20 21:09:52,901 - AppLogger - INFO - logger:84 - [KiwoomAPI] 실시간 데이터 등록 요청: 화면(2010), 종목(005930), FID(10;11;12;13), 타입(1)
-2025-05-20 21:09:52,903 - AppLogger - INFO - logger:84 - [KiwoomAPI] 실시간 데이터 등록 성공: 화면(2010)
-2025-05-20 21:09:52,904 - AppLogger - INFO - logger:84 - [Strategy][2025-05-20 21:09:52] 실시간 데이터 구독 요청 성공 (화면: 2010, 종목: 005930) - SetRealReg 호출 자체는 성공으로 간주. 실제 구독 성공은 이벤트로 확인.
-2025-05-20 21:09:52,904 - AppLogger - INFO - logger:84 - [ScreenManager_GET] 새 화면 할당: Identifier='real_035720' -> ScreenNo='2011'. 사용중: 11, 사용가능: 89
-2025-05-20 21:09:52,904 - AppLogger - INFO - logger:84 - [KiwoomAPI] 실시간 데이터 등록 요청: 화면(2011), 종목(035720), FID(10;11;12;13), 타입(1)
-2025-05-20 21:09:52,904 - AppLogger - INFO - logger:84 - [KiwoomAPI] 실시간 데이터 등록 성공: 화면(2011)
-2025-05-20 21:09:52,904 - AppLogger - INFO - logger:84 - [Strategy][2025-05-20 21:09:52] 실시간 데이터 구독 요청 성공 (화면: 2011, 종목: 035720) - SetRealReg 호출 자체는 성공으로 간주. 실제 구독 성공은 이벤트로 확인.
-2025-05-20 21:09:52,904 - AppLogger - INFO - logger:84 - [ScreenManager_GET] 새 화면 할당: Identifier='real_105560' -> ScreenNo='2012'. 사용중: 12, 사용가능: 88
-2025-05-20 21:09:52,904 - AppLogger - INFO - logger:84 - [KiwoomAPI] 실시간 데이터 등록 요청: 화면(2012), 종목(105560), FID(10;11;12;13), 타입(1)
-2025-05-20 21:09:52,907 - AppLogger - INFO - logger:84 - [KiwoomAPI] 실시간 데이터 등록 성공: 화면(2012)
-2025-05-20 21:09:52,907 - AppLogger - INFO - logger:84 - [Strategy][2025-05-20 21:09:52] 실시간 데이터 구독 요청 성공 (화면: 2012, 종목: 105560) - SetRealReg 호출 자체는 성공으로 간주. 실제 구독 성공은 이벤트로 확인.
-2025-05-20 21:09:52,908 - AppLogger - INFO - logger:84 - [Strategy][2025-05-20 21:09:52] 11개 관심종목에 대한 실시간 시세 구독 요청 완료.
-2025-05-20 21:09:52,909 - AppLogger - INFO - logger:84 - [Strategy][2025-05-20 21:09:52] 날짜 변경 감지: None -> 2025-05-20. 일일 매수 횟수 초기화.
-2025-05-20 21:09:52,910 - AppLogger - INFO - logger:84 - [Strategy][2025-05-20 21:09:52] 조건 확인 타이머 시작 (주기: 2.0초).
-2025-05-20 21:09:52,910 - AppLogger - INFO - logger:84 - [Strategy][2025-05-20 21:09:52] 주기적 상태 보고 타이머 시작 (주기: 60초).
-2025-05-20 21:09:52,911 - AppLogger - INFO - logger:84 - [Strategy][2025-05-20 21:09:52] 일일 스냅샷 타이머 시작 (주기: 1.0시간).
-2025-05-20 21:09:52,911 - AppLogger - INFO - logger:84 - [Strategy][2025-05-20 21:09:52] [STRATEGY_INTERNAL] _check_all_data_loaded_and_start_strategy: Timers started. is_running=True, is_initialized_successfully=True
-2025-05-20 21:09:52,911 - AppLogger - INFO - logger:84 - [Strategy][2025-05-20 21:09:52] 장 종료 확인, 일별 계좌 스냅샷 기록 시도: 2025-05-20
-2025-05-20 21:09:52,912 - AppLogger - DEBUG - logger:81 - [Strategy][2025-05-20 21:09:52] 계좌 요약 정보: {'총매입금액': 0.0, '총평가금액': 0.0, '총평가손익금액': 0.0, '총수익률': 0.0, '추정예탁자산': 0.0, '예수금': 0.0}
-2025-05-20 21:09:52,913 - AppLogger - WARNING - logger:87 - 일별 계좌 스냅샷 추가 실패: 2025-05-20 데이터 이미 존재함
-2025-05-20 21:09:52,915 - AppLogger - ERROR - logger:90 - [Strategy][2025-05-20 21:09:52] 일별 계좌 스냅샷 DB 저장 실패 또는 이미 존재: 2025-05-20
-2025-05-20 21:09:52,915 - AppLogger - INFO - logger:84 - [Strategy][2025-05-20 21:09:52] === 전략이 성공적으로 시작되었습니다. is_running: True ===
-2025-05-20 21:09:52,915 - AppLogger - INFO - logger:84 - [Strategy][2025-05-20 21:09:52] 계좌 포트폴리오 정보 로드 완료 (최종).
-2025-05-20 21:09:52,915 - AppLogger - INFO - logger:84 - [Strategy][2025-05-20 21:09:52] 포트폴리오 로드 완료, 예수금도 이미 로드됨. 설정에서 관심종목 로드 시도.
-2025-05-20 21:09:52,918 - AppLogger - DEBUG - logger:81 - [Strategy][2025-05-20 21:09:52] [STRATEGY_INTERNAL] _check_all_data_loaded_and_start_strategy 호출됨. is_running: True
-2025-05-20 21:09:52,918 - AppLogger - DEBUG - logger:81 - [Strategy][2025-05-20 21:09:52] 전략이 이미 실행 중입니다. _check_all_data_loaded_and_start_strategy 중복 호출 방지.
-2025-05-20 21:09:52,918 - AppLogger - DEBUG - logger:81 - [KiwoomAPI] TR(opw00018, RQ='계좌잔고조회_8101891811') 단일/최종 응답. 화면번호(2001) 반환 예정.
-2025-05-20 21:09:52,918 - AppLogger - INFO - logger:84 - [ScreenManager_RELEASE] 화면 반환 완료: ScreenNo='2001', Identifier='계좌잔고조회_8101891811'. 사용중: 11, 사용가능: 89
-2025-05-20 21:09:52,919 - AppLogger - DEBUG - logger:81 - [KiwoomAPI] [Dry Run] on_receive_tr_data 가상 호출 완료 for 계좌잔고조회_8101891811.
-2025-05-20 21:10:52,914 - AppLogger - INFO - logger:84 - [Strategy][2025-05-20 21:10:52] ===== 주기적 상태 보고 (2025-05-20 21:10:52) =====
-2025-05-20 21:10:52,914 - AppLogger - INFO - logger:84 - [Strategy][2025-05-20 21:10:52] 전략 실행 상태: 실행 중, 최종 초기화 성공: True
-2025-05-20 21:10:52,914 - AppLogger - INFO - logger:84 - [Strategy][2025-05-20 21:10:52] 현재 상태 메시지: TR 데이터 처리 완료: opw00018 (계좌잔고조회_8101891811)
-2025-05-20 21:10:52,914 - AppLogger - INFO - logger:84 - [Strategy][2025-05-20 21:10:52] 계좌번호: 8101891811
-2025-05-20 21:10:52,914 - AppLogger - INFO - logger:84 - [Strategy][2025-05-20 21:10:52] 예수금 정보 로딩 중이거나 사용 불가.
-2025-05-20 21:10:52,914 - AppLogger - INFO - logger:84 - [Strategy][2025-05-20 21:10:52] 보유 종목 (1개):
-2025-05-20 21:10:52,914 - AppLogger - INFO - logger:84 - [Strategy][2025-05-20 21:10:52]   - 보유 종목 없음.
-2025-05-20 21:10:52,926 - AppLogger - INFO - logger:84 - [Strategy][2025-05-20 21:10:52] 미체결 주문 없음.
-2025-05-20 21:10:52,928 - AppLogger - INFO - logger:84 - [Strategy][2025-05-20 21:10:52] 관심 종목 (11개):
-2025-05-20 21:10:52,928 - AppLogger - INFO - logger:84 - [Strategy][2025-05-20 21:10:52]   - 수젠텍(253840): 현재가 N/A, 상태: WAITING
-2025-05-20 21:10:52,930 - AppLogger - INFO - logger:84 - [Strategy][2025-05-20 21:10:52]   - 로킷헬스케어(376900): 현재가 N/A, 상태: WAITING
-2025-05-20 21:10:52,933 - AppLogger - INFO - logger:84 - [Strategy][2025-05-20 21:10:52]   - 대명에너지(389260): 현재가 N/A, 상태: WAITING
-2025-05-20 21:10:52,935 - AppLogger - INFO - logger:84 - [Strategy][2025-05-20 21:10:52]   - 원익(032940): 현재가 N/A, 상태: WAITING
-2025-05-20 21:10:52,936 - AppLogger - INFO - logger:84 - [Strategy][2025-05-20 21:10:52]   - 진바이오텍(086060): 현재가 N/A, 상태: WAITING
-2025-05-20 21:10:52,936 - AppLogger - INFO - logger:84 - [Strategy][2025-05-20 21:10:52]   - 싸이토젠(217330): 현재가 N/A, 상태: WAITING
-2025-05-20 21:10:52,938 - AppLogger - INFO - logger:84 - [Strategy][2025-05-20 21:10:52]   - 에스엘에스바이오(246250): 현재가 N/A, 상태: WAITING
-2025-05-20 21:10:52,940 - AppLogger - INFO - logger:84 - [Strategy][2025-05-20 21:10:52]   - 압타머사이언스(291650): 현재가 N/A, 상태: WAITING
-2025-05-20 21:10:52,941 - AppLogger - INFO - logger:84 - [Strategy][2025-05-20 21:10:52]   - 삼성전자(005930): 현재가 N/A, 상태: WAITING
-2025-05-20 21:10:52,942 - AppLogger - INFO - logger:84 - [Strategy][2025-05-20 21:10:52]   - 카카오(035720): 현재가 N/A, 상태: WAITING
-2025-05-20 21:10:52,944 - AppLogger - INFO - logger:84 - [Strategy][2025-05-20 21:10:52]   - AP시스템(105560): 현재가 N/A, 상태: WAITING
-2025-05-20 21:10:52,946 - AppLogger - INFO - logger:84 - [Strategy][2025-05-20 21:10:52] 일일 매수 실행 횟수: 0 / 10
-2025-05-20 21:10:52,946 - AppLogger - INFO - logger:84 - [Strategy][2025-05-20 21:10:52] ===========================================
-2025-05-20 21:11:52,928 - AppLogger - INFO - logger:84 - [Strategy][2025-05-20 21:11:52] ===== 주기적 상태 보고 (2025-05-20 21:11:52) =====
-2025-05-20 21:11:52,928 - AppLogger - INFO - logger:84 - [Strategy][2025-05-20 21:11:52] 전략 실행 상태: 실행 중, 최종 초기화 성공: True
-2025-05-20 21:11:52,928 - AppLogger - INFO - logger:84 - [Strategy][2025-05-20 21:11:52] 현재 상태 메시지: TR 데이터 처리 완료: opw00018 (계좌잔고조회_8101891811)
-2025-05-20 21:11:52,932 - AppLogger - INFO - logger:84 - [Strategy][2025-05-20 21:11:52] 계좌번호: 8101891811
-2025-05-20 21:11:52,932 - AppLogger - INFO - logger:84 - [Strategy][2025-05-20 21:11:52] 예수금 정보 로딩 중이거나 사용 불가.
-2025-05-20 21:11:52,933 - AppLogger - INFO - logger:84 - [Strategy][2025-05-20 21:11:52] 보유 종목 (1개):
-2025-05-20 21:11:52,933 - AppLogger - INFO - logger:84 - [Strategy][2025-05-20 21:11:52]   - 보유 종목 없음.
-2025-05-20 21:11:52,933 - AppLogger - INFO - logger:84 - [Strategy][2025-05-20 21:11:52] 미체결 주문 없음.
-2025-05-20 21:11:52,934 - AppLogger - INFO - logger:84 - [Strategy][2025-05-20 21:11:52] 관심 종목 (11개):
-2025-05-20 21:11:52,934 - AppLogger - INFO - logger:84 - [Strategy][2025-05-20 21:11:52]   - 수젠텍(253840): 현재가 N/A, 상태: WAITING
-2025-05-20 21:11:52,935 - AppLogger - INFO - logger:84 - [Strategy][2025-05-20 21:11:52]   - 로킷헬스케어(376900): 현재가 N/A, 상태: WAITING
-2025-05-20 21:11:52,935 - AppLogger - INFO - logger:84 - [Strategy][2025-05-20 21:11:52]   - 대명에너지(389260): 현재가 N/A, 상태: WAITING
-2025-05-20 21:11:52,936 - AppLogger - INFO - logger:84 - [Strategy][2025-05-20 21:11:52]   - 원익(032940): 현재가 N/A, 상태: WAITING
-2025-05-20 21:11:52,936 - AppLogger - INFO - logger:84 - [Strategy][2025-05-20 21:11:52]   - 진바이오텍(086060): 현재가 N/A, 상태: WAITING
-2025-05-20 21:11:52,937 - AppLogger - INFO - logger:84 - [Strategy][2025-05-20 21:11:52]   - 싸이토젠(217330): 현재가 N/A, 상태: WAITING
-2025-05-20 21:11:52,937 - AppLogger - INFO - logger:84 - [Strategy][2025-05-20 21:11:52]   - 에스엘에스바이오(246250): 현재가 N/A, 상태: WAITING
-2025-05-20 21:11:52,937 - AppLogger - INFO - logger:84 - [Strategy][2025-05-20 21:11:52]   - 압타머사이언스(291650): 현재가 N/A, 상태: WAITING
-2025-05-20 21:11:52,938 - AppLogger - INFO - logger:84 - [Strategy][2025-05-20 21:11:52]   - 삼성전자(005930): 현재가 N/A, 상태: WAITING
-2025-05-20 21:11:52,938 - AppLogger - INFO - logger:84 - [Strategy][2025-05-20 21:11:52]   - 카카오(035720): 현재가 N/A, 상태: WAITING
-2025-05-20 21:11:52,938 - AppLogger - INFO - logger:84 - [Strategy][2025-05-20 21:11:52]   - AP시스템(105560): 현재가 N/A, 상태: WAITING
-2025-05-20 21:11:52,938 - AppLogger - INFO - logger:84 - [Strategy][2025-05-20 21:11:52] 일일 매수 실행 횟수: 0 / 10
-2025-05-20 21:11:52,939 - AppLogger - INFO - logger:84 - [Strategy][2025-05-20 21:11:52] ===========================================
-2025-05-20 21:12:07,494 - AppLogger - INFO - logger:84 - Ctrl+C 입력 감지. 프로그램 즉시 종료 절차를 시작합니다...
-2025-05-20 21:12:07,494 - AppLogger - INFO - logger:84 - 매매 전략 중지를 시도합니다...
-2025-05-20 21:12:07,494 - AppLogger - INFO - logger:84 - [Strategy][2025-05-20 21:12:07] TradingStrategy.stop() 메소드 시작됨.
-2025-05-20 21:12:07,494 - AppLogger - INFO - logger:84 - [Strategy][2025-05-20 21:12:07] 전략 실행 플래그 (is_running)를 False로 설정했습니다.
-2025-05-20 21:12:07,494 - AppLogger - INFO - logger:84 - [Strategy][2025-05-20 21:12:07] 미체결 주문 취소 시도...
-2025-05-20 21:12:07,494 - AppLogger - INFO - logger:84 - [Strategy][2025-05-20 21:12:07] 미체결 주문 취소 시작...
-2025-05-20 21:12:07,494 - AppLogger - INFO - logger:84 - [Strategy][2025-05-20 21:12:07] 취소할 미체결 주문이 없습니다.
-2025-05-20 21:12:07,494 - AppLogger - INFO - logger:84 - [Strategy][2025-05-20 21:12:07] 타이머 중지 시도...
-2025-05-20 21:12:07,494 - AppLogger - DEBUG - logger:81 - [Strategy][2025-05-20 21:12:07] 조건 확인 타이머 중지됨.
-2025-05-20 21:12:07,505 - AppLogger - DEBUG - logger:81 - [Strategy][2025-05-20 21:12:07] 주기적 상태 보고 타이머 중지됨.
-2025-05-20 21:12:07,506 - AppLogger - DEBUG - logger:81 - [Strategy][2025-05-20 21:12:07] 일일 스냅샷 타이머 중지됨.
-2025-05-20 21:12:07,509 - AppLogger - INFO - logger:84 - [Strategy][2025-05-20 21:12:07] 관심 종목 실시간 데이터 구독 해제 시도...
-2025-05-20 21:12:07,510 - AppLogger - INFO - logger:84 - [Strategy][2025-05-20 21:12:07] Removing 253840 from watchlist... Unsubscribe real data: True
-2025-05-20 21:12:07,511 - AppLogger - INFO - logger:84 - [ScreenManager_RELEASE] 화면 반환 완료: ScreenNo='2002', Identifier='real_253840'. 사용중: 10, 사용가능: 90
-2025-05-20 21:12:07,515 - AppLogger - DEBUG - logger:81 - [Strategy][2025-05-20 21:12:07] Unsubscribed real data for 253840 using screen_no: 2002
-2025-05-20 21:12:07,517 - AppLogger - INFO - logger:84 - [Strategy][2025-05-20 21:12:07] 253840 removed from watchlist.
-2025-05-20 21:12:07,518 - AppLogger - INFO - logger:84 - [Strategy][2025-05-20 21:12:07] Removing 376900 from watchlist... Unsubscribe real data: True
-2025-05-20 21:12:07,519 - AppLogger - INFO - logger:84 - [ScreenManager_RELEASE] 화면 반환 완료: ScreenNo='2003', Identifier='real_376900'. 사용중: 9, 사용가능: 91
-2025-05-20 21:12:07,520 - AppLogger - DEBUG - logger:81 - [Strategy][2025-05-20 21:12:07] Unsubscribed real data for 376900 using screen_no: 2003
-2025-05-20 21:12:07,521 - AppLogger - INFO - logger:84 - [Strategy][2025-05-20 21:12:07] 376900 removed from watchlist.
-2025-05-20 21:12:07,522 - AppLogger - INFO - logger:84 - [Strategy][2025-05-20 21:12:07] Removing 389260 from watchlist... Unsubscribe real data: True
-2025-05-20 21:12:07,523 - AppLogger - INFO - logger:84 - [ScreenManager_RELEASE] 화면 반환 완료: ScreenNo='2004', Identifier='real_389260'. 사용중: 8, 사용가능: 92
-2025-05-20 21:12:07,523 - AppLogger - DEBUG - logger:81 - [Strategy][2025-05-20 21:12:07] Unsubscribed real data for 389260 using screen_no: 2004
-2025-05-20 21:12:07,524 - AppLogger - INFO - logger:84 - [Strategy][2025-05-20 21:12:07] 389260 removed from watchlist.
-2025-05-20 21:12:07,525 - AppLogger - INFO - logger:84 - [Strategy][2025-05-20 21:12:07] Removing 032940 from watchlist... Unsubscribe real data: True
-2025-05-20 21:12:07,526 - AppLogger - INFO - logger:84 - [ScreenManager_RELEASE] 화면 반환 완료: ScreenNo='2005', Identifier='real_032940'. 사용중: 7, 사용가능: 93
-2025-05-20 21:12:07,526 - AppLogger - DEBUG - logger:81 - [Strategy][2025-05-20 21:12:07] Unsubscribed real data for 032940 using screen_no: 2005
-2025-05-20 21:12:07,527 - AppLogger - INFO - logger:84 - [Strategy][2025-05-20 21:12:07] 032940 removed from watchlist.
-2025-05-20 21:12:07,528 - AppLogger - INFO - logger:84 - [Strategy][2025-05-20 21:12:07] Removing 086060 from watchlist... Unsubscribe real data: True
-2025-05-20 21:12:07,529 - AppLogger - INFO - logger:84 - [ScreenManager_RELEASE] 화면 반환 완료: ScreenNo='2006', Identifier='real_086060'. 사용중: 6, 사용가능: 94
-2025-05-20 21:12:07,530 - AppLogger - DEBUG - logger:81 - [Strategy][2025-05-20 21:12:07] Unsubscribed real data for 086060 using screen_no: 2006
-2025-05-20 21:12:07,530 - AppLogger - INFO - logger:84 - [Strategy][2025-05-20 21:12:07] 086060 removed from watchlist.
-2025-05-20 21:12:07,531 - AppLogger - INFO - logger:84 - [Strategy][2025-05-20 21:12:07] Removing 217330 from watchlist... Unsubscribe real data: True
-2025-05-20 21:12:07,531 - AppLogger - INFO - logger:84 - [ScreenManager_RELEASE] 화면 반환 완료: ScreenNo='2007', Identifier='real_217330'. 사용중: 5, 사용가능: 95
-2025-05-20 21:12:07,532 - AppLogger - DEBUG - logger:81 - [Strategy][2025-05-20 21:12:07] Unsubscribed real data for 217330 using screen_no: 2007
-2025-05-20 21:12:07,533 - AppLogger - INFO - logger:84 - [Strategy][2025-05-20 21:12:07] 217330 removed from watchlist.
-2025-05-20 21:12:07,533 - AppLogger - INFO - logger:84 - [Strategy][2025-05-20 21:12:07] Removing 246250 from watchlist... Unsubscribe real data: True
-2025-05-20 21:12:07,534 - AppLogger - INFO - logger:84 - [ScreenManager_RELEASE] 화면 반환 완료: ScreenNo='2008', Identifier='real_246250'. 사용중: 4, 사용가능: 96
-2025-05-20 21:12:07,535 - AppLogger - DEBUG - logger:81 - [Strategy][2025-05-20 21:12:07] Unsubscribed real data for 246250 using screen_no: 2008
-2025-05-20 21:12:07,535 - AppLogger - INFO - logger:84 - [Strategy][2025-05-20 21:12:07] 246250 removed from watchlist.
-2025-05-20 21:12:07,536 - AppLogger - INFO - logger:84 - [Strategy][2025-05-20 21:12:07] Removing 291650 from watchlist... Unsubscribe real data: True
-2025-05-20 21:12:07,537 - AppLogger - INFO - logger:84 - [ScreenManager_RELEASE] 화면 반환 완료: ScreenNo='2009', Identifier='real_291650'. 사용중: 3, 사용가능: 97
-2025-05-20 21:12:07,537 - AppLogger - DEBUG - logger:81 - [Strategy][2025-05-20 21:12:07] Unsubscribed real data for 291650 using screen_no: 2009
-2025-05-20 21:12:07,537 - AppLogger - INFO - logger:84 - [Strategy][2025-05-20 21:12:07] 291650 removed from watchlist.
-2025-05-20 21:12:07,539 - AppLogger - INFO - logger:84 - [Strategy][2025-05-20 21:12:07] Removing 005930 from watchlist... Unsubscribe real data: True
-2025-05-20 21:12:07,540 - AppLogger - INFO - logger:84 - [ScreenManager_RELEASE] 화면 반환 완료: ScreenNo='2010', Identifier='real_005930'. 사용중: 2, 사용가능: 98
-2025-05-20 21:12:07,540 - AppLogger - DEBUG - logger:81 - [Strategy][2025-05-20 21:12:07] Unsubscribed real data for 005930 using screen_no: 2010
-2025-05-20 21:12:07,541 - AppLogger - INFO - logger:84 - [Strategy][2025-05-20 21:12:07] 005930 removed from watchlist.
-2025-05-20 21:12:07,541 - AppLogger - INFO - logger:84 - [Strategy][2025-05-20 21:12:07] Removing 035720 from watchlist... Unsubscribe real data: True
-2025-05-20 21:12:07,542 - AppLogger - INFO - logger:84 - [ScreenManager_RELEASE] 화면 반환 완료: ScreenNo='2011', Identifier='real_035720'. 사용중: 1, 사용가능: 99
-2025-05-20 21:12:07,542 - AppLogger - DEBUG - logger:81 - [Strategy][2025-05-20 21:12:07] Unsubscribed real data for 035720 using screen_no: 2011
-2025-05-20 21:12:07,543 - AppLogger - INFO - logger:84 - [Strategy][2025-05-20 21:12:07] 035720 removed from watchlist.
-2025-05-20 21:12:07,543 - AppLogger - INFO - logger:84 - [Strategy][2025-05-20 21:12:07] Removing 105560 from watchlist... Unsubscribe real data: True
-2025-05-20 21:12:07,543 - AppLogger - INFO - logger:84 - [ScreenManager_RELEASE] 화면 반환 완료: ScreenNo='2012', Identifier='real_105560'. 사용중: 0, 사용가능: 100
-2025-05-20 21:12:07,543 - AppLogger - DEBUG - logger:81 - [Strategy][2025-05-20 21:12:07] Unsubscribed real data for 105560 using screen_no: 2012
-2025-05-20 21:12:07,543 - AppLogger - INFO - logger:84 - [Strategy][2025-05-20 21:12:07] 105560 removed from watchlist.
-2025-05-20 21:12:07,543 - AppLogger - INFO - logger:84 - [Strategy][2025-05-20 21:12:07] ScreenManager 화면 정리 시도...
-2025-05-20 21:12:07,543 - AppLogger - INFO - logger:84 - [ScreenManager_CLEANUP] 모든 사용 중인 화면 정리 시작. 현재 사용중: 0개
-2025-05-20 21:12:07,543 - AppLogger - INFO - logger:84 - [ScreenManager_CLEANUP] 모든 화면 정리 완료. 사용중: 0, 사용가능: 100
-2025-05-20 21:12:07,543 - AppLogger - INFO - logger:84 - [Strategy][2025-05-20 21:12:07] 모든 화면 사용 해제 완료.
-2025-05-20 21:12:07,543 - AppLogger - INFO - logger:84 - [Strategy][2025-05-20 21:12:07] DB Manager 관련 리소스 정리 시도 (필요시 close 구현)
-2025-05-20 21:12:07,543 - AppLogger - INFO - logger:84 - [Strategy][2025-05-20 21:12:07] TradingStrategy.stop() 메소드 완료됨.
-2025-05-20 21:12:07,548 - AppLogger - INFO - logger:84 - 매매 전략이 중지되었습니다.
-2025-05-20 21:12:07,548 - AppLogger - INFO - logger:84 - KiwoomAPI 리소스 해제 및 연결 종료를 시작합니다...
-2025-05-20 21:12:07,548 - AppLogger - INFO - logger:84 - [KiwoomAPI] Kiwoom API 연결 종료 절차 시작...
-2025-05-20 21:12:07,549 - AppLogger - INFO - logger:84 - [KiwoomAPI] 종료 모드가 활성화되었습니다.
-2025-05-20 21:12:07,549 - AppLogger - INFO - logger:84 - [KiwoomAPI] 모든 실시간 데이터 구독 해제 시도...
-2025-05-20 21:12:07,550 - AppLogger - INFO - logger:84 - [KiwoomAPI] 모든 실시간 데이터 구독 해제 요청됨 (SetRealRemove ALL, ALL).
-2025-05-20 21:12:07,551 - AppLogger - DEBUG - logger:81 - [KiwoomAPI] 내부 실시간 데이터 구독 상태 (FID 목록) 초기화 완료.
-2025-05-20 21:12:07,551 - AppLogger - INFO - logger:84 - [KiwoomAPI] 모든 실시간 데이터 구독 해제 요청 완료.
-2025-05-20 21:12:07,552 - AppLogger - INFO - logger:84 - [KiwoomAPI] ScreenManager를 통해 모든 화면 리소스 해제 시도...
-2025-05-20 21:12:07,554 - AppLogger - INFO - logger:84 - [ScreenManager_RELEASE_ALL] 관리 중인 모든 화면 해제 시작. 현재 사용중: 0개
-2025-05-20 21:12:07,556 - AppLogger - WARNING - logger:87 - [ScreenManager_RELEASE_ALL] Kiwoom OCX 인스턴스가 없어 API 호출(DisconnectRealData)을 스킵합니다. 내부 상태만 초기화합니다.
-2025-05-20 21:12:07,556 - AppLogger - INFO - logger:84 - [ScreenManager_RELEASE_ALL] 모든 화면 해제 및 내부 상태 초기화 완료. 사용 가능 화면: 100개
-2025-05-20 21:12:07,557 - AppLogger - INFO - logger:84 - [KiwoomAPI] ScreenManager를 통한 화면 리소스 해제 완료.
-2025-05-20 21:12:07,557 - AppLogger - INFO - logger:84 - [KiwoomAPI] Kiwoom OpenAPI CommTerminate 호출 시도...
-2025-05-20 21:12:07,558 - AppLogger - INFO - logger:84 - [KiwoomAPI] [Dry Run] CommTerminate 호출 스킵.
-2025-05-20 21:12:07,558 - AppLogger - INFO - logger:84 - [KiwoomAPI] Kiwoom API 연결 종료 절차 완료됨.
-2025-05-20 21:12:07,558 - AppLogger - INFO - logger:84 - KiwoomAPI 연결 해제 절차 호출 완료.
-2025-05-20 21:12:07,559 - AppLogger - WARNING - logger:87 - DB 인스턴스 또는 close_connection 메소드를 찾을 수 없습니다.
-2025-05-20 21:12:07,559 - AppLogger - INFO - logger:84 - QApplication 종료를 시도합니다.
-2025-05-20 21:12:07,560 - AppLogger - INFO - logger:84 - QApplication.quit() 호출됨.
-2025-05-20 21:12:07,560 - AppLogger - INFO - logger:84 - 프로그램이 정상적으로 종료될 예정입니다.
-2025-05-20 21:12:07,560 - AppLogger - INFO - logger:84 - 프로그램 최종 정리 작업 수행...
-2025-05-20 21:12:07,560 - AppLogger - INFO - logger:84 - 프로그램이 종료됩니다.
-2025-05-20 22:14:58,949 - AppLogger - INFO - logger:84 - 로깅 시스템 초기화 완료 (콘솔 및 파일 핸들러)
-2025-05-20 22:14:58,949 - AppLogger - INFO - logger:84 - Using settings file: settings.json
-2025-05-20 22:14:58,949 - AppLogger - INFO - logger:84 - 프로그램 시작 (콘솔 모드)
-2025-05-20 22:14:58,949 - AppLogger - DEBUG - logger:81 - ScreenManager 초기화 완료. 사용 가능 화면: 100개 (2000~2099)
-2025-05-20 22:14:58,949 - AppLogger - INFO - logger:84 - ScreenManager 단일 인스턴스 생성 완료
-2025-05-20 22:14:59,052 - AppLogger - INFO - logger:84 - Using settings file: settings.json
-2025-05-20 22:14:59,059 - AppLogger - INFO - logger:84 - 데이터베이스 (logs/trading_data.test.db) 초기화 성공
-2025-05-20 22:14:59,060 - AppLogger - INFO - logger:84 - 데이터베이스 초기화 완료
-2025-05-20 22:14:59,062 - AppLogger - INFO - logger:84 - [Strategy][2025-05-20 22:14:59] 전략 설정 로딩 시작...
-2025-05-20 22:14:59,068 - AppLogger - INFO - logger:84 - [Strategy][2025-05-20 22:14:59] 장운영시간 설정: 시작(09:00:00), 종료(15:30:00)
-2025-05-20 22:14:59,068 - AppLogger - INFO - logger:84 - [Strategy][2025-05-20 22:14:59] 전략 설정 로드 완료: StrategySettings(buy_amount_per_stock=1000000.0, stop_loss_rate_from_yesterday_close=2.0, partial_take_profit_rate=5.0, full_take_profit_target_rate=9.0, partial_sell_ratio=50, trailing_stop_activation_profit_rate=2.0, trailing_stop_fall_rate=1.5, market_open_time_str='09:00:00', market_close_time_str='15:30:00', periodic_report_enabled=True, periodic_report_interval_seconds=60, max_daily_buy_count=10, cancel_pending_orders_on_exit=True, auto_liquidate_after_minutes_enabled=False, auto_liquidate_after_minutes=60)
-2025-05-20 22:14:59,068 - AppLogger - INFO - logger:84 - [Strategy][2025-05-20 22:14:59] 전략 설정 로드 완료.
-2025-05-20 22:14:59,068 - AppLogger - INFO - logger:84 - [Strategy][2025-05-20 22:14:59] 장운영시간 초기화: 09:00:00 - 15:30:00
-2025-05-20 22:14:59,068 - AppLogger - INFO - logger:84 - [Strategy][2025-05-20 22:14:59] TradingStrategy 객체 생성 완료. 추가 초기화가 필요합니다.
-2025-05-20 22:14:59,068 - AppLogger - INFO - logger:84 - 매매 전략 초기화 (KiwoomAPI 주입 전, ScreenManager 주입 완료)
-2025-05-20 22:14:59,068 - AppLogger - DEBUG - logger:81 - [KiwoomAPI] 키움 API 초기화 시작
-2025-05-20 22:14:59,094 - AppLogger - DEBUG - logger:81 - [KiwoomAPI] ScreenManager 초기화 완료 (외부 제공: True, OCX 전달됨)
-2025-05-20 22:14:59,094 - AppLogger - DEBUG - logger:81 - [KiwoomAPI] TR 요청 간격 설정됨: 기본 0.21초, 연속 1.0초
-2025-05-20 22:14:59,094 - AppLogger - DEBUG - logger:81 - [KiwoomAPI] 설정에서 계좌 비밀번호 로드: 비밀번호 없음
-2025-05-20 22:14:59,098 - AppLogger - INFO - logger:84 - KiwoomAPI 초기화 및 Strategy에 주입 완료
-2025-05-20 22:14:59,098 - AppLogger - INFO - logger:84 - 키움 API 로그인 시도
-2025-05-20 22:14:59,098 - AppLogger - INFO - logger:84 - [KiwoomAPI] 로그인 시도
-2025-05-20 22:15:15,079 - AppLogger - INFO - logger:84 - [KiwoomAPI] 로그인 성공 (이벤트 수신) - 연결 상태만 변경
-2025-05-20 22:15:15,079 - AppLogger - DEBUG - logger:81 - [KiwoomAPI] [LOGIN_DEBUG] Account list from API (raw): '8101891811;', Parsed list: ['8101891811']
-2025-05-20 22:15:15,079 - AppLogger - DEBUG - logger:81 - [KiwoomAPI] [LOGIN_DEBUG] Preferred account from config: '8101891811'
-2025-05-20 22:15:15,079 - AppLogger - DEBUG - logger:81 - [KiwoomAPI] [LOGIN_DEBUG] Using preferred account from settings: '8101891811'
-2025-05-20 22:15:15,079 - AppLogger - INFO - logger:84 - [KiwoomAPI] 로그인 성공. 계좌번호: 8101891811
-2025-05-20 22:15:15,079 - AppLogger - DEBUG - logger:81 - [Strategy][2025-05-20 22:15:15] [STRATEGY_LOGIN_DEBUG] _on_login_completed 호출됨. account_number_from_signal: '8101891811'
-2025-05-20 22:15:15,079 - AppLogger - INFO - logger:84 - [Strategy][2025-05-20 22:15:15] API로부터 계좌번호 수신: '8101891811'
-2025-05-20 22:15:15,079 - AppLogger - INFO - logger:84 - [Strategy][2025-05-20 22:15:15] 최종 계좌번호 설정(TradingStrategy & KiwoomAPI): '8101891811'. 계좌 정보 요청 시작.
-2025-05-20 22:15:15,079 - AppLogger - INFO - logger:84 - [Strategy][2025-05-20 22:15:15] 예수금 상세정보 요청 시작 (opw00001). 계좌번호: 8101891811
-2025-05-20 22:15:15,079 - AppLogger - INFO - logger:84 - [ScreenManager_GET] 새 화면 할당: Identifier='account_info' -> ScreenNo='2000'. 사용중: 1, 사용가능: 99
-2025-05-20 22:15:15,079 - AppLogger - DEBUG - logger:81 - [KiwoomAPI] [KiwoomAPI] comm_rq_data PARAMS CHECK: rq_name='예수금상세현황요청', tr_code='opw00001', input_values_override IS NOT None, market_context='None'
-2025-05-20 22:15:15,079 - AppLogger - DEBUG - logger:81 - [KiwoomAPI] [KiwoomAPI] comm_rq_data PARAMS CHECK: input_values_override CONTENT: {'계좌번호': '8101891811', '비밀번호': '', '비밀번호입력매체구분': '00', '조회구분': '2'}
-2025-05-20 22:15:15,079 - AppLogger - CRITICAL - logger:93 - [KiwoomAPI] [KiwoomAPI] comm_rq_data 호출 시작: RQName=예수금상세현황요청, TRCode=opw00001, PrevNext=0, ScreenNo=2000, OverrideInputs=True, MarketCtx=None
-2025-05-20 22:15:15,079 - AppLogger - DEBUG - logger:81 - [KiwoomAPI] [KiwoomAPI] CommRqData TR요청 시작: 예수금상세현황요청, opw00001, scr:2000
-2025-05-20 22:15:15,079 - AppLogger - DEBUG - logger:81 - [KiwoomAPI] [KiwoomAPI][CACHE_SETUP] RQName '예수금상세현황요청' 캐시 초기화/재초기화.
-2025-05-20 22:15:15,079 - AppLogger - DEBUG - logger:81 - [KiwoomAPI] [KiwoomAPI][CACHE_SETUP_SUCCESS] RQName: '예수금상세현황요청' 캐시 업데이트 완료 (status: pending_api_call).
-2025-05-20 22:15:15,088 - AppLogger - DEBUG - logger:81 - [KiwoomAPI] [KiwoomAPI] [CommRqData_INPUT_PREP] 최종 입력값 설정 전: {'계좌번호': '8101891811', '비밀번호': '', '비밀번호입력매체구분': '00', '조회구분': '2'}
-2025-05-20 22:15:15,088 - AppLogger - DEBUG - logger:81 - [KiwoomAPI] [KiwoomAPI] [CommRqData_INPUT_FINAL] 최종 입력값 API 전달: {'계좌번호': '8101891811', '비밀번호': '', '비밀번호입력매체구분': '00', '조회구분': '2'}
-2025-05-20 22:15:15,088 - AppLogger - DEBUG - logger:81 - [KiwoomAPI] [KiwoomAPI] SetInputValue: Key='계좌번호', Value='8101891811'
-2025-05-20 22:15:15,091 - AppLogger - DEBUG - logger:81 - [KiwoomAPI] [KiwoomAPI] SetInputValue: Key='비밀번호', Value=''
-2025-05-20 22:15:15,095 - AppLogger - DEBUG - logger:81 - [KiwoomAPI] [KiwoomAPI] SetInputValue: Key='비밀번호입력매체구분', Value='00'
-2025-05-20 22:15:15,095 - AppLogger - DEBUG - logger:81 - [KiwoomAPI] [KiwoomAPI] SetInputValue: Key='조회구분', Value='2'
-2025-05-20 22:15:15,105 - AppLogger - CRITICAL - logger:93 - [KiwoomAPI] [KiwoomAPI] [CommRqData_CALL] CommRqData 호출: RQName='예수금상세현황요청', TRCode='opw00001', PrevNext=0, ScreenNo='2000', ReturnCode=0
-2025-05-20 22:15:15,106 - AppLogger - DEBUG - logger:81 - [KiwoomAPI] [KiwoomAPI] CommRqData 요청 성공: RQName='예수금상세현황요청', TRCode='opw00001'. 데이터 수신 대기 중...
-2025-05-20 22:15:15,106 - AppLogger - DEBUG - logger:81 - [Strategy][2025-05-20 22:15:15] opw00001 TR 요청 전송 완료. 요청명: 예수금상세현황요청, 화면번호: 2000
-2025-05-20 22:15:15,106 - AppLogger - INFO - logger:84 - [Strategy][2025-05-20 22:15:15] 계좌 포트폴리오 정보 요청 시작 (opw00018). 계좌번호: 8101891811
-2025-05-20 22:15:15,107 - AppLogger - INFO - logger:84 - [ScreenManager_GET] 새 화면 할당: Identifier='portfolio_info' -> ScreenNo='2001'. 사용중: 2, 사용가능: 98
-2025-05-20 22:15:15,107 - AppLogger - DEBUG - logger:81 - [KiwoomAPI] [KiwoomAPI] comm_rq_data PARAMS CHECK: rq_name='계좌잔고조회_8101891811', tr_code='opw00018', input_values_override IS NOT None, market_context='None'
-2025-05-20 22:15:15,107 - AppLogger - DEBUG - logger:81 - [KiwoomAPI] [KiwoomAPI] comm_rq_data PARAMS CHECK: input_values_override CONTENT: {'계좌번호': '8101891811', '비밀번호': '', '비밀번호입력매체구분': '00', '조회구분': '1'}
-2025-05-20 22:15:15,108 - AppLogger - CRITICAL - logger:93 - [KiwoomAPI] [KiwoomAPI] comm_rq_data 호출 시작: RQName=계좌잔고조회_8101891811, TRCode=opw00018, PrevNext=0, ScreenNo=2001, OverrideInputs=True, MarketCtx=None
-2025-05-20 22:15:15,108 - AppLogger - DEBUG - logger:81 - [KiwoomAPI] [KiwoomAPI] TR 요청 간격 조절: 0.208초 대기 (이전 요청 후 0.002초 경과, 필요 간격 0.21초)
-2025-05-20 22:15:15,581 - AppLogger - DEBUG - logger:81 - [KiwoomAPI] TR 관련 성공 메시지 수신 (예수금상세현황요청, opw00001): [100000] 모의투자 조회완료
-2025-05-20 22:15:15,581 - AppLogger - INFO - logger:84 - [KiwoomAPI] TR 처리 성공 메시지: 화면: 2000, RQ: 예수금상세현황요청, TR: opw00001, 메시지: [100000] 모의투자 조회완료
-2025-05-20 22:15:15,581 - AppLogger - CRITICAL - logger:93 - [KiwoomAPI] [EVENT_HANDLER_ENTRY] on_receive_tr_data: Scr='2000', RQ='예수금상세현황요청', TR='opw00001', PrevNext='', ErrCode='', Msg=''
-2025-05-20 22:15:15,581 - AppLogger - DEBUG - logger:81 - [KiwoomAPI] _parse_tr_data: TR Code 'opw00001', RQName '예수금상세현황요청'
-2025-05-20 22:15:15,581 - AppLogger - DEBUG - logger:81 - [KiwoomAPI] _parse_tr_data 완료: TR(opw00001), RQName(예수금상세현황요청), SingleDataKeys(14), MultiDataCount(0)
-2025-05-20 22:15:15,581 - AppLogger - INFO - logger:84 - [KiwoomAPI] opw00001 (계좌정보) 수신 및 저장: 예수금(339440565) - RQ: 예수금상세현황요청
-2025-05-20 22:15:15,581 - AppLogger - DEBUG - logger:81 - [Strategy][2025-05-20 22:15:15] TR 데이터 수신 시작 - rq_name: 예수금상세현황요청, tr_code: opw00001, 연속조회: 0
-2025-05-20 22:15:15,581 - AppLogger - INFO - logger:84 - [Strategy][2025-05-20 22:15:15] TR 수신 (opw00001) - 예수금 데이터 (요약 로깅)
-2025-05-20 22:15:15,581 - AppLogger - INFO - logger:84 - [Strategy][2025-05-20 22:15:15] 예수금 정보 업데이트 (opw00001): {'예수금': 339440565, 'd+1추정예수금': 313749971, 'd+2추정예수금': 313749971, '출금가능금액': 339440565, '미수금': '', '대용금': '', '권리대용금': 0, '주문가능금액': 313749971, '예탁자산평가액': '', '총매입금액': 0.0, '총평가금액': 0.0, '총손익금액': '', '총손익률': '', '총재사용금액': '', '계좌번호': '8101891811'}
-2025-05-20 22:15:15,581 - AppLogger - DEBUG - logger:81 - [Strategy][2025-05-20 22:15:15] opw00001 핸들러 완료. deposit_info_loaded: True
-2025-05-20 22:15:15,581 - AppLogger - DEBUG - logger:81 - [Strategy][2025-05-20 22:15:15] [STRATEGY_INTERNAL] _check_all_data_loaded_and_start_strategy 호출됨. is_running: False
-2025-05-20 22:15:15,581 - AppLogger - WARNING - logger:87 - [Strategy][2025-05-20 22:15:15] 계좌, 예수금 또는 포트폴리오 정보가 아직 모두 로드되지 않아 전략을 시작할 수 없습니다.
-2025-05-20 22:15:15,581 - AppLogger - DEBUG - logger:81 - [Strategy][2025-05-20 22:15:15] 누락된 초기 정보: 포트폴리오
-2025-05-20 22:15:15,581 - AppLogger - INFO - logger:84 - [Strategy][2025-05-20 22:15:15] 예수금 정보 로드 완료.
-2025-05-20 22:15:15,581 - AppLogger - INFO - logger:84 - [Strategy][2025-05-20 22:15:15] 예수금 로드 완료. 포트폴리오 정보 로딩 대기 중...
-2025-05-20 22:15:15,581 - AppLogger - DEBUG - logger:81 - [Strategy][2025-05-20 22:15:15] [STRATEGY_INTERNAL] _check_all_data_loaded_and_start_strategy 호출됨. is_running: False
-2025-05-20 22:15:15,581 - AppLogger - WARNING - logger:87 - [Strategy][2025-05-20 22:15:15] 계좌, 예수금 또는 포트폴리오 정보가 아직 모두 로드되지 않아 전략을 시작할 수 없습니다.
-2025-05-20 22:15:15,581 - AppLogger - DEBUG - logger:81 - [Strategy][2025-05-20 22:15:15] 누락된 초기 정보: 포트폴리오
-2025-05-20 22:15:15,581 - AppLogger - DEBUG - logger:81 - [KiwoomAPI] TR(opw00001, RQ='예수금상세현황요청') 단일/최종 응답. 화면번호(2000) 반환 예정.
-2025-05-20 22:15:15,581 - AppLogger - INFO - logger:84 - [ScreenManager_RELEASE] 화면 반환 완료: ScreenNo='2000', Identifier='예수금상세현황요청'. 사용중: 1, 사용가능: 99
-2025-05-20 22:15:15,597 - AppLogger - DEBUG - logger:81 - [KiwoomAPI] [KiwoomAPI] CommRqData TR요청 시작: 계좌잔고조회_8101891811, opw00018, scr:2001
-2025-05-20 22:15:15,597 - AppLogger - DEBUG - logger:81 - [KiwoomAPI] [KiwoomAPI][CACHE_SETUP] RQName '계좌잔고조회_8101891811' 캐시 초기화/재초기화.
-2025-05-20 22:15:15,597 - AppLogger - DEBUG - logger:81 - [KiwoomAPI] [KiwoomAPI][CACHE_SETUP_SUCCESS] RQName: '계좌잔고조회_8101891811' 캐시 업데이트 완료 (status: pending_api_call).
-2025-05-20 22:15:15,597 - AppLogger - DEBUG - logger:81 - [KiwoomAPI] [KiwoomAPI] [CommRqData_INPUT_PREP] 최종 입력값 설정 전: {'계좌번호': '8101891811', '비밀번호': '', '비밀번호입력매체구분': '00', '조회구분': '1'}
-2025-05-20 22:15:15,599 - AppLogger - DEBUG - logger:81 - [KiwoomAPI] [KiwoomAPI] [CommRqData_INPUT_FINAL] 최종 입력값 API 전달: {'계좌번호': '8101891811', '비밀번호': '', '비밀번호입력매체구분': '00', '조회구분': '1'}
-2025-05-20 22:15:15,599 - AppLogger - DEBUG - logger:81 - [KiwoomAPI] [KiwoomAPI] SetInputValue: Key='계좌번호', Value='8101891811'
-2025-05-20 22:15:15,599 - AppLogger - DEBUG - logger:81 - [KiwoomAPI] [KiwoomAPI] SetInputValue: Key='비밀번호', Value=''
-2025-05-20 22:15:15,600 - AppLogger - DEBUG - logger:81 - [KiwoomAPI] [KiwoomAPI] SetInputValue: Key='비밀번호입력매체구분', Value='00'
-2025-05-20 22:15:15,600 - AppLogger - DEBUG - logger:81 - [KiwoomAPI] [KiwoomAPI] SetInputValue: Key='조회구분', Value='1'
-2025-05-20 22:15:15,601 - AppLogger - CRITICAL - logger:93 - [KiwoomAPI] [KiwoomAPI] [CommRqData_CALL] CommRqData 호출: RQName='계좌잔고조회_8101891811', TRCode='opw00018', PrevNext=0, ScreenNo='2001', ReturnCode=0
-2025-05-20 22:15:15,602 - AppLogger - DEBUG - logger:81 - [KiwoomAPI] [KiwoomAPI] CommRqData 요청 성공: RQName='계좌잔고조회_8101891811', TRCode='opw00018'. 데이터 수신 대기 중...
-2025-05-20 22:15:15,602 - AppLogger - DEBUG - logger:81 - [Strategy][2025-05-20 22:15:15] opw00018 TR 요청 전송 완료. 요청명: 계좌잔고조회_8101891811, 화면번호: 2001
-2025-05-20 22:15:15,602 - AppLogger - INFO - logger:84 - 키움 API 로그인 성공
-2025-05-20 22:15:15,603 - AppLogger - INFO - logger:84 - 매매 전략 최종 초기화 완료
-2025-05-20 22:15:15,656 - AppLogger - INFO - logger:84 - 설정 파일에서 11개의 관심종목 로드 및 전략에 추가 시작...
-2025-05-20 22:15:15,656 - AppLogger - DEBUG - logger:81 - [MAIN_WATCHLIST_ADD] 항목 1: 코드(253840), 이름(수젠텍), 전일종가(7160.0)
-2025-05-20 22:15:15,657 - AppLogger - DEBUG - logger:81 - [Strategy][2025-05-20 22:15:15] [WATCHLIST_ADD_START] 관심종목 추가/업데이트 시작: 코드(253840), 이름(수젠텍), 설정된 전일종가(7160.0)
-2025-05-20 22:15:15,657 - AppLogger - INFO - logger:84 - [Strategy][2025-05-20 22:15:15] 관심종목 신규 추가: 수젠텍(253840), 전일종가: 7160.0, 초기상태: WAITING
-2025-05-20 22:15:15,658 - AppLogger - DEBUG - logger:81 - [Strategy][2025-05-20 22:15:15] [WATCHLIST_ADD_END] 관심종목 추가/업데이트 완료: 코드(253840) - 현재 self.watchlist에 1개 항목
-2025-05-20 22:15:15,658 - AppLogger - DEBUG - logger:81 - [MAIN_WATCHLIST_ADD] 항목 2: 코드(376900), 이름(로킷헬스케어), 전일종가(19950.0)
-2025-05-20 22:15:15,658 - AppLogger - DEBUG - logger:81 - [Strategy][2025-05-20 22:15:15] [WATCHLIST_ADD_START] 관심종목 추가/업데이트 시작: 코드(376900), 이름(로킷헬스케어), 설정된 전일종가(19950.0)
-2025-05-20 22:15:15,658 - AppLogger - INFO - logger:84 - [Strategy][2025-05-20 22:15:15] 관심종목 신규 추가: 로킷헬스케어(376900), 전일종가: 19950.0, 초기상태: WAITING
-2025-05-20 22:15:15,659 - AppLogger - DEBUG - logger:81 - [Strategy][2025-05-20 22:15:15] [WATCHLIST_ADD_END] 관심종목 추가/업데이트 완료: 코드(376900) - 현재 self.watchlist에 2개 항목
-2025-05-20 22:15:15,659 - AppLogger - DEBUG - logger:81 - [MAIN_WATCHLIST_ADD] 항목 3: 코드(389260), 이름(대명에너지), 전일종가(24900.0)
-2025-05-20 22:15:15,659 - AppLogger - DEBUG - logger:81 - [Strategy][2025-05-20 22:15:15] [WATCHLIST_ADD_START] 관심종목 추가/업데이트 시작: 코드(389260), 이름(대명에너지), 설정된 전일종가(24900.0)
-2025-05-20 22:15:15,660 - AppLogger - INFO - logger:84 - [Strategy][2025-05-20 22:15:15] 관심종목 신규 추가: 대명에너지(389260), 전일종가: 24900.0, 초기상태: WAITING
-2025-05-20 22:15:15,660 - AppLogger - DEBUG - logger:81 - [Strategy][2025-05-20 22:15:15] [WATCHLIST_ADD_END] 관심종목 추가/업데이트 완료: 코드(389260) - 현재 self.watchlist에 3개 항목
-2025-05-20 22:15:15,660 - AppLogger - DEBUG - logger:81 - [MAIN_WATCHLIST_ADD] 항목 4: 코드(032940), 이름(원익), 전일종가(3790.0)
-2025-05-20 22:15:15,660 - AppLogger - DEBUG - logger:81 - [Strategy][2025-05-20 22:15:15] [WATCHLIST_ADD_START] 관심종목 추가/업데이트 시작: 코드(032940), 이름(원익), 설정된 전일종가(3790.0)
-2025-05-20 22:15:15,661 - AppLogger - INFO - logger:84 - [Strategy][2025-05-20 22:15:15] 관심종목 신규 추가: 원익(032940), 전일종가: 3790.0, 초기상태: WAITING
-2025-05-20 22:15:15,661 - AppLogger - DEBUG - logger:81 - [Strategy][2025-05-20 22:15:15] [WATCHLIST_ADD_END] 관심종목 추가/업데이트 완료: 코드(032940) - 현재 self.watchlist에 4개 항목
-2025-05-20 22:15:15,661 - AppLogger - DEBUG - logger:81 - [MAIN_WATCHLIST_ADD] 항목 5: 코드(086060), 이름(진바이오텍), 전일종가(4115.0)
-2025-05-20 22:15:15,662 - AppLogger - DEBUG - logger:81 - [Strategy][2025-05-20 22:15:15] [WATCHLIST_ADD_START] 관심종목 추가/업데이트 시작: 코드(086060), 이름(진바이오텍), 설정된 전일종가(4115.0)
-2025-05-20 22:15:15,662 - AppLogger - INFO - logger:84 - [Strategy][2025-05-20 22:15:15] 관심종목 신규 추가: 진바이오텍(086060), 전일종가: 4115.0, 초기상태: WAITING
-2025-05-20 22:15:15,662 - AppLogger - DEBUG - logger:81 - [Strategy][2025-05-20 22:15:15] [WATCHLIST_ADD_END] 관심종목 추가/업데이트 완료: 코드(086060) - 현재 self.watchlist에 5개 항목
-2025-05-20 22:15:15,662 - AppLogger - DEBUG - logger:81 - [MAIN_WATCHLIST_ADD] 항목 6: 코드(217330), 이름(싸이토젠), 전일종가(4405.0)
-2025-05-20 22:15:15,663 - AppLogger - DEBUG - logger:81 - [Strategy][2025-05-20 22:15:15] [WATCHLIST_ADD_START] 관심종목 추가/업데이트 시작: 코드(217330), 이름(싸이토젠), 설정된 전일종가(4405.0)
-2025-05-20 22:15:15,663 - AppLogger - INFO - logger:84 - [Strategy][2025-05-20 22:15:15] 관심종목 신규 추가: 싸이토젠(217330), 전일종가: 4405.0, 초기상태: WAITING
-2025-05-20 22:15:15,663 - AppLogger - DEBUG - logger:81 - [Strategy][2025-05-20 22:15:15] [WATCHLIST_ADD_END] 관심종목 추가/업데이트 완료: 코드(217330) - 현재 self.watchlist에 6개 항목
-2025-05-20 22:15:15,664 - AppLogger - DEBUG - logger:81 - [MAIN_WATCHLIST_ADD] 항목 7: 코드(246250), 이름(에스엘에스바이오), 전일종가(2420.0)
-2025-05-20 22:15:15,664 - AppLogger - DEBUG - logger:81 - [Strategy][2025-05-20 22:15:15] [WATCHLIST_ADD_START] 관심종목 추가/업데이트 시작: 코드(246250), 이름(에스엘에스바이오), 설정된 전일종가(2420.0)
-2025-05-20 22:15:15,664 - AppLogger - INFO - logger:84 - [Strategy][2025-05-20 22:15:15] 관심종목 신규 추가: 에스엘에스바이오(246250), 전일종가: 2420.0, 초기상태: WAITING
-2025-05-20 22:15:15,664 - AppLogger - DEBUG - logger:81 - [Strategy][2025-05-20 22:15:15] [WATCHLIST_ADD_END] 관심종목 추가/업데이트 완료: 코드(246250) - 현재 self.watchlist에 7개 항목
-2025-05-20 22:15:15,666 - AppLogger - DEBUG - logger:81 - [MAIN_WATCHLIST_ADD] 항목 8: 코드(291650), 이름(압타머사이언스), 전일종가(1046.0)
-2025-05-20 22:15:15,666 - AppLogger - DEBUG - logger:81 - [Strategy][2025-05-20 22:15:15] [WATCHLIST_ADD_START] 관심종목 추가/업데이트 시작: 코드(291650), 이름(압타머사이언스), 설정된 전일종가(1046.0)
-2025-05-20 22:15:15,666 - AppLogger - INFO - logger:84 - [Strategy][2025-05-20 22:15:15] 관심종목 신규 추가: 압타머사이언스(291650), 전일종가: 1046.0, 초기상태: WAITING
-2025-05-20 22:15:15,666 - AppLogger - DEBUG - logger:81 - [Strategy][2025-05-20 22:15:15] [WATCHLIST_ADD_END] 관심종목 추가/업데이트 완료: 코드(291650) - 현재 self.watchlist에 8개 항목
-2025-05-20 22:15:15,666 - AppLogger - DEBUG - logger:81 - [MAIN_WATCHLIST_ADD] 항목 9: 코드(005930), 이름(삼성전자), 전일종가(70000.0)
-2025-05-20 22:15:15,667 - AppLogger - DEBUG - logger:81 - [Strategy][2025-05-20 22:15:15] [WATCHLIST_ADD_START] 관심종목 추가/업데이트 시작: 코드(005930), 이름(삼성전자), 설정된 전일종가(70000.0)
-2025-05-20 22:15:15,667 - AppLogger - INFO - logger:84 - [Strategy][2025-05-20 22:15:15] 관심종목 신규 추가: 삼성전자(005930), 전일종가: 70000.0, 초기상태: WAITING
-2025-05-20 22:15:15,667 - AppLogger - DEBUG - logger:81 - [Strategy][2025-05-20 22:15:15] [WATCHLIST_ADD_END] 관심종목 추가/업데이트 완료: 코드(005930) - 현재 self.watchlist에 9개 항목
-2025-05-20 22:15:15,667 - AppLogger - DEBUG - logger:81 - [MAIN_WATCHLIST_ADD] 항목 10: 코드(035720), 이름(카카오), 전일종가(49000.0)
-2025-05-20 22:15:15,667 - AppLogger - DEBUG - logger:81 - [Strategy][2025-05-20 22:15:15] [WATCHLIST_ADD_START] 관심종목 추가/업데이트 시작: 코드(035720), 이름(카카오), 설정된 전일종가(49000.0)
-2025-05-20 22:15:15,667 - AppLogger - INFO - logger:84 - [Strategy][2025-05-20 22:15:15] 관심종목 신규 추가: 카카오(035720), 전일종가: 49000.0, 초기상태: WAITING
-2025-05-20 22:15:15,667 - AppLogger - DEBUG - logger:81 - [Strategy][2025-05-20 22:15:15] [WATCHLIST_ADD_END] 관심종목 추가/업데이트 완료: 코드(035720) - 현재 self.watchlist에 10개 항목
-2025-05-20 22:15:15,667 - AppLogger - DEBUG - logger:81 - [MAIN_WATCHLIST_ADD] 항목 11: 코드(105560), 이름(AP시스템), 전일종가(98000.0)
-2025-05-20 22:15:15,667 - AppLogger - DEBUG - logger:81 - [Strategy][2025-05-20 22:15:15] [WATCHLIST_ADD_START] 관심종목 추가/업데이트 시작: 코드(105560), 이름(AP시스템), 설정된 전일종가(98000.0)
-2025-05-20 22:15:15,667 - AppLogger - INFO - logger:84 - [Strategy][2025-05-20 22:15:15] 관심종목 신규 추가: AP시스템(105560), 전일종가: 98000.0, 초기상태: WAITING
-2025-05-20 22:15:15,667 - AppLogger - DEBUG - logger:81 - [Strategy][2025-05-20 22:15:15] [WATCHLIST_ADD_END] 관심종목 추가/업데이트 완료: 코드(105560) - 현재 self.watchlist에 11개 항목
-2025-05-20 22:15:15,667 - AppLogger - INFO - logger:84 - 11개의 관심종목이 전략에 추가되었습니다.
-2025-05-20 22:15:15,667 - AppLogger - INFO - logger:84 - [Strategy][2025-05-20 22:15:15] TradingStrategy 시작 요청 접수...
-2025-05-20 22:15:15,667 - AppLogger - DEBUG - logger:81 - [Strategy][2025-05-20 22:15:15] [STRATEGY_DEBUG] ENTERING start() method. is_running=False, init_status={'account_info_loaded': True, 'deposit_info_loaded': True, 'portfolio_loaded': False, 'settings_loaded': True, 'market_hours_initialized': True}, watchlist_items=11
-2025-05-20 22:15:15,667 - AppLogger - WARNING - logger:87 - [Strategy][2025-05-20 22:15:15] 시작 보류: 예수금 또는 포트폴리오 정보가 아직 로드되지 않았습니다. TR 수신 대기 중일 수 있습니다.
-2025-05-20 22:15:15,667 - AppLogger - INFO - logger:84 - 매매 전략 시작됨. Ctrl+C로 종료하세요.
-2025-05-20 22:15:15,667 - AppLogger - INFO - logger:84 - Ctrl+C (SIGINT) 핸들러 최종 설정 완료. 이벤트 루프 시작 직전.
-2025-05-20 22:15:15,667 - AppLogger - DEBUG - logger:81 - [KiwoomAPI] TR 관련 성공 메시지 수신 (계좌잔고조회_8101891811, opw00018): [100000] 모의투자 조회완료
-2025-05-20 22:15:15,667 - AppLogger - INFO - logger:84 - [KiwoomAPI] TR 처리 성공 메시지: 화면: 2001, RQ: 계좌잔고조회_8101891811, TR: opw00018, 메시지: [100000] 모의투자 조회완료
-2025-05-20 22:15:15,667 - AppLogger - CRITICAL - logger:93 - [KiwoomAPI] [EVENT_HANDLER_ENTRY] on_receive_tr_data: Scr='2001', RQ='계좌잔고조회_8101891811', TR='opw00018', PrevNext='', ErrCode='', Msg=''
-2025-05-20 22:15:15,667 - AppLogger - DEBUG - logger:81 - [KiwoomAPI] _parse_tr_data: TR Code 'opw00018', RQName '계좌잔고조회_8101891811'
-2025-05-20 22:15:15,690 - AppLogger - DEBUG - logger:81 - [KiwoomAPI] _parse_tr_data 완료: TR(opw00018), RQName(계좌잔고조회_8101891811), SingleDataKeys(9), MultiDataCount(13)
-2025-05-20 22:15:15,690 - AppLogger - DEBUG - logger:81 - [KiwoomAPI] opw00018 데이터 캐시 저장: 계좌잔고조회_8101891811 - 보유종목 13건, 총매입 205025774
-2025-05-20 22:15:15,691 - AppLogger - DEBUG - logger:81 - [Strategy][2025-05-20 22:15:15] TR 데이터 수신 시작 - rq_name: 계좌잔고조회_8101891811, tr_code: opw00018, 연속조회: 0
-2025-05-20 22:15:15,691 - AppLogger - INFO - logger:84 - [Strategy][2025-05-20 22:15:15] TR 수신 (opw00018) - 계좌잔고 데이터 (요약 로깅)
-2025-05-20 22:15:15,692 - AppLogger - INFO - logger:84 - [Strategy][2025-05-20 22:15:15] 계좌 평가 요약 정보 업데이트 (opw00018 single_data): {'총매입금액': 205025774, '총평가금액': 198486140, '총평가손익금액': 8249534, '총수익률(%)': 4.02, '추정예탁자산': 511243751, '총대출금': 0, '총융자금액': 0, '총대주금액': 0, '조회건수': 13}
-2025-05-20 22:15:15,692 - AppLogger - INFO - logger:84 - [Strategy][2025-05-20 22:15:15] 계좌 잔고(포트폴리오) 업데이트 (opw00018 multi_data): 13 종목
-2025-05-20 22:15:15,694 - AppLogger - DEBUG - logger:81 - [Strategy][2025-05-20 22:15:15]   - 와이투솔루션(011690): 2710주 @ 2910.0 (현:2800.0)
-2025-05-20 22:15:15,694 - AppLogger - DEBUG - logger:81 - [Strategy][2025-05-20 22:15:15]   - 에코플라스틱(038110): 1943주 @ 3076.0 (현:2905.0)
-2025-05-20 22:15:15,694 - AppLogger - DEBUG - logger:81 - [Strategy][2025-05-20 22:15:15]   - 웹케시(053580): 6670주 @ 14618.0 (현:13980.0)
-2025-05-20 22:15:15,694 - AppLogger - DEBUG - logger:81 - [Strategy][2025-05-20 22:15:15]   - 인피니트헬스케어(071200): 552주 @ 6176.0 (현:6330.0)
-2025-05-20 22:15:15,694 - AppLogger - DEBUG - logger:81 - [Strategy][2025-05-20 22:15:15]   - 그린케미칼(083420): 653주 @ 8883.0 (현:8260.0)
-2025-05-20 22:15:15,694 - AppLogger - DEBUG - logger:81 - [Strategy][2025-05-20 22:15:15]   - 유비벨록스(089850): 3주 @ 7040.0 (현:6360.0)
-2025-05-20 22:15:15,695 - AppLogger - DEBUG - logger:81 - [Strategy][2025-05-20 22:15:15]   - 원일티엔아이(136150): 34주 @ 29250.0 (현:29100.0)
-2025-05-20 22:15:15,695 - AppLogger - DEBUG - logger:81 - [Strategy][2025-05-20 22:15:15]   - 에어레인(163280): 1010주 @ 20364.0 (현:19650.0)
-2025-05-20 22:15:15,695 - AppLogger - DEBUG - logger:81 - [Strategy][2025-05-20 22:15:15]   - 토니모리(214420): 3460주 @ 8954.0 (현:8830.0)
-2025-05-20 22:15:15,695 - AppLogger - DEBUG - logger:81 - [Strategy][2025-05-20 22:15:15]   - 일승(333430): 2529주 @ 4726.0 (현:4585.0)
-2025-05-20 22:15:15,695 - AppLogger - DEBUG - logger:81 - [Strategy][2025-05-20 22:15:15]   - 지투파워(388050): 968주 @ 8241.0 (현:8180.0)
-2025-05-20 22:15:15,695 - AppLogger - DEBUG - logger:81 - [Strategy][2025-05-20 22:15:15]   - 그리드위즈(453450): 398주 @ 20015.0 (현:19200.0)
-2025-05-20 22:15:15,695 - AppLogger - DEBUG - logger:81 - [Strategy][2025-05-20 22:15:15]   - SK이터닉스(475150): 199주 @ 20070.0 (현:22900.0)
-2025-05-20 22:15:15,695 - AppLogger - DEBUG - logger:81 - [Strategy][2025-05-20 22:15:15] opw00018 핸들러 완료. portfolio_loaded: True
-2025-05-20 22:15:15,695 - AppLogger - DEBUG - logger:81 - [Strategy][2025-05-20 22:15:15] [STRATEGY_INTERNAL] _check_all_data_loaded_and_start_strategy 호출됨. is_running: False
-2025-05-20 22:15:15,695 - AppLogger - DEBUG - logger:81 - [Strategy][2025-05-20 22:15:15] 현재 관심종목 11개 로드됨. 목록:
-2025-05-20 22:15:15,695 - AppLogger - DEBUG - logger:81 - [Strategy][2025-05-20 22:15:15]   - 수젠텍(253840): 전일종가(7160.0), 상태(WAITING)
-2025-05-20 22:15:15,699 - AppLogger - DEBUG - logger:81 - [Strategy][2025-05-20 22:15:15]   - 로킷헬스케어(376900): 전일종가(19950.0), 상태(WAITING)
-2025-05-20 22:15:15,699 - AppLogger - DEBUG - logger:81 - [Strategy][2025-05-20 22:15:15]   - 대명에너지(389260): 전일종가(24900.0), 상태(WAITING)
-2025-05-20 22:15:15,699 - AppLogger - DEBUG - logger:81 - [Strategy][2025-05-20 22:15:15]   - 원익(032940): 전일종가(3790.0), 상태(WAITING)
-2025-05-20 22:15:15,700 - AppLogger - DEBUG - logger:81 - [Strategy][2025-05-20 22:15:15]   - 진바이오텍(086060): 전일종가(4115.0), 상태(WAITING)
-2025-05-20 22:15:15,700 - AppLogger - DEBUG - logger:81 - [Strategy][2025-05-20 22:15:15]   - 싸이토젠(217330): 전일종가(4405.0), 상태(WAITING)
-2025-05-20 22:15:15,700 - AppLogger - DEBUG - logger:81 - [Strategy][2025-05-20 22:15:15]   - 에스엘에스바이오(246250): 전일종가(2420.0), 상태(WAITING)
-2025-05-20 22:15:15,701 - AppLogger - DEBUG - logger:81 - [Strategy][2025-05-20 22:15:15]   - 압타머사이언스(291650): 전일종가(1046.0), 상태(WAITING)
-2025-05-20 22:15:15,701 - AppLogger - DEBUG - logger:81 - [Strategy][2025-05-20 22:15:15]   - 삼성전자(005930): 전일종가(70000.0), 상태(WAITING)
-2025-05-20 22:15:15,701 - AppLogger - DEBUG - logger:81 - [Strategy][2025-05-20 22:15:15]   - 카카오(035720): 전일종가(49000.0), 상태(WAITING)
-2025-05-20 22:15:15,702 - AppLogger - DEBUG - logger:81 - [Strategy][2025-05-20 22:15:15]   - AP시스템(105560): 전일종가(98000.0), 상태(WAITING)
-2025-05-20 22:15:15,702 - AppLogger - INFO - logger:84 - [Strategy][2025-05-20 22:15:15] 모든 계좌/포트폴리오/관심종목(설정) 데이터 준비 완료. 실제 전략 시작 로직 수행.
-2025-05-20 22:15:15,703 - AppLogger - INFO - logger:84 - [ScreenManager_GET] 새 화면 할당: Identifier='real_253840' -> ScreenNo='2002'. 사용중: 2, 사용가능: 98
-2025-05-20 22:15:15,703 - AppLogger - INFO - logger:84 - [KiwoomAPI] 실시간 데이터 등록 요청: 화면(2002), 종목(253840), FID(10;11;12;13), 타입(1)
-2025-05-20 22:15:15,706 - AppLogger - INFO - logger:84 - [KiwoomAPI] 실시간 데이터 등록 성공: 화면(2002)
-2025-05-20 22:15:15,706 - AppLogger - INFO - logger:84 - [Strategy][2025-05-20 22:15:15] 실시간 데이터 구독 요청 성공 (화면: 2002, 종목: 253840) - SetRealReg 호출 자체는 성공으로 간주. 실제 구독 성공은 이벤트로 확인.
-2025-05-20 22:15:15,706 - AppLogger - INFO - logger:84 - [ScreenManager_GET] 새 화면 할당: Identifier='real_376900' -> ScreenNo='2003'. 사용중: 3, 사용가능: 97
-2025-05-20 22:15:15,706 - AppLogger - INFO - logger:84 - [KiwoomAPI] 실시간 데이터 등록 요청: 화면(2003), 종목(376900), FID(10;11;12;13), 타입(1)
-2025-05-20 22:15:15,706 - AppLogger - INFO - logger:84 - [KiwoomAPI] 실시간 데이터 등록 성공: 화면(2003)
-2025-05-20 22:15:15,713 - AppLogger - INFO - logger:84 - [Strategy][2025-05-20 22:15:15] 실시간 데이터 구독 요청 성공 (화면: 2003, 종목: 376900) - SetRealReg 호출 자체는 성공으로 간주. 실제 구독 성공은 이벤트로 확인.
-2025-05-20 22:15:15,713 - AppLogger - INFO - logger:84 - [ScreenManager_GET] 새 화면 할당: Identifier='real_389260' -> ScreenNo='2004'. 사용중: 4, 사용가능: 96
-2025-05-20 22:15:15,713 - AppLogger - INFO - logger:84 - [KiwoomAPI] 실시간 데이터 등록 요청: 화면(2004), 종목(389260), FID(10;11;12;13), 타입(1)
-2025-05-20 22:15:15,715 - AppLogger - INFO - logger:84 - [KiwoomAPI] 실시간 데이터 등록 성공: 화면(2004)
-2025-05-20 22:15:15,715 - AppLogger - INFO - logger:84 - [Strategy][2025-05-20 22:15:15] 실시간 데이터 구독 요청 성공 (화면: 2004, 종목: 389260) - SetRealReg 호출 자체는 성공으로 간주. 실제 구독 성공은 이벤트로 확인.
-2025-05-20 22:15:15,716 - AppLogger - INFO - logger:84 - [ScreenManager_GET] 새 화면 할당: Identifier='real_032940' -> ScreenNo='2005'. 사용중: 5, 사용가능: 95
-2025-05-20 22:15:15,716 - AppLogger - INFO - logger:84 - [KiwoomAPI] 실시간 데이터 등록 요청: 화면(2005), 종목(032940), FID(10;11;12;13), 타입(1)
-2025-05-20 22:15:15,718 - AppLogger - INFO - logger:84 - [KiwoomAPI] 실시간 데이터 등록 성공: 화면(2005)
-2025-05-20 22:15:15,718 - AppLogger - INFO - logger:84 - [Strategy][2025-05-20 22:15:15] 실시간 데이터 구독 요청 성공 (화면: 2005, 종목: 032940) - SetRealReg 호출 자체는 성공으로 간주. 실제 구독 성공은 이벤트로 확인.
-2025-05-20 22:15:15,718 - AppLogger - INFO - logger:84 - [ScreenManager_GET] 새 화면 할당: Identifier='real_086060' -> ScreenNo='2006'. 사용중: 6, 사용가능: 94
-2025-05-20 22:15:15,718 - AppLogger - INFO - logger:84 - [KiwoomAPI] 실시간 데이터 등록 요청: 화면(2006), 종목(086060), FID(10;11;12;13), 타입(1)
-2025-05-20 22:15:15,725 - AppLogger - INFO - logger:84 - [KiwoomAPI] 실시간 데이터 등록 성공: 화면(2006)
-2025-05-20 22:15:15,725 - AppLogger - INFO - logger:84 - [Strategy][2025-05-20 22:15:15] 실시간 데이터 구독 요청 성공 (화면: 2006, 종목: 086060) - SetRealReg 호출 자체는 성공으로 간주. 실제 구독 성공은 이벤트로 확인.
-2025-05-20 22:15:15,726 - AppLogger - INFO - logger:84 - [ScreenManager_GET] 새 화면 할당: Identifier='real_217330' -> ScreenNo='2007'. 사용중: 7, 사용가능: 93
-2025-05-20 22:15:15,726 - AppLogger - INFO - logger:84 - [KiwoomAPI] 실시간 데이터 등록 요청: 화면(2007), 종목(217330), FID(10;11;12;13), 타입(1)
-2025-05-20 22:15:15,727 - AppLogger - INFO - logger:84 - [KiwoomAPI] 실시간 데이터 등록 성공: 화면(2007)
-2025-05-20 22:15:15,728 - AppLogger - INFO - logger:84 - [Strategy][2025-05-20 22:15:15] 실시간 데이터 구독 요청 성공 (화면: 2007, 종목: 217330) - SetRealReg 호출 자체는 성공으로 간주. 실제 구독 성공은 이벤트로 확인.
-2025-05-20 22:15:15,729 - AppLogger - INFO - logger:84 - [ScreenManager_GET] 새 화면 할당: Identifier='real_246250' -> ScreenNo='2008'. 사용중: 8, 사용가능: 92
-2025-05-20 22:15:15,729 - AppLogger - INFO - logger:84 - [KiwoomAPI] 실시간 데이터 등록 요청: 화면(2008), 종목(246250), FID(10;11;12;13), 타입(1)
-2025-05-20 22:15:15,729 - AppLogger - INFO - logger:84 - [KiwoomAPI] 실시간 데이터 등록 성공: 화면(2008)
-2025-05-20 22:15:15,731 - AppLogger - INFO - logger:84 - [Strategy][2025-05-20 22:15:15] 실시간 데이터 구독 요청 성공 (화면: 2008, 종목: 246250) - SetRealReg 호출 자체는 성공으로 간주. 실제 구독 성공은 이벤트로 확인.
-2025-05-20 22:15:15,731 - AppLogger - INFO - logger:84 - [ScreenManager_GET] 새 화면 할당: Identifier='real_291650' -> ScreenNo='2009'. 사용중: 9, 사용가능: 91
-2025-05-20 22:15:15,731 - AppLogger - INFO - logger:84 - [KiwoomAPI] 실시간 데이터 등록 요청: 화면(2009), 종목(291650), FID(10;11;12;13), 타입(1)
-2025-05-20 22:15:15,734 - AppLogger - INFO - logger:84 - [KiwoomAPI] 실시간 데이터 등록 성공: 화면(2009)
-2025-05-20 22:15:15,735 - AppLogger - INFO - logger:84 - [Strategy][2025-05-20 22:15:15] 실시간 데이터 구독 요청 성공 (화면: 2009, 종목: 291650) - SetRealReg 호출 자체는 성공으로 간주. 실제 구독 성공은 이벤트로 확인.
-2025-05-20 22:15:15,736 - AppLogger - INFO - logger:84 - [ScreenManager_GET] 새 화면 할당: Identifier='real_005930' -> ScreenNo='2010'. 사용중: 10, 사용가능: 90
-2025-05-20 22:15:15,736 - AppLogger - INFO - logger:84 - [KiwoomAPI] 실시간 데이터 등록 요청: 화면(2010), 종목(005930), FID(10;11;12;13), 타입(1)
-2025-05-20 22:15:15,736 - AppLogger - INFO - logger:84 - [KiwoomAPI] 실시간 데이터 등록 성공: 화면(2010)
-2025-05-20 22:15:15,736 - AppLogger - INFO - logger:84 - [Strategy][2025-05-20 22:15:15] 실시간 데이터 구독 요청 성공 (화면: 2010, 종목: 005930) - SetRealReg 호출 자체는 성공으로 간주. 실제 구독 성공은 이벤트로 확인.
-2025-05-20 22:15:15,736 - AppLogger - INFO - logger:84 - [ScreenManager_GET] 새 화면 할당: Identifier='real_035720' -> ScreenNo='2011'. 사용중: 11, 사용가능: 89
-2025-05-20 22:15:15,736 - AppLogger - INFO - logger:84 - [KiwoomAPI] 실시간 데이터 등록 요청: 화면(2011), 종목(035720), FID(10;11;12;13), 타입(1)
-2025-05-20 22:15:15,736 - AppLogger - INFO - logger:84 - [KiwoomAPI] 실시간 데이터 등록 성공: 화면(2011)
-2025-05-20 22:15:15,736 - AppLogger - INFO - logger:84 - [Strategy][2025-05-20 22:15:15] 실시간 데이터 구독 요청 성공 (화면: 2011, 종목: 035720) - SetRealReg 호출 자체는 성공으로 간주. 실제 구독 성공은 이벤트로 확인.
-2025-05-20 22:15:15,736 - AppLogger - INFO - logger:84 - [ScreenManager_GET] 새 화면 할당: Identifier='real_105560' -> ScreenNo='2012'. 사용중: 12, 사용가능: 88
-2025-05-20 22:15:15,736 - AppLogger - INFO - logger:84 - [KiwoomAPI] 실시간 데이터 등록 요청: 화면(2012), 종목(105560), FID(10;11;12;13), 타입(1)
-2025-05-20 22:15:15,744 - AppLogger - INFO - logger:84 - [KiwoomAPI] 실시간 데이터 등록 성공: 화면(2012)
-2025-05-20 22:15:15,744 - AppLogger - INFO - logger:84 - [Strategy][2025-05-20 22:15:15] 실시간 데이터 구독 요청 성공 (화면: 2012, 종목: 105560) - SetRealReg 호출 자체는 성공으로 간주. 실제 구독 성공은 이벤트로 확인.
-2025-05-20 22:15:15,745 - AppLogger - INFO - logger:84 - [Strategy][2025-05-20 22:15:15] 11개 관심종목에 대한 실시간 시세 구독 요청 완료.
-2025-05-20 22:15:15,745 - AppLogger - INFO - logger:84 - [Strategy][2025-05-20 22:15:15] 날짜 변경 감지: None -> 2025-05-20. 일일 매수 횟수 초기화.
-2025-05-20 22:15:15,745 - AppLogger - INFO - logger:84 - [Strategy][2025-05-20 22:15:15] 조건 확인 타이머 시작 (주기: 2.0초).
-2025-05-20 22:15:15,746 - AppLogger - INFO - logger:84 - [Strategy][2025-05-20 22:15:15] 주기적 상태 보고 타이머 시작 (주기: 60초).
-2025-05-20 22:15:15,746 - AppLogger - INFO - logger:84 - [Strategy][2025-05-20 22:15:15] 일일 스냅샷 타이머 시작 (주기: 1.0시간).
-2025-05-20 22:15:15,746 - AppLogger - INFO - logger:84 - [Strategy][2025-05-20 22:15:15] [STRATEGY_INTERNAL] _check_all_data_loaded_and_start_strategy: Timers started. is_running=True, is_initialized_successfully=True
-2025-05-20 22:15:15,747 - AppLogger - INFO - logger:84 - [Strategy][2025-05-20 22:15:15] 장 종료 확인, 일별 계좌 스냅샷 기록 시도: 2025-05-20
-2025-05-20 22:15:15,747 - AppLogger - DEBUG - logger:81 - [Strategy][2025-05-20 22:15:15] 계좌 요약 정보: {'총매입금액': 205025774.0, '총평가금액': 198486140.0, '총평가손익금액': 8249534.0, '총수익률': 4.02, '추정예탁자산': 511243751.0, '예수금': 339440565.0}
-2025-05-20 22:15:15,750 - AppLogger - WARNING - logger:87 - 일별 계좌 스냅샷 추가 실패: 2025-05-20 데이터 이미 존재함
-2025-05-20 22:15:15,751 - AppLogger - ERROR - logger:90 - [Strategy][2025-05-20 22:15:15] 일별 계좌 스냅샷 DB 저장 실패 또는 이미 존재: 2025-05-20
-2025-05-20 22:15:15,751 - AppLogger - INFO - logger:84 - [Strategy][2025-05-20 22:15:15] === 전략이 성공적으로 시작되었습니다. is_running: True ===
-2025-05-20 22:15:15,752 - AppLogger - INFO - logger:84 - [Strategy][2025-05-20 22:15:15] 계좌 포트폴리오 정보 로드 완료 (최종).
-2025-05-20 22:15:15,752 - AppLogger - INFO - logger:84 - [Strategy][2025-05-20 22:15:15] 포트폴리오 로드 완료, 예수금도 이미 로드됨. 설정에서 관심종목 로드 시도.
-2025-05-20 22:15:15,752 - AppLogger - DEBUG - logger:81 - [Strategy][2025-05-20 22:15:15] [STRATEGY_INTERNAL] _check_all_data_loaded_and_start_strategy 호출됨. is_running: True
-2025-05-20 22:15:15,753 - AppLogger - DEBUG - logger:81 - [Strategy][2025-05-20 22:15:15] 전략이 이미 실행 중입니다. _check_all_data_loaded_and_start_strategy 중복 호출 방지.
-2025-05-20 22:15:15,753 - AppLogger - DEBUG - logger:81 - [KiwoomAPI] TR(opw00018, RQ='계좌잔고조회_8101891811') 단일/최종 응답. 화면번호(2001) 반환 예정.
-2025-05-20 22:15:15,753 - AppLogger - INFO - logger:84 - [ScreenManager_RELEASE] 화면 반환 완료: ScreenNo='2001', Identifier='계좌잔고조회_8101891811'. 사용중: 11, 사용가능: 89
-2025-05-20 22:16:15,742 - AppLogger - INFO - logger:84 - [Strategy][2025-05-20 22:16:15] ===== 주기적 상태 보고 (2025-05-20 22:16:15) =====
-2025-05-20 22:16:15,742 - AppLogger - INFO - logger:84 - [Strategy][2025-05-20 22:16:15] 전략 실행 상태: 실행 중, 최종 초기화 성공: True
-2025-05-20 22:16:15,742 - AppLogger - INFO - logger:84 - [Strategy][2025-05-20 22:16:15] 현재 상태 메시지: TR 데이터 처리 완료: opw00018 (계좌잔고조회_8101891811)
-2025-05-20 22:16:15,742 - AppLogger - INFO - logger:84 - [Strategy][2025-05-20 22:16:15] 계좌번호: 8101891811
-2025-05-20 22:16:15,742 - AppLogger - INFO - logger:84 - [Strategy][2025-05-20 22:16:15] 예수금: 339440565
-2025-05-20 22:16:15,742 - AppLogger - INFO - logger:84 - [Strategy][2025-05-20 22:16:15] 보유 종목 (13개):
-2025-05-20 22:16:15,742 - AppLogger - INFO - logger:84 - [Strategy][2025-05-20 22:16:15]   - 와이투솔루션(011690): 2710주, 평가액 7,588,000 (수익률 4.60%)
-2025-05-20 22:16:15,756 - AppLogger - INFO - logger:84 - [Strategy][2025-05-20 22:16:15]   - 에코플라스틱(038110): 1943주, 평가액 5,644,415 (수익률 6.37%)
-2025-05-20 22:16:15,756 - AppLogger - INFO - logger:84 - [Strategy][2025-05-20 22:16:15]   - 웹케시(053580): 6670주, 평가액 93,246,600 (수익률 5.19%)
-2025-05-20 22:16:15,759 - AppLogger - INFO - logger:84 - [Strategy][2025-05-20 22:16:15]   - 인피니트헬스케어(071200): 552주, 평가액 3,494,160 (수익률 1.63%)
-2025-05-20 22:16:15,760 - AppLogger - INFO - logger:84 - [Strategy][2025-05-20 22:16:15]   - 그린케미칼(083420): 653주, 평가액 5,393,780 (수익률 7.83%)
-2025-05-20 22:16:15,760 - AppLogger - INFO - logger:84 - [Strategy][2025-05-20 22:16:15]   - 유비벨록스(089850): 3주, 평가액 19,080 (수익률 10.41%)
-2025-05-20 22:16:15,762 - AppLogger - INFO - logger:84 - [Strategy][2025-05-20 22:16:15]   - 원일티엔아이(136150): 34주, 평가액 989,400 (수익률 1.36%)
-2025-05-20 22:16:15,763 - AppLogger - INFO - logger:84 - [Strategy][2025-05-20 22:16:15]   - 에어레인(163280): 1010주, 평가액 19,846,500 (수익률 4.34%)
-2025-05-20 22:16:15,764 - AppLogger - INFO - logger:84 - [Strategy][2025-05-20 22:16:15]   - 토니모리(214420): 3460주, 평가액 30,551,800 (수익률 2.23%)
-2025-05-20 22:16:15,766 - AppLogger - INFO - logger:84 - [Strategy][2025-05-20 22:16:15]   - 일승(333430): 2529주, 평가액 11,595,465 (수익률 3.83%)
-2025-05-20 22:16:15,766 - AppLogger - INFO - logger:84 - [Strategy][2025-05-20 22:16:15]   - 지투파워(388050): 968주, 평가액 7,918,240 (수익률 1.59%)
-2025-05-20 22:16:15,766 - AppLogger - INFO - logger:84 - [Strategy][2025-05-20 22:16:15]   - 그리드위즈(453450): 398주, 평가액 7,641,600 (수익률 4.90%)
-2025-05-20 22:16:15,766 - AppLogger - INFO - logger:84 - [Strategy][2025-05-20 22:16:15]   - SK이터닉스(475150): 199주, 평가액 4,557,100 (수익률 13.18%)
-2025-05-20 22:16:15,770 - AppLogger - INFO - logger:84 - [Strategy][2025-05-20 22:16:15] 미체결 주문 없음.
-2025-05-20 22:16:15,771 - AppLogger - INFO - logger:84 - [Strategy][2025-05-20 22:16:15] 관심 종목 (11개):
-2025-05-20 22:16:15,772 - AppLogger - INFO - logger:84 - [Strategy][2025-05-20 22:16:15]   - 수젠텍(253840): 현재가 N/A, 상태: WAITING
-2025-05-20 22:16:15,773 - AppLogger - INFO - logger:84 - [Strategy][2025-05-20 22:16:15]   - 로킷헬스케어(376900): 현재가 N/A, 상태: WAITING
-2025-05-20 22:16:15,773 - AppLogger - INFO - logger:84 - [Strategy][2025-05-20 22:16:15]   - 대명에너지(389260): 현재가 N/A, 상태: WAITING
-2025-05-20 22:16:15,774 - AppLogger - INFO - logger:84 - [Strategy][2025-05-20 22:16:15]   - 원익(032940): 현재가 N/A, 상태: WAITING
-2025-05-20 22:16:15,775 - AppLogger - INFO - logger:84 - [Strategy][2025-05-20 22:16:15]   - 진바이오텍(086060): 현재가 N/A, 상태: WAITING
-2025-05-20 22:16:15,775 - AppLogger - INFO - logger:84 - [Strategy][2025-05-20 22:16:15]   - 싸이토젠(217330): 현재가 N/A, 상태: WAITING
-2025-05-20 22:16:15,776 - AppLogger - INFO - logger:84 - [Strategy][2025-05-20 22:16:15]   - 에스엘에스바이오(246250): 현재가 N/A, 상태: WAITING
-2025-05-20 22:16:15,777 - AppLogger - INFO - logger:84 - [Strategy][2025-05-20 22:16:15]   - 압타머사이언스(291650): 현재가 N/A, 상태: WAITING
-2025-05-20 22:16:15,777 - AppLogger - INFO - logger:84 - [Strategy][2025-05-20 22:16:15]   - 삼성전자(005930): 현재가 N/A, 상태: WAITING
-2025-05-20 22:16:15,778 - AppLogger - INFO - logger:84 - [Strategy][2025-05-20 22:16:15]   - 카카오(035720): 현재가 N/A, 상태: WAITING
-2025-05-20 22:16:15,779 - AppLogger - INFO - logger:84 - [Strategy][2025-05-20 22:16:15]   - AP시스템(105560): 현재가 N/A, 상태: WAITING
-2025-05-20 22:16:15,779 - AppLogger - INFO - logger:84 - [Strategy][2025-05-20 22:16:15] 일일 매수 실행 횟수: 0 / 10
-2025-05-20 22:16:15,780 - AppLogger - INFO - logger:84 - [Strategy][2025-05-20 22:16:15] ===========================================
-2025-05-20 22:16:21,937 - AppLogger - INFO - logger:84 - Ctrl+C 입력 감지. 프로그램 즉시 종료 절차를 시작합니다...
-2025-05-20 22:16:21,937 - AppLogger - INFO - logger:84 - 매매 전략 중지를 시도합니다...
-2025-05-20 22:16:21,937 - AppLogger - INFO - logger:84 - [Strategy][2025-05-20 22:16:21] TradingStrategy.stop() 메소드 시작됨.
-2025-05-20 22:16:21,937 - AppLogger - INFO - logger:84 - [Strategy][2025-05-20 22:16:21] 전략 실행 플래그 (is_running)를 False로 설정했습니다.
-2025-05-20 22:16:21,937 - AppLogger - INFO - logger:84 - [Strategy][2025-05-20 22:16:21] 미체결 주문 취소 시도...
-2025-05-20 22:16:21,937 - AppLogger - INFO - logger:84 - [Strategy][2025-05-20 22:16:21] 미체결 주문 취소 시작...
-2025-05-20 22:16:21,937 - AppLogger - INFO - logger:84 - [Strategy][2025-05-20 22:16:21] 취소할 미체결 주문이 없습니다.
-2025-05-20 22:16:21,937 - AppLogger - INFO - logger:84 - [Strategy][2025-05-20 22:16:21] 타이머 중지 시도...
-2025-05-20 22:16:21,937 - AppLogger - DEBUG - logger:81 - [Strategy][2025-05-20 22:16:21] 조건 확인 타이머 중지됨.
-2025-05-20 22:16:21,937 - AppLogger - DEBUG - logger:81 - [Strategy][2025-05-20 22:16:21] 주기적 상태 보고 타이머 중지됨.
-2025-05-20 22:16:21,937 - AppLogger - DEBUG - logger:81 - [Strategy][2025-05-20 22:16:21] 일일 스냅샷 타이머 중지됨.
-2025-05-20 22:16:21,946 - AppLogger - INFO - logger:84 - [Strategy][2025-05-20 22:16:21] 관심 종목 실시간 데이터 구독 해제 시도...
-2025-05-20 22:16:21,947 - AppLogger - INFO - logger:84 - [Strategy][2025-05-20 22:16:21] Removing 253840 from watchlist... Unsubscribe real data: True
-2025-05-20 22:16:21,950 - AppLogger - INFO - logger:84 - [ScreenManager_RELEASE] 화면 반환 완료: ScreenNo='2002', Identifier='real_253840'. 사용중: 10, 사용가능: 90
-2025-05-20 22:16:21,951 - AppLogger - DEBUG - logger:81 - [Strategy][2025-05-20 22:16:21] Unsubscribed real data for 253840 using screen_no: 2002
-2025-05-20 22:16:21,953 - AppLogger - INFO - logger:84 - [Strategy][2025-05-20 22:16:21] 253840 removed from watchlist.
-2025-05-20 22:16:21,954 - AppLogger - INFO - logger:84 - [Strategy][2025-05-20 22:16:21] Removing 376900 from watchlist... Unsubscribe real data: True
-2025-05-20 22:16:21,955 - AppLogger - INFO - logger:84 - [ScreenManager_RELEASE] 화면 반환 완료: ScreenNo='2003', Identifier='real_376900'. 사용중: 9, 사용가능: 91
-2025-05-20 22:16:21,957 - AppLogger - DEBUG - logger:81 - [Strategy][2025-05-20 22:16:21] Unsubscribed real data for 376900 using screen_no: 2003
-2025-05-20 22:16:21,957 - AppLogger - INFO - logger:84 - [Strategy][2025-05-20 22:16:21] 376900 removed from watchlist.
-2025-05-20 22:16:21,957 - AppLogger - INFO - logger:84 - [Strategy][2025-05-20 22:16:21] Removing 389260 from watchlist... Unsubscribe real data: True
-2025-05-20 22:16:21,957 - AppLogger - INFO - logger:84 - [ScreenManager_RELEASE] 화면 반환 완료: ScreenNo='2004', Identifier='real_389260'. 사용중: 8, 사용가능: 92
-2025-05-20 22:16:21,957 - AppLogger - DEBUG - logger:81 - [Strategy][2025-05-20 22:16:21] Unsubscribed real data for 389260 using screen_no: 2004
-2025-05-20 22:16:21,957 - AppLogger - INFO - logger:84 - [Strategy][2025-05-20 22:16:21] 389260 removed from watchlist.
-2025-05-20 22:16:21,961 - AppLogger - INFO - logger:84 - [Strategy][2025-05-20 22:16:21] Removing 032940 from watchlist... Unsubscribe real data: True
-2025-05-20 22:16:21,962 - AppLogger - INFO - logger:84 - [ScreenManager_RELEASE] 화면 반환 완료: ScreenNo='2005', Identifier='real_032940'. 사용중: 7, 사용가능: 93
-2025-05-20 22:16:21,962 - AppLogger - DEBUG - logger:81 - [Strategy][2025-05-20 22:16:21] Unsubscribed real data for 032940 using screen_no: 2005
-2025-05-20 22:16:21,962 - AppLogger - INFO - logger:84 - [Strategy][2025-05-20 22:16:21] 032940 removed from watchlist.
-2025-05-20 22:16:21,963 - AppLogger - INFO - logger:84 - [Strategy][2025-05-20 22:16:21] Removing 086060 from watchlist... Unsubscribe real data: True
-2025-05-20 22:16:21,963 - AppLogger - INFO - logger:84 - [ScreenManager_RELEASE] 화면 반환 완료: ScreenNo='2006', Identifier='real_086060'. 사용중: 6, 사용가능: 94
-2025-05-20 22:16:21,963 - AppLogger - DEBUG - logger:81 - [Strategy][2025-05-20 22:16:21] Unsubscribed real data for 086060 using screen_no: 2006
-2025-05-20 22:16:21,963 - AppLogger - INFO - logger:84 - [Strategy][2025-05-20 22:16:21] 086060 removed from watchlist.
-2025-05-20 22:16:21,966 - AppLogger - INFO - logger:84 - [Strategy][2025-05-20 22:16:21] Removing 217330 from watchlist... Unsubscribe real data: True
-2025-05-20 22:16:21,967 - AppLogger - INFO - logger:84 - [ScreenManager_RELEASE] 화면 반환 완료: ScreenNo='2007', Identifier='real_217330'. 사용중: 5, 사용가능: 95
-2025-05-20 22:16:21,967 - AppLogger - DEBUG - logger:81 - [Strategy][2025-05-20 22:16:21] Unsubscribed real data for 217330 using screen_no: 2007
-2025-05-20 22:16:21,968 - AppLogger - INFO - logger:84 - [Strategy][2025-05-20 22:16:21] 217330 removed from watchlist.
-2025-05-20 22:16:21,968 - AppLogger - INFO - logger:84 - [Strategy][2025-05-20 22:16:21] Removing 246250 from watchlist... Unsubscribe real data: True
-2025-05-20 22:16:21,968 - AppLogger - INFO - logger:84 - [ScreenManager_RELEASE] 화면 반환 완료: ScreenNo='2008', Identifier='real_246250'. 사용중: 4, 사용가능: 96
-2025-05-20 22:16:21,971 - AppLogger - DEBUG - logger:81 - [Strategy][2025-05-20 22:16:21] Unsubscribed real data for 246250 using screen_no: 2008
-2025-05-20 22:16:21,973 - AppLogger - INFO - logger:84 - [Strategy][2025-05-20 22:16:21] 246250 removed from watchlist.
-2025-05-20 22:16:21,973 - AppLogger - INFO - logger:84 - [Strategy][2025-05-20 22:16:21] Removing 291650 from watchlist... Unsubscribe real data: True
-2025-05-20 22:16:21,975 - AppLogger - INFO - logger:84 - [ScreenManager_RELEASE] 화면 반환 완료: ScreenNo='2009', Identifier='real_291650'. 사용중: 3, 사용가능: 97
-2025-05-20 22:16:21,976 - AppLogger - DEBUG - logger:81 - [Strategy][2025-05-20 22:16:21] Unsubscribed real data for 291650 using screen_no: 2009
-2025-05-20 22:16:21,976 - AppLogger - INFO - logger:84 - [Strategy][2025-05-20 22:16:21] 291650 removed from watchlist.
-2025-05-20 22:16:21,977 - AppLogger - INFO - logger:84 - [Strategy][2025-05-20 22:16:21] Removing 005930 from watchlist... Unsubscribe real data: True
-2025-05-20 22:16:21,978 - AppLogger - INFO - logger:84 - [ScreenManager_RELEASE] 화면 반환 완료: ScreenNo='2010', Identifier='real_005930'. 사용중: 2, 사용가능: 98
-2025-05-20 22:16:21,979 - AppLogger - DEBUG - logger:81 - [Strategy][2025-05-20 22:16:21] Unsubscribed real data for 005930 using screen_no: 2010
-2025-05-20 22:16:21,979 - AppLogger - INFO - logger:84 - [Strategy][2025-05-20 22:16:21] 005930 removed from watchlist.
-2025-05-20 22:16:21,980 - AppLogger - INFO - logger:84 - [Strategy][2025-05-20 22:16:21] Removing 035720 from watchlist... Unsubscribe real data: True
-2025-05-20 22:16:21,982 - AppLogger - INFO - logger:84 - [ScreenManager_RELEASE] 화면 반환 완료: ScreenNo='2011', Identifier='real_035720'. 사용중: 1, 사용가능: 99
-2025-05-20 22:16:21,982 - AppLogger - DEBUG - logger:81 - [Strategy][2025-05-20 22:16:21] Unsubscribed real data for 035720 using screen_no: 2011
-2025-05-20 22:16:21,982 - AppLogger - INFO - logger:84 - [Strategy][2025-05-20 22:16:21] 035720 removed from watchlist.
-2025-05-20 22:16:21,982 - AppLogger - INFO - logger:84 - [Strategy][2025-05-20 22:16:21] Removing 105560 from watchlist... Unsubscribe real data: True
-2025-05-20 22:16:21,982 - AppLogger - INFO - logger:84 - [ScreenManager_RELEASE] 화면 반환 완료: ScreenNo='2012', Identifier='real_105560'. 사용중: 0, 사용가능: 100
-2025-05-20 22:16:21,982 - AppLogger - DEBUG - logger:81 - [Strategy][2025-05-20 22:16:21] Unsubscribed real data for 105560 using screen_no: 2012
-2025-05-20 22:16:21,982 - AppLogger - INFO - logger:84 - [Strategy][2025-05-20 22:16:21] 105560 removed from watchlist.
-2025-05-20 22:16:21,982 - AppLogger - INFO - logger:84 - [Strategy][2025-05-20 22:16:21] ScreenManager 화면 정리 시도...
-2025-05-20 22:16:21,987 - AppLogger - INFO - logger:84 - [ScreenManager_CLEANUP] 모든 사용 중인 화면 정리 시작. 현재 사용중: 0개
-2025-05-20 22:16:21,987 - AppLogger - INFO - logger:84 - [ScreenManager_CLEANUP] 모든 화면 정리 완료. 사용중: 0, 사용가능: 100
-2025-05-20 22:16:21,987 - AppLogger - INFO - logger:84 - [Strategy][2025-05-20 22:16:21] 모든 화면 사용 해제 완료.
-2025-05-20 22:16:21,989 - AppLogger - INFO - logger:84 - [Strategy][2025-05-20 22:16:21] DB Manager 관련 리소스 정리 시도 (필요시 close 구현)
-2025-05-20 22:16:21,989 - AppLogger - INFO - logger:84 - [Strategy][2025-05-20 22:16:21] TradingStrategy.stop() 메소드 완료됨.
-2025-05-20 22:16:21,990 - AppLogger - INFO - logger:84 - 매매 전략이 중지되었습니다.
-2025-05-20 22:16:21,991 - AppLogger - INFO - logger:84 - KiwoomAPI 리소스 해제 및 연결 종료를 시작합니다...
-2025-05-20 22:16:21,991 - AppLogger - INFO - logger:84 - [KiwoomAPI] Kiwoom API 연결 종료 절차 시작...
-2025-05-20 22:16:21,991 - AppLogger - INFO - logger:84 - [KiwoomAPI] 종료 모드가 활성화되었습니다.
-2025-05-20 22:16:21,991 - AppLogger - INFO - logger:84 - [KiwoomAPI] 모든 실시간 데이터 구독 해제 시도...
-2025-05-20 22:16:21,991 - AppLogger - INFO - logger:84 - [KiwoomAPI] 모든 실시간 데이터 구독 해제 요청됨 (SetRealRemove ALL, ALL).
-2025-05-20 22:16:21,994 - AppLogger - DEBUG - logger:81 - [KiwoomAPI] 내부 실시간 데이터 구독 상태 (FID 목록) 초기화 완료.
-2025-05-20 22:16:21,995 - AppLogger - INFO - logger:84 - [KiwoomAPI] 모든 실시간 데이터 구독 해제 요청 완료.
-2025-05-20 22:16:21,995 - AppLogger - INFO - logger:84 - [KiwoomAPI] ScreenManager를 통해 모든 화면 리소스 해제 시도...
-2025-05-20 22:16:21,995 - AppLogger - INFO - logger:84 - [ScreenManager_RELEASE_ALL] 관리 중인 모든 화면 해제 시작. 현재 사용중: 0개
-2025-05-20 22:16:21,995 - AppLogger - WARNING - logger:87 - [ScreenManager_RELEASE_ALL] Kiwoom OCX 인스턴스가 없어 API 호출(DisconnectRealData)을 스킵합니다. 내부 상태만 초기화합니다.
-2025-05-20 22:16:21,996 - AppLogger - INFO - logger:84 - [ScreenManager_RELEASE_ALL] 모든 화면 해제 및 내부 상태 초기화 완료. 사용 가능 화면: 100개
-2025-05-20 22:16:21,996 - AppLogger - INFO - logger:84 - [KiwoomAPI] ScreenManager를 통한 화면 리소스 해제 완료.
-2025-05-20 22:16:21,996 - AppLogger - INFO - logger:84 - [KiwoomAPI] Kiwoom OpenAPI CommTerminate 호출 시도...
-2025-05-20 22:16:21,997 - AppLogger - INFO - logger:84 - [KiwoomAPI] CommTerminate 호출 완료. API 연결이 종료되었을 것입니다.
-2025-05-20 22:16:21,997 - AppLogger - INFO - logger:84 - [KiwoomAPI] Kiwoom API 연결 종료 절차 완료됨.
-2025-05-20 22:16:21,997 - AppLogger - INFO - logger:84 - KiwoomAPI 연결 해제 절차 호출 완료.
-2025-05-20 22:16:21,997 - AppLogger - WARNING - logger:87 - DB 인스턴스 또는 close_connection 메소드를 찾을 수 없습니다.
-2025-05-20 22:16:21,998 - AppLogger - INFO - logger:84 - QApplication 종료를 시도합니다.
-2025-05-20 22:16:21,998 - AppLogger - INFO - logger:84 - QApplication.quit() 호출됨.
-2025-05-20 22:16:21,998 - AppLogger - INFO - logger:84 - 프로그램이 정상적으로 종료될 예정입니다.
-2025-05-20 22:16:21,998 - AppLogger - INFO - logger:84 - 프로그램 최종 정리 작업 수행...
-2025-05-20 22:16:22,000 - AppLogger - INFO - logger:84 - 프로그램이 종료됩니다.
+2025-05-21 12:15:48,803 - AppLogger - INFO - logger:84 - 로깅 시스템 초기화 완료 (콘솔 및 파일 핸들러)
+2025-05-21 12:15:48,805 - AppLogger - INFO - logger:84 - Using settings file: settings.json
+2025-05-21 12:15:48,806 - AppLogger - INFO - logger:84 - 프로그램 시작 (콘솔 모드)
+2025-05-21 12:15:48,806 - AppLogger - INFO - logger:84 - ScreenManager 단일 인스턴스 생성 완료
+2025-05-21 12:15:48,923 - AppLogger - INFO - logger:84 - Using settings file: settings.json
+2025-05-21 12:15:48,930 - AppLogger - INFO - logger:84 - 데이터베이스 (logs/trading_data.test.db) 초기화 성공
+2025-05-21 12:15:48,930 - AppLogger - INFO - logger:84 - 데이터베이스 초기화 완료
+2025-05-21 12:15:48,932 - AppLogger - INFO - logger:84 - [Strategy][2025-05-21 12:15:48] 전략 설정 로딩 시작...
+2025-05-21 12:15:48,940 - AppLogger - INFO - logger:84 - [Strategy][2025-05-21 12:15:48] 장운영시간 설정: 시작(09:00:00), 종료(15:30:00)
+2025-05-21 12:15:48,941 - AppLogger - INFO - logger:84 - [Strategy][2025-05-21 12:15:48] 전략 설정 로드 완료: StrategySettings(buy_amount_per_stock=1000000.0, stop_loss_rate_from_yesterday_close=2.0, partial_take_profit_rate=5.0, full_take_profit_target_rate=9.0, partial_sell_ratio=50, trailing_stop_activation_profit_rate=2.0, trailing_stop_fall_rate=1.5, market_open_time_str='09:00:00', market_close_time_str='15:30:00', periodic_report_enabled=True, periodic_report_interval_seconds=60, max_daily_buy_count=10, cancel_pending_orders_on_exit=True, auto_liquidate_after_minutes_enabled=False, auto_liquidate_after_minutes=60)
+2025-05-21 12:15:48,942 - AppLogger - INFO - logger:84 - [Strategy][2025-05-21 12:15:48] 전략 설정 로드 완료.
+2025-05-21 12:15:48,942 - AppLogger - INFO - logger:84 - [Strategy][2025-05-21 12:15:48] 장운영시간 초기화: 09:00:00 - 15:30:00
+2025-05-21 12:15:48,944 - AppLogger - INFO - logger:84 - [Strategy][2025-05-21 12:15:48] TradingStrategy 객체 생성 완료. 추가 초기화가 필요합니다.
+2025-05-21 12:15:48,944 - AppLogger - INFO - logger:84 - 매매 전략 초기화 (KiwoomAPI 주입 전, ScreenManager 주입 완료)
+2025-05-21 12:15:48,981 - AppLogger - INFO - logger:84 - KiwoomAPI 초기화 및 Strategy에 주입 완료
+2025-05-21 12:15:48,982 - AppLogger - INFO - logger:84 - 키움 API 로그인 시도
+2025-05-21 12:15:48,982 - AppLogger - INFO - logger:84 - [KiwoomAPI] 로그인 시도
+2025-05-21 12:16:03,051 - AppLogger - INFO - logger:84 - [KiwoomAPI] 로그인 성공 (이벤트 수신) - 연결 상태만 변경
+2025-05-21 12:16:03,053 - AppLogger - INFO - logger:84 - [KiwoomAPI] 로그인 성공. 계좌번호: 8101891811
+2025-05-21 12:16:03,053 - AppLogger - INFO - logger:84 - [Strategy][2025-05-21 12:16:03] API로부터 계좌번호 수신: '8101891811'
+2025-05-21 12:16:03,054 - AppLogger - INFO - logger:84 - [Strategy][2025-05-21 12:16:03] 최종 계좌번호 설정(TradingStrategy & KiwoomAPI): '8101891811'. 계좌 정보 요청 시작.
+2025-05-21 12:16:03,054 - AppLogger - INFO - logger:84 - [Strategy][2025-05-21 12:16:03] 예수금 상세정보 요청 시작 (opw00001). 계좌번호: 8101891811
+2025-05-21 12:16:03,054 - AppLogger - INFO - logger:84 - [ScreenManager_GET] 새 화면 할당: Identifier='account_info' -> ScreenNo='2000'. 사용중: 1, 사용가능: 99
+2025-05-21 12:16:03,057 - AppLogger - CRITICAL - logger:93 - [KiwoomAPI] [KiwoomAPI] [CommRqData_CALL] CommRqData 호출: RQName='예수금상세현황요청', TRCode='opw00001', PrevNext=0, ScreenNo='2000', ReturnCode=0
+2025-05-21 12:16:03,057 - AppLogger - INFO - logger:84 - [Strategy][2025-05-21 12:16:03] 계좌 포트폴리오 정보 요청 시작 (opw00018). 계좌번호: 8101891811
+2025-05-21 12:16:03,058 - AppLogger - INFO - logger:84 - [ScreenManager_GET] 새 화면 할당: Identifier='portfolio_info' -> ScreenNo='2001'. 사용중: 2, 사용가능: 98
+2025-05-21 12:16:03,102 - AppLogger - INFO - logger:84 - [KiwoomAPI] TR 처리 성공 메시지: 화면: 2000, RQ: 예수금상세현황요청, TR: opw00001, 메시지: [100000] 모의투자 조회완료
+2025-05-21 12:16:03,104 - AppLogger - CRITICAL - logger:93 - [KiwoomAPI] [EVENT_HANDLER_ENTRY] on_receive_tr_data: Scr='2000', RQ='예수금상세현황요청', TR='opw00001', PrevNext='', ErrCode='', Msg=''
+2025-05-21 12:16:03,107 - AppLogger - INFO - logger:84 - [KiwoomAPI] opw00001 (계좌정보) 수신 및 저장: 예수금(339440565) - RQ: 예수금상세현황요청
+2025-05-21 12:16:03,108 - AppLogger - INFO - logger:84 - [Strategy][2025-05-21 12:16:03] TR 수신 (opw00001) - 예수금 데이터 (요약 로깅)
+2025-05-21 12:16:03,108 - AppLogger - INFO - logger:84 - [Strategy][2025-05-21 12:16:03] 예수금 정보 업데이트 (opw00001): {'예수금': 339440565, 'd+1추정예수금': 313749971, 'd+2추정예수금': 323530366, '출금가능금액': 338078423, '미수금': '', '대용금': '', '권리대용금': 0, '주문가능금액': 323530366, '예탁자산평가액': '', '총매입금액': 0.0, '총평가금액': 0.0, '총손익금액': '', '총손익률': '', '총재사용금액': '', '계좌번호': '8101891811'}
+2025-05-21 12:16:03,109 - AppLogger - WARNING - logger:87 - [Strategy][2025-05-21 12:16:03] 계좌, 예수금 또는 포트폴리오 정보가 아직 모두 로드되지 않아 전략을 시작할 수 없습니다.
+2025-05-21 12:16:03,109 - AppLogger - INFO - logger:84 - [Strategy][2025-05-21 12:16:03] 예수금 정보 로드 완료.
+2025-05-21 12:16:03,110 - AppLogger - INFO - logger:84 - [Strategy][2025-05-21 12:16:03] 예수금 로드 완료. 포트폴리오 정보 로딩 대기 중...
+2025-05-21 12:16:03,110 - AppLogger - WARNING - logger:87 - [Strategy][2025-05-21 12:16:03] 계좌, 예수금 또는 포트폴리오 정보가 아직 모두 로드되지 않아 전략을 시작할 수 없습니다.
+2025-05-21 12:16:03,110 - AppLogger - INFO - logger:84 - [ScreenManager_RELEASE] 화면 반환 완료: ScreenNo='2000', Identifier='예수금상세현황요청'. 사용중: 1, 사용가능: 99
+2025-05-21 12:16:03,277 - AppLogger - CRITICAL - logger:93 - [KiwoomAPI] [KiwoomAPI] [CommRqData_CALL] CommRqData 호출: RQName='계좌잔고조회_8101891811', TRCode='opw00018', PrevNext=0, ScreenNo='2001', ReturnCode=0
+2025-05-21 12:16:03,278 - AppLogger - INFO - logger:84 - 키움 API 로그인 성공
+2025-05-21 12:16:03,278 - AppLogger - INFO - logger:84 - 매매 전략 최종 초기화 완료
+2025-05-21 12:16:03,335 - AppLogger - INFO - logger:84 - 설정 파일에서 1개의 관심종목 로드 및 전략에 추가 시작...
+2025-05-21 12:16:03,336 - AppLogger - INFO - logger:84 - [Strategy][2025-05-21 12:16:03] 관심종목 신규 추가: 블루엠텍(439580), 전일종가: 7400.0, 초기상태: WAITING
+2025-05-21 12:16:03,336 - AppLogger - INFO - logger:84 - 1개의 관심종목이 전략에 추가되었습니다.
+2025-05-21 12:16:03,337 - AppLogger - INFO - logger:84 - [Strategy][2025-05-21 12:16:03] TradingStrategy 시작 요청 접수...
+2025-05-21 12:16:03,337 - AppLogger - WARNING - logger:87 - [Strategy][2025-05-21 12:16:03] 시작 보류: 예수금 또는 포트폴리오 정보가 아직 로드되지 않았습니다. TR 수신 대기 중일 수 있습니다.
+2025-05-21 12:16:03,339 - AppLogger - INFO - logger:84 - 매매 전략 시작됨. Ctrl+C로 종료하세요.
+2025-05-21 12:16:03,340 - AppLogger - INFO - logger:84 - Ctrl+C (SIGINT) 핸들러 최종 설정 완료. 이벤트 루프 시작 직전.
+2025-05-21 12:16:03,342 - AppLogger - INFO - logger:84 - [KiwoomAPI] TR 처리 성공 메시지: 화면: 2001, RQ: 계좌잔고조회_8101891811, TR: opw00018, 메시지: [100000] 모의투자 조회완료
+2025-05-21 12:16:03,344 - AppLogger - CRITICAL - logger:93 - [KiwoomAPI] [EVENT_HANDLER_ENTRY] on_receive_tr_data: Scr='2001', RQ='계좌잔고조회_8101891811', TR='opw00018', PrevNext='', ErrCode='', Msg=''
+2025-05-21 12:16:03,358 - AppLogger - INFO - logger:84 - [Strategy][2025-05-21 12:16:03] TR 수신 (opw00018) - 계좌잔고 데이터 (요약 로깅)
+2025-05-21 12:16:03,359 - AppLogger - INFO - logger:84 - [Strategy][2025-05-21 12:16:03] 계좌 평가 요약 정보 업데이트 (opw00018 single_data): {'총매입금액': 195724150, '총평가금액': 190606435, '총평가손익금액': 6755665, '총수익률(%)': 3.45, '추정예탁자산': 513183841, '총대출금': 0, '총융자금액': 0, '총대주금액': 0, '조회건수': 13}
+2025-05-21 12:16:03,361 - AppLogger - INFO - logger:84 - [Strategy][2025-05-21 12:16:03] 계좌 잔고(포트폴리오) 업데이트 (opw00018 multi_data): 13 종목
+2025-05-21 12:16:03,361 - AppLogger - INFO - logger:84 - [Strategy][2025-05-21 12:16:03] 모든 계좌/포트폴리오/관심종목(설정) 데이터 준비 완료. 실제 전략 시작 로직 수행.
+2025-05-21 12:16:03,362 - AppLogger - INFO - logger:84 - [ScreenManager_GET] 새 화면 할당: Identifier='real_439580' -> ScreenNo='2002'. 사용중: 2, 사용가능: 98
+2025-05-21 12:16:03,362 - AppLogger - INFO - logger:84 - [KiwoomAPI] 실시간 데이터 등록 요청: 화면(2002), 종목(439580), FID(10;11;12;13), 타입(1)
+2025-05-21 12:16:03,364 - AppLogger - INFO - logger:84 - [KiwoomAPI] 실시간 데이터 등록 성공: 화면(2002)
+2025-05-21 12:16:03,365 - AppLogger - INFO - logger:84 - [Strategy][2025-05-21 12:16:03] 실시간 데이터 구독 요청 성공 (화면: 2002, 종목: 439580) - SetRealReg 호출 자체는 성공으로 간주. 실제 구독 성공은 이벤트로 확인.
+2025-05-21 12:16:03,365 - AppLogger - INFO - logger:84 - [Strategy][2025-05-21 12:16:03] 1개 관심종목에 대한 실시간 시세 구독 요청 완료.
+2025-05-21 12:16:03,365 - AppLogger - INFO - logger:84 - [Strategy][2025-05-21 12:16:03] 날짜 변경 감지: None -> 2025-05-21. 일일 매수 횟수 초기화.
+2025-05-21 12:16:03,366 - AppLogger - INFO - logger:84 - [Strategy][2025-05-21 12:16:03] 조건 확인 타이머 시작 (주기: 2.0초).
+2025-05-21 12:16:03,366 - AppLogger - INFO - logger:84 - [Strategy][2025-05-21 12:16:03] 주기적 상태 보고 타이머 시작 (주기: 60초).
+2025-05-21 12:16:03,367 - AppLogger - INFO - logger:84 - [Strategy][2025-05-21 12:16:03] 일일 스냅샷 타이머 시작 (주기: 1.0시간).
+2025-05-21 12:16:03,367 - AppLogger - INFO - logger:84 - [Strategy][2025-05-21 12:16:03] [STRATEGY_INTERNAL] _check_all_data_loaded_and_start_strategy: Timers started. is_running=True, is_initialized_successfully=True
+2025-05-21 12:16:03,368 - AppLogger - INFO - logger:84 - [Strategy][2025-05-21 12:16:03] === 전략이 성공적으로 시작되었습니다. is_running: True ===
+2025-05-21 12:16:03,368 - AppLogger - INFO - logger:84 - [Strategy][2025-05-21 12:16:03] 계좌 포트폴리오 정보 로드 완료 (최종).
+2025-05-21 12:16:03,368 - AppLogger - INFO - logger:84 - [Strategy][2025-05-21 12:16:03] 포트폴리오 로드 완료, 예수금도 이미 로드됨. 설정에서 관심종목 로드 시도.
+2025-05-21 12:16:03,369 - AppLogger - INFO - logger:84 - [ScreenManager_RELEASE] 화면 반환 완료: ScreenNo='2001', Identifier='계좌잔고조회_8101891811'. 사용중: 1, 사용가능: 99
+2025-05-21 12:16:17,455 - AppLogger - INFO - logger:84 - [Strategy][2025-05-21 12:16:17] [439580] 전일 종가 하회 기록 (전일종가: 7400.0, 현재가: 7390.0)
+2025-05-21 12:17:03,357 - AppLogger - INFO - logger:84 - [Strategy][2025-05-21 12:17:03] ===== 주기적 상태 보고 (2025-05-21 12:17:03) =====
+2025-05-21 12:17:03,357 - AppLogger - INFO - logger:84 - [Strategy][2025-05-21 12:17:03] 전략 실행 상태: 실행 중, 최종 초기화 성공: True
+2025-05-21 12:17:03,358 - AppLogger - INFO - logger:84 - [Strategy][2025-05-21 12:17:03] 현재 상태 메시지: TR 데이터 처리 완료: opw00018 (계좌잔고조회_8101891811)
+2025-05-21 12:17:03,358 - AppLogger - INFO - logger:84 - [Strategy][2025-05-21 12:17:03] 계좌번호: 8101891811
+2025-05-21 12:17:03,358 - AppLogger - INFO - logger:84 - [Strategy][2025-05-21 12:17:03] 예수금: 339440565
+2025-05-21 12:17:03,359 - AppLogger - INFO - logger:84 - [Strategy][2025-05-21 12:17:03] 보유 종목 (13개):
+2025-05-21 12:17:03,359 - AppLogger - INFO - logger:84 - [Strategy][2025-05-21 12:17:03]   - 와이투솔루션(011690): 2710주, 평가액 7,615,100 (수익률 4.26%)
+2025-05-21 12:17:03,359 - AppLogger - INFO - logger:84 - [Strategy][2025-05-21 12:17:03]   - 원익(032940): 263주, 평가액 996,770 (수익률 0.98%)
+2025-05-21 12:17:03,360 - AppLogger - INFO - logger:84 - [Strategy][2025-05-21 12:17:03]   - 에코플라스틱(038110): 1943주, 평가액 5,624,985 (수익률 6.70%)
+2025-05-21 12:17:03,360 - AppLogger - INFO - logger:84 - [Strategy][2025-05-21 12:17:03]   - 웹케시(053580): 6670주, 평가액 94,980,800 (수익률 3.42%)
+2025-05-21 12:17:03,360 - AppLogger - INFO - logger:84 - [Strategy][2025-05-21 12:17:03]   - 인피니트헬스케어(071200): 372주, 평가액 2,313,840 (수익률 0.15%)
+2025-05-21 12:17:03,360 - AppLogger - INFO - logger:84 - [Strategy][2025-05-21 12:17:03]   - 그린케미칼(083420): 653주, 평가액 5,524,380 (수익률 5.59%)
+2025-05-21 12:17:03,361 - AppLogger - INFO - logger:84 - [Strategy][2025-05-21 12:17:03]   - 에어레인(163280): 1010주, 평가액 19,907,100 (수익률 4.04%)
+2025-05-21 12:17:03,361 - AppLogger - INFO - logger:84 - [Strategy][2025-05-21 12:17:03]   - 토니모리(214420): 3460주, 평가액 30,275,000 (수익률 3.12%)
+2025-05-21 12:17:03,361 - AppLogger - INFO - logger:84 - [Strategy][2025-05-21 12:17:03]   - 일승(333430): 1224주, 평가액 6,077,160 (수익률 4.17%)
+2025-05-21 12:17:03,362 - AppLogger - INFO - logger:84 - [Strategy][2025-05-21 12:17:03]   - 로킷헬스케어(376900): 50주, 평가액 999,500 (수익률 0.70%)
+2025-05-21 12:17:03,362 - AppLogger - INFO - logger:84 - [Strategy][2025-05-21 12:17:03]   - 지투파워(388050): 968주, 평가액 7,802,080 (수익률 3.03%)
+2025-05-21 12:17:03,362 - AppLogger - INFO - logger:84 - [Strategy][2025-05-21 12:17:03]   - 블루엠텍(439580): 132주, 평가액 975,480 (수익률 2.47%)
+2025-05-21 12:17:03,363 - AppLogger - INFO - logger:84 - [Strategy][2025-05-21 12:17:03]   - 그리드위즈(453450): 398주, 평가액 7,514,240 (수익률 6.49%)
+2025-05-21 12:17:03,363 - AppLogger - INFO - logger:84 - [Strategy][2025-05-21 12:17:03] 미체결 주문 없음.
+2025-05-21 12:17:03,364 - AppLogger - INFO - logger:84 - [Strategy][2025-05-21 12:17:03] 관심 종목 (1개):
+2025-05-21 12:17:03,364 - AppLogger - INFO - logger:84 - [Strategy][2025-05-21 12:17:03]   - 블루엠텍(439580): 현재가 7380.0, 상태: WAITING
+2025-05-21 12:17:03,364 - AppLogger - INFO - logger:84 - [Strategy][2025-05-21 12:17:03] 일일 매수 실행 횟수: 0 / 10
+2025-05-21 12:17:03,365 - AppLogger - INFO - logger:84 - [Strategy][2025-05-21 12:17:03] ===========================================
+2025-05-21 12:18:03,361 - AppLogger - INFO - logger:84 - [Strategy][2025-05-21 12:18:03] ===== 주기적 상태 보고 (2025-05-21 12:18:03) =====
+2025-05-21 12:18:03,362 - AppLogger - INFO - logger:84 - [Strategy][2025-05-21 12:18:03] 전략 실행 상태: 실행 중, 최종 초기화 성공: True
+2025-05-21 12:18:03,363 - AppLogger - INFO - logger:84 - [Strategy][2025-05-21 12:18:03] 현재 상태 메시지: TR 데이터 처리 완료: opw00018 (계좌잔고조회_8101891811)
+2025-05-21 12:18:03,363 - AppLogger - INFO - logger:84 - [Strategy][2025-05-21 12:18:03] 계좌번호: 8101891811
+2025-05-21 12:18:03,363 - AppLogger - INFO - logger:84 - [Strategy][2025-05-21 12:18:03] 예수금: 339440565
+2025-05-21 12:18:03,364 - AppLogger - INFO - logger:84 - [Strategy][2025-05-21 12:18:03] 보유 종목 (13개):
+2025-05-21 12:18:03,364 - AppLogger - INFO - logger:84 - [Strategy][2025-05-21 12:18:03]   - 와이투솔루션(011690): 2710주, 평가액 7,615,100 (수익률 4.26%)
+2025-05-21 12:18:03,365 - AppLogger - INFO - logger:84 - [Strategy][2025-05-21 12:18:03]   - 원익(032940): 263주, 평가액 996,770 (수익률 0.98%)
+2025-05-21 12:18:03,365 - AppLogger - INFO - logger:84 - [Strategy][2025-05-21 12:18:03]   - 에코플라스틱(038110): 1943주, 평가액 5,624,985 (수익률 6.70%)
+2025-05-21 12:18:03,365 - AppLogger - INFO - logger:84 - [Strategy][2025-05-21 12:18:03]   - 웹케시(053580): 6670주, 평가액 94,980,800 (수익률 3.42%)
+2025-05-21 12:18:03,367 - AppLogger - INFO - logger:84 - [Strategy][2025-05-21 12:18:03]   - 인피니트헬스케어(071200): 372주, 평가액 2,313,840 (수익률 0.15%)
+2025-05-21 12:18:03,367 - AppLogger - INFO - logger:84 - [Strategy][2025-05-21 12:18:03]   - 그린케미칼(083420): 653주, 평가액 5,524,380 (수익률 5.59%)
+2025-05-21 12:18:03,367 - AppLogger - INFO - logger:84 - [Strategy][2025-05-21 12:18:03]   - 에어레인(163280): 1010주, 평가액 19,907,100 (수익률 4.04%)
+2025-05-21 12:18:03,367 - AppLogger - INFO - logger:84 - [Strategy][2025-05-21 12:18:03]   - 토니모리(214420): 3460주, 평가액 30,275,000 (수익률 3.12%)
+2025-05-21 12:18:03,367 - AppLogger - INFO - logger:84 - [Strategy][2025-05-21 12:18:03]   - 일승(333430): 1224주, 평가액 6,077,160 (수익률 4.17%)
+2025-05-21 12:18:03,367 - AppLogger - INFO - logger:84 - [Strategy][2025-05-21 12:18:03]   - 로킷헬스케어(376900): 50주, 평가액 999,500 (수익률 0.70%)
+2025-05-21 12:18:03,368 - AppLogger - INFO - logger:84 - [Strategy][2025-05-21 12:18:03]   - 지투파워(388050): 968주, 평가액 7,802,080 (수익률 3.03%)
+2025-05-21 12:18:03,368 - AppLogger - INFO - logger:84 - [Strategy][2025-05-21 12:18:03]   - 블루엠텍(439580): 132주, 평가액 975,480 (수익률 2.47%)
+2025-05-21 12:18:03,369 - AppLogger - INFO - logger:84 - [Strategy][2025-05-21 12:18:03]   - 그리드위즈(453450): 398주, 평가액 7,514,240 (수익률 6.49%)
+2025-05-21 12:18:03,370 - AppLogger - INFO - logger:84 - [Strategy][2025-05-21 12:18:03] 미체결 주문 없음.
+2025-05-21 12:18:03,370 - AppLogger - INFO - logger:84 - [Strategy][2025-05-21 12:18:03] 관심 종목 (1개):
+2025-05-21 12:18:03,372 - AppLogger - INFO - logger:84 - [Strategy][2025-05-21 12:18:03]   - 블루엠텍(439580): 현재가 7380.0, 상태: WAITING
+2025-05-21 12:18:03,373 - AppLogger - INFO - logger:84 - [Strategy][2025-05-21 12:18:03] 일일 매수 실행 횟수: 0 / 10
+2025-05-21 12:18:03,374 - AppLogger - INFO - logger:84 - [Strategy][2025-05-21 12:18:03] ===========================================
+2025-05-21 12:19:03,365 - AppLogger - INFO - logger:84 - [Strategy][2025-05-21 12:19:03] ===== 주기적 상태 보고 (2025-05-21 12:19:03) =====
+2025-05-21 12:19:03,366 - AppLogger - INFO - logger:84 - [Strategy][2025-05-21 12:19:03] 전략 실행 상태: 실행 중, 최종 초기화 성공: True
+2025-05-21 12:19:03,367 - AppLogger - INFO - logger:84 - [Strategy][2025-05-21 12:19:03] 현재 상태 메시지: TR 데이터 처리 완료: opw00018 (계좌잔고조회_8101891811)
+2025-05-21 12:19:03,367 - AppLogger - INFO - logger:84 - [Strategy][2025-05-21 12:19:03] 계좌번호: 8101891811
+2025-05-21 12:19:03,368 - AppLogger - INFO - logger:84 - [Strategy][2025-05-21 12:19:03] 예수금: 339440565
+2025-05-21 12:19:03,368 - AppLogger - INFO - logger:84 - [Strategy][2025-05-21 12:19:03] 보유 종목 (13개):
+2025-05-21 12:19:03,368 - AppLogger - INFO - logger:84 - [Strategy][2025-05-21 12:19:03]   - 와이투솔루션(011690): 2710주, 평가액 7,615,100 (수익률 4.26%)
+2025-05-21 12:19:03,369 - AppLogger - INFO - logger:84 - [Strategy][2025-05-21 12:19:03]   - 원익(032940): 263주, 평가액 996,770 (수익률 0.98%)
+2025-05-21 12:19:03,369 - AppLogger - INFO - logger:84 - [Strategy][2025-05-21 12:19:03]   - 에코플라스틱(038110): 1943주, 평가액 5,624,985 (수익률 6.70%)
+2025-05-21 12:19:03,369 - AppLogger - INFO - logger:84 - [Strategy][2025-05-21 12:19:03]   - 웹케시(053580): 6670주, 평가액 94,980,800 (수익률 3.42%)
+2025-05-21 12:19:03,370 - AppLogger - INFO - logger:84 - [Strategy][2025-05-21 12:19:03]   - 인피니트헬스케어(071200): 372주, 평가액 2,313,840 (수익률 0.15%)
+2025-05-21 12:19:03,370 - AppLogger - INFO - logger:84 - [Strategy][2025-05-21 12:19:03]   - 그린케미칼(083420): 653주, 평가액 5,524,380 (수익률 5.59%)
+2025-05-21 12:19:03,370 - AppLogger - INFO - logger:84 - [Strategy][2025-05-21 12:19:03]   - 에어레인(163280): 1010주, 평가액 19,907,100 (수익률 4.04%)
+2025-05-21 12:19:03,371 - AppLogger - INFO - logger:84 - [Strategy][2025-05-21 12:19:03]   - 토니모리(214420): 3460주, 평가액 30,275,000 (수익률 3.12%)
+2025-05-21 12:19:03,371 - AppLogger - INFO - logger:84 - [Strategy][2025-05-21 12:19:03]   - 일승(333430): 1224주, 평가액 6,077,160 (수익률 4.17%)
+2025-05-21 12:19:03,371 - AppLogger - INFO - logger:84 - [Strategy][2025-05-21 12:19:03]   - 로킷헬스케어(376900): 50주, 평가액 999,500 (수익률 0.70%)
+2025-05-21 12:19:03,372 - AppLogger - INFO - logger:84 - [Strategy][2025-05-21 12:19:03]   - 지투파워(388050): 968주, 평가액 7,802,080 (수익률 3.03%)
+2025-05-21 12:19:03,373 - AppLogger - INFO - logger:84 - [Strategy][2025-05-21 12:19:03]   - 블루엠텍(439580): 132주, 평가액 975,480 (수익률 2.47%)
+2025-05-21 12:19:03,373 - AppLogger - INFO - logger:84 - [Strategy][2025-05-21 12:19:03]   - 그리드위즈(453450): 398주, 평가액 7,514,240 (수익률 6.49%)
+2025-05-21 12:19:03,374 - AppLogger - INFO - logger:84 - [Strategy][2025-05-21 12:19:03] 미체결 주문 없음.
+2025-05-21 12:19:03,374 - AppLogger - INFO - logger:84 - [Strategy][2025-05-21 12:19:03] 관심 종목 (1개):
+2025-05-21 12:19:03,375 - AppLogger - INFO - logger:84 - [Strategy][2025-05-21 12:19:03]   - 블루엠텍(439580): 현재가 7390.0, 상태: WAITING
+2025-05-21 12:19:03,375 - AppLogger - INFO - logger:84 - [Strategy][2025-05-21 12:19:03] 일일 매수 실행 횟수: 0 / 10
+2025-05-21 12:19:03,375 - AppLogger - INFO - logger:84 - [Strategy][2025-05-21 12:19:03] ===========================================
+2025-05-21 12:20:03,363 - AppLogger - INFO - logger:84 - [Strategy][2025-05-21 12:20:03] ===== 주기적 상태 보고 (2025-05-21 12:20:03) =====
+2025-05-21 12:20:03,365 - AppLogger - INFO - logger:84 - [Strategy][2025-05-21 12:20:03] 전략 실행 상태: 실행 중, 최종 초기화 성공: True
+2025-05-21 12:20:03,365 - AppLogger - INFO - logger:84 - [Strategy][2025-05-21 12:20:03] 현재 상태 메시지: TR 데이터 처리 완료: opw00018 (계좌잔고조회_8101891811)
+2025-05-21 12:20:03,365 - AppLogger - INFO - logger:84 - [Strategy][2025-05-21 12:20:03] 계좌번호: 8101891811
+2025-05-21 12:20:03,366 - AppLogger - INFO - logger:84 - [Strategy][2025-05-21 12:20:03] 예수금: 339440565
+2025-05-21 12:20:03,366 - AppLogger - INFO - logger:84 - [Strategy][2025-05-21 12:20:03] 보유 종목 (13개):
+2025-05-21 12:20:03,366 - AppLogger - INFO - logger:84 - [Strategy][2025-05-21 12:20:03]   - 와이투솔루션(011690): 2710주, 평가액 7,615,100 (수익률 4.26%)
+2025-05-21 12:20:03,367 - AppLogger - INFO - logger:84 - [Strategy][2025-05-21 12:20:03]   - 원익(032940): 263주, 평가액 996,770 (수익률 0.98%)
+2025-05-21 12:20:03,367 - AppLogger - INFO - logger:84 - [Strategy][2025-05-21 12:20:03]   - 에코플라스틱(038110): 1943주, 평가액 5,624,985 (수익률 6.70%)
+2025-05-21 12:20:03,367 - AppLogger - INFO - logger:84 - [Strategy][2025-05-21 12:20:03]   - 웹케시(053580): 6670주, 평가액 94,980,800 (수익률 3.42%)
+2025-05-21 12:20:03,368 - AppLogger - INFO - logger:84 - [Strategy][2025-05-21 12:20:03]   - 인피니트헬스케어(071200): 372주, 평가액 2,313,840 (수익률 0.15%)
+2025-05-21 12:20:03,368 - AppLogger - INFO - logger:84 - [Strategy][2025-05-21 12:20:03]   - 그린케미칼(083420): 653주, 평가액 5,524,380 (수익률 5.59%)
+2025-05-21 12:20:03,369 - AppLogger - INFO - logger:84 - [Strategy][2025-05-21 12:20:03]   - 에어레인(163280): 1010주, 평가액 19,907,100 (수익률 4.04%)
+2025-05-21 12:20:03,369 - AppLogger - INFO - logger:84 - [Strategy][2025-05-21 12:20:03]   - 토니모리(214420): 3460주, 평가액 30,275,000 (수익률 3.12%)
+2025-05-21 12:20:03,369 - AppLogger - INFO - logger:84 - [Strategy][2025-05-21 12:20:03]   - 일승(333430): 1224주, 평가액 6,077,160 (수익률 4.17%)
+2025-05-21 12:20:03,370 - AppLogger - INFO - logger:84 - [Strategy][2025-05-21 12:20:03]   - 로킷헬스케어(376900): 50주, 평가액 999,500 (수익률 0.70%)
+2025-05-21 12:20:03,370 - AppLogger - INFO - logger:84 - [Strategy][2025-05-21 12:20:03]   - 지투파워(388050): 968주, 평가액 7,802,080 (수익률 3.03%)
+2025-05-21 12:20:03,370 - AppLogger - INFO - logger:84 - [Strategy][2025-05-21 12:20:03]   - 블루엠텍(439580): 132주, 평가액 975,480 (수익률 2.47%)
+2025-05-21 12:20:03,371 - AppLogger - INFO - logger:84 - [Strategy][2025-05-21 12:20:03]   - 그리드위즈(453450): 398주, 평가액 7,514,240 (수익률 6.49%)
+2025-05-21 12:20:03,371 - AppLogger - INFO - logger:84 - [Strategy][2025-05-21 12:20:03] 미체결 주문 없음.
+2025-05-21 12:20:03,372 - AppLogger - INFO - logger:84 - [Strategy][2025-05-21 12:20:03] 관심 종목 (1개):
+2025-05-21 12:20:03,372 - AppLogger - INFO - logger:84 - [Strategy][2025-05-21 12:20:03]   - 블루엠텍(439580): 현재가 7400.0, 상태: WAITING
+2025-05-21 12:20:03,373 - AppLogger - INFO - logger:84 - [Strategy][2025-05-21 12:20:03] 일일 매수 실행 횟수: 0 / 10
+2025-05-21 12:20:03,373 - AppLogger - INFO - logger:84 - [Strategy][2025-05-21 12:20:03] ===========================================
+2025-05-21 12:21:03,383 - AppLogger - INFO - logger:84 - [Strategy][2025-05-21 12:21:03] ===== 주기적 상태 보고 (2025-05-21 12:21:03) =====
+2025-05-21 12:21:03,384 - AppLogger - INFO - logger:84 - [Strategy][2025-05-21 12:21:03] 전략 실행 상태: 실행 중, 최종 초기화 성공: True
+2025-05-21 12:21:03,384 - AppLogger - INFO - logger:84 - [Strategy][2025-05-21 12:21:03] 현재 상태 메시지: TR 데이터 처리 완료: opw00018 (계좌잔고조회_8101891811)
+2025-05-21 12:21:03,385 - AppLogger - INFO - logger:84 - [Strategy][2025-05-21 12:21:03] 계좌번호: 8101891811
+2025-05-21 12:21:03,385 - AppLogger - INFO - logger:84 - [Strategy][2025-05-21 12:21:03] 예수금: 339440565
+2025-05-21 12:21:03,385 - AppLogger - INFO - logger:84 - [Strategy][2025-05-21 12:21:03] 보유 종목 (13개):
+2025-05-21 12:21:03,386 - AppLogger - INFO - logger:84 - [Strategy][2025-05-21 12:21:03]   - 와이투솔루션(011690): 2710주, 평가액 7,615,100 (수익률 4.26%)
+2025-05-21 12:21:03,386 - AppLogger - INFO - logger:84 - [Strategy][2025-05-21 12:21:03]   - 원익(032940): 263주, 평가액 996,770 (수익률 0.98%)
+2025-05-21 12:21:03,386 - AppLogger - INFO - logger:84 - [Strategy][2025-05-21 12:21:03]   - 에코플라스틱(038110): 1943주, 평가액 5,624,985 (수익률 6.70%)
+2025-05-21 12:21:03,387 - AppLogger - INFO - logger:84 - [Strategy][2025-05-21 12:21:03]   - 웹케시(053580): 6670주, 평가액 94,980,800 (수익률 3.42%)
+2025-05-21 12:21:03,387 - AppLogger - INFO - logger:84 - [Strategy][2025-05-21 12:21:03]   - 인피니트헬스케어(071200): 372주, 평가액 2,313,840 (수익률 0.15%)
+2025-05-21 12:21:03,387 - AppLogger - INFO - logger:84 - [Strategy][2025-05-21 12:21:03]   - 그린케미칼(083420): 653주, 평가액 5,524,380 (수익률 5.59%)
+2025-05-21 12:21:03,387 - AppLogger - INFO - logger:84 - [Strategy][2025-05-21 12:21:03]   - 에어레인(163280): 1010주, 평가액 19,907,100 (수익률 4.04%)
+2025-05-21 12:21:03,388 - AppLogger - INFO - logger:84 - [Strategy][2025-05-21 12:21:03]   - 토니모리(214420): 3460주, 평가액 30,275,000 (수익률 3.12%)
+2025-05-21 12:21:03,388 - AppLogger - INFO - logger:84 - [Strategy][2025-05-21 12:21:03]   - 일승(333430): 1224주, 평가액 6,077,160 (수익률 4.17%)
+2025-05-21 12:21:03,388 - AppLogger - INFO - logger:84 - [Strategy][2025-05-21 12:21:03]   - 로킷헬스케어(376900): 50주, 평가액 999,500 (수익률 0.70%)
+2025-05-21 12:21:03,389 - AppLogger - INFO - logger:84 - [Strategy][2025-05-21 12:21:03]   - 지투파워(388050): 968주, 평가액 7,802,080 (수익률 3.03%)
+2025-05-21 12:21:03,390 - AppLogger - INFO - logger:84 - [Strategy][2025-05-21 12:21:03]   - 블루엠텍(439580): 132주, 평가액 975,480 (수익률 2.47%)
+2025-05-21 12:21:03,390 - AppLogger - INFO - logger:84 - [Strategy][2025-05-21 12:21:03]   - 그리드위즈(453450): 398주, 평가액 7,514,240 (수익률 6.49%)
+2025-05-21 12:21:03,391 - AppLogger - INFO - logger:84 - [Strategy][2025-05-21 12:21:03] 미체결 주문 없음.
+2025-05-21 12:21:03,391 - AppLogger - INFO - logger:84 - [Strategy][2025-05-21 12:21:03] 관심 종목 (1개):
+2025-05-21 12:21:03,391 - AppLogger - INFO - logger:84 - [Strategy][2025-05-21 12:21:03]   - 블루엠텍(439580): 현재가 7390.0, 상태: WAITING
+2025-05-21 12:21:03,392 - AppLogger - INFO - logger:84 - [Strategy][2025-05-21 12:21:03] 일일 매수 실행 횟수: 0 / 10
+2025-05-21 12:21:03,392 - AppLogger - INFO - logger:84 - [Strategy][2025-05-21 12:21:03] ===========================================
+2025-05-21 12:22:03,376 - AppLogger - INFO - logger:84 - [Strategy][2025-05-21 12:22:03] ===== 주기적 상태 보고 (2025-05-21 12:22:03) =====
+2025-05-21 12:22:03,377 - AppLogger - INFO - logger:84 - [Strategy][2025-05-21 12:22:03] 전략 실행 상태: 실행 중, 최종 초기화 성공: True
+2025-05-21 12:22:03,377 - AppLogger - INFO - logger:84 - [Strategy][2025-05-21 12:22:03] 현재 상태 메시지: TR 데이터 처리 완료: opw00018 (계좌잔고조회_8101891811)
+2025-05-21 12:22:03,378 - AppLogger - INFO - logger:84 - [Strategy][2025-05-21 12:22:03] 계좌번호: 8101891811
+2025-05-21 12:22:03,378 - AppLogger - INFO - logger:84 - [Strategy][2025-05-21 12:22:03] 예수금: 339440565
+2025-05-21 12:22:03,378 - AppLogger - INFO - logger:84 - [Strategy][2025-05-21 12:22:03] 보유 종목 (13개):
+2025-05-21 12:22:03,378 - AppLogger - INFO - logger:84 - [Strategy][2025-05-21 12:22:03]   - 와이투솔루션(011690): 2710주, 평가액 7,615,100 (수익률 4.26%)
+2025-05-21 12:22:03,379 - AppLogger - INFO - logger:84 - [Strategy][2025-05-21 12:22:03]   - 원익(032940): 263주, 평가액 996,770 (수익률 0.98%)
+2025-05-21 12:22:03,379 - AppLogger - INFO - logger:84 - [Strategy][2025-05-21 12:22:03]   - 에코플라스틱(038110): 1943주, 평가액 5,624,985 (수익률 6.70%)
+2025-05-21 12:22:03,379 - AppLogger - INFO - logger:84 - [Strategy][2025-05-21 12:22:03]   - 웹케시(053580): 6670주, 평가액 94,980,800 (수익률 3.42%)
+2025-05-21 12:22:03,380 - AppLogger - INFO - logger:84 - [Strategy][2025-05-21 12:22:03]   - 인피니트헬스케어(071200): 372주, 평가액 2,313,840 (수익률 0.15%)
+2025-05-21 12:22:03,380 - AppLogger - INFO - logger:84 - [Strategy][2025-05-21 12:22:03]   - 그린케미칼(083420): 653주, 평가액 5,524,380 (수익률 5.59%)
+2025-05-21 12:22:03,380 - AppLogger - INFO - logger:84 - [Strategy][2025-05-21 12:22:03]   - 에어레인(163280): 1010주, 평가액 19,907,100 (수익률 4.04%)
+2025-05-21 12:22:03,381 - AppLogger - INFO - logger:84 - [Strategy][2025-05-21 12:22:03]   - 토니모리(214420): 3460주, 평가액 30,275,000 (수익률 3.12%)
+2025-05-21 12:22:03,381 - AppLogger - INFO - logger:84 - [Strategy][2025-05-21 12:22:03]   - 일승(333430): 1224주, 평가액 6,077,160 (수익률 4.17%)
+2025-05-21 12:22:03,381 - AppLogger - INFO - logger:84 - [Strategy][2025-05-21 12:22:03]   - 로킷헬스케어(376900): 50주, 평가액 999,500 (수익률 0.70%)
+2025-05-21 12:22:03,381 - AppLogger - INFO - logger:84 - [Strategy][2025-05-21 12:22:03]   - 지투파워(388050): 968주, 평가액 7,802,080 (수익률 3.03%)
+2025-05-21 12:22:03,382 - AppLogger - INFO - logger:84 - [Strategy][2025-05-21 12:22:03]   - 블루엠텍(439580): 132주, 평가액 975,480 (수익률 2.47%)
+2025-05-21 12:22:03,382 - AppLogger - INFO - logger:84 - [Strategy][2025-05-21 12:22:03]   - 그리드위즈(453450): 398주, 평가액 7,514,240 (수익률 6.49%)
+2025-05-21 12:22:03,383 - AppLogger - INFO - logger:84 - [Strategy][2025-05-21 12:22:03] 미체결 주문 없음.
+2025-05-21 12:22:03,383 - AppLogger - INFO - logger:84 - [Strategy][2025-05-21 12:22:03] 관심 종목 (1개):
+2025-05-21 12:22:03,384 - AppLogger - INFO - logger:84 - [Strategy][2025-05-21 12:22:03]   - 블루엠텍(439580): 현재가 7340.0, 상태: WAITING
+2025-05-21 12:22:03,384 - AppLogger - INFO - logger:84 - [Strategy][2025-05-21 12:22:03] 일일 매수 실행 횟수: 0 / 10
+2025-05-21 12:22:03,384 - AppLogger - INFO - logger:84 - [Strategy][2025-05-21 12:22:03] ===========================================
+2025-05-21 12:23:03,382 - AppLogger - INFO - logger:84 - [Strategy][2025-05-21 12:23:03] ===== 주기적 상태 보고 (2025-05-21 12:23:03) =====
+2025-05-21 12:23:03,389 - AppLogger - INFO - logger:84 - [Strategy][2025-05-21 12:23:03] 전략 실행 상태: 실행 중, 최종 초기화 성공: True
+2025-05-21 12:23:03,396 - AppLogger - INFO - logger:84 - [Strategy][2025-05-21 12:23:03] 현재 상태 메시지: TR 데이터 처리 완료: opw00018 (계좌잔고조회_8101891811)
+2025-05-21 12:23:03,398 - AppLogger - INFO - logger:84 - [Strategy][2025-05-21 12:23:03] 계좌번호: 8101891811
+2025-05-21 12:23:03,406 - AppLogger - INFO - logger:84 - [Strategy][2025-05-21 12:23:03] 예수금: 339440565
+2025-05-21 12:23:03,406 - AppLogger - INFO - logger:84 - [Strategy][2025-05-21 12:23:03] 보유 종목 (13개):
+2025-05-21 12:23:03,406 - AppLogger - INFO - logger:84 - [Strategy][2025-05-21 12:23:03]   - 와이투솔루션(011690): 2710주, 평가액 7,615,100 (수익률 4.26%)
+2025-05-21 12:23:03,406 - AppLogger - INFO - logger:84 - [Strategy][2025-05-21 12:23:03]   - 원익(032940): 263주, 평가액 996,770 (수익률 0.98%)
+2025-05-21 12:23:03,406 - AppLogger - INFO - logger:84 - [Strategy][2025-05-21 12:23:03]   - 에코플라스틱(038110): 1943주, 평가액 5,624,985 (수익률 6.70%)
+2025-05-21 12:23:03,418 - AppLogger - INFO - logger:84 - [Strategy][2025-05-21 12:23:03]   - 웹케시(053580): 6670주, 평가액 94,980,800 (수익률 3.42%)
+2025-05-21 12:23:03,418 - AppLogger - INFO - logger:84 - [Strategy][2025-05-21 12:23:03]   - 인피니트헬스케어(071200): 372주, 평가액 2,313,840 (수익률 0.15%)
+2025-05-21 12:23:03,422 - AppLogger - INFO - logger:84 - [Strategy][2025-05-21 12:23:03]   - 그린케미칼(083420): 653주, 평가액 5,524,380 (수익률 5.59%)
+2025-05-21 12:23:03,424 - AppLogger - INFO - logger:84 - [Strategy][2025-05-21 12:23:03]   - 에어레인(163280): 1010주, 평가액 19,907,100 (수익률 4.04%)
+2025-05-21 12:23:03,424 - AppLogger - INFO - logger:84 - [Strategy][2025-05-21 12:23:03]   - 토니모리(214420): 3460주, 평가액 30,275,000 (수익률 3.12%)
+2025-05-21 12:23:03,431 - AppLogger - INFO - logger:84 - [Strategy][2025-05-21 12:23:03]   - 일승(333430): 1224주, 평가액 6,077,160 (수익률 4.17%)
+2025-05-21 12:23:03,435 - AppLogger - INFO - logger:84 - [Strategy][2025-05-21 12:23:03]   - 로킷헬스케어(376900): 50주, 평가액 999,500 (수익률 0.70%)
+2025-05-21 12:23:03,436 - AppLogger - INFO - logger:84 - [Strategy][2025-05-21 12:23:03]   - 지투파워(388050): 968주, 평가액 7,802,080 (수익률 3.03%)
+2025-05-21 12:23:03,436 - AppLogger - INFO - logger:84 - [Strategy][2025-05-21 12:23:03]   - 블루엠텍(439580): 132주, 평가액 975,480 (수익률 2.47%)
+2025-05-21 12:23:03,467 - AppLogger - INFO - logger:84 - [Strategy][2025-05-21 12:23:03]   - 그리드위즈(453450): 398주, 평가액 7,514,240 (수익률 6.49%)
+2025-05-21 12:23:03,469 - AppLogger - INFO - logger:84 - [Strategy][2025-05-21 12:23:03] 미체결 주문 없음.
+2025-05-21 12:23:03,469 - AppLogger - INFO - logger:84 - [Strategy][2025-05-21 12:23:03] 관심 종목 (1개):
+2025-05-21 12:23:03,470 - AppLogger - INFO - logger:84 - [Strategy][2025-05-21 12:23:03]   - 블루엠텍(439580): 현재가 7330.0, 상태: WAITING
+2025-05-21 12:23:03,470 - AppLogger - INFO - logger:84 - [Strategy][2025-05-21 12:23:03] 일일 매수 실행 횟수: 0 / 10
+2025-05-21 12:23:03,471 - AppLogger - INFO - logger:84 - [Strategy][2025-05-21 12:23:03] ===========================================
+2025-05-21 12:24:03,376 - AppLogger - INFO - logger:84 - [Strategy][2025-05-21 12:24:03] ===== 주기적 상태 보고 (2025-05-21 12:24:03) =====
+2025-05-21 12:24:03,378 - AppLogger - INFO - logger:84 - [Strategy][2025-05-21 12:24:03] 전략 실행 상태: 실행 중, 최종 초기화 성공: True
+2025-05-21 12:24:03,378 - AppLogger - INFO - logger:84 - [Strategy][2025-05-21 12:24:03] 현재 상태 메시지: TR 데이터 처리 완료: opw00018 (계좌잔고조회_8101891811)
+2025-05-21 12:24:03,379 - AppLogger - INFO - logger:84 - [Strategy][2025-05-21 12:24:03] 계좌번호: 8101891811
+2025-05-21 12:24:03,379 - AppLogger - INFO - logger:84 - [Strategy][2025-05-21 12:24:03] 예수금: 339440565
+2025-05-21 12:24:03,379 - AppLogger - INFO - logger:84 - [Strategy][2025-05-21 12:24:03] 보유 종목 (13개):
+2025-05-21 12:24:03,380 - AppLogger - INFO - logger:84 - [Strategy][2025-05-21 12:24:03]   - 와이투솔루션(011690): 2710주, 평가액 7,615,100 (수익률 4.26%)
+2025-05-21 12:24:03,380 - AppLogger - INFO - logger:84 - [Strategy][2025-05-21 12:24:03]   - 원익(032940): 263주, 평가액 996,770 (수익률 0.98%)
+2025-05-21 12:24:03,380 - AppLogger - INFO - logger:84 - [Strategy][2025-05-21 12:24:03]   - 에코플라스틱(038110): 1943주, 평가액 5,624,985 (수익률 6.70%)
+2025-05-21 12:24:03,381 - AppLogger - INFO - logger:84 - [Strategy][2025-05-21 12:24:03]   - 웹케시(053580): 6670주, 평가액 94,980,800 (수익률 3.42%)
+2025-05-21 12:24:03,381 - AppLogger - INFO - logger:84 - [Strategy][2025-05-21 12:24:03]   - 인피니트헬스케어(071200): 372주, 평가액 2,313,840 (수익률 0.15%)
+2025-05-21 12:24:03,381 - AppLogger - INFO - logger:84 - [Strategy][2025-05-21 12:24:03]   - 그린케미칼(083420): 653주, 평가액 5,524,380 (수익률 5.59%)
+2025-05-21 12:24:03,382 - AppLogger - INFO - logger:84 - [Strategy][2025-05-21 12:24:03]   - 에어레인(163280): 1010주, 평가액 19,907,100 (수익률 4.04%)
+2025-05-21 12:24:03,382 - AppLogger - INFO - logger:84 - [Strategy][2025-05-21 12:24:03]   - 토니모리(214420): 3460주, 평가액 30,275,000 (수익률 3.12%)
+2025-05-21 12:24:03,382 - AppLogger - INFO - logger:84 - [Strategy][2025-05-21 12:24:03]   - 일승(333430): 1224주, 평가액 6,077,160 (수익률 4.17%)
+2025-05-21 12:24:03,382 - AppLogger - INFO - logger:84 - [Strategy][2025-05-21 12:24:03]   - 로킷헬스케어(376900): 50주, 평가액 999,500 (수익률 0.70%)
+2025-05-21 12:24:03,383 - AppLogger - INFO - logger:84 - [Strategy][2025-05-21 12:24:03]   - 지투파워(388050): 968주, 평가액 7,802,080 (수익률 3.03%)
+2025-05-21 12:24:03,384 - AppLogger - INFO - logger:84 - [Strategy][2025-05-21 12:24:03]   - 블루엠텍(439580): 132주, 평가액 975,480 (수익률 2.47%)
+2025-05-21 12:24:03,384 - AppLogger - INFO - logger:84 - [Strategy][2025-05-21 12:24:03]   - 그리드위즈(453450): 398주, 평가액 7,514,240 (수익률 6.49%)
+2025-05-21 12:24:03,386 - AppLogger - INFO - logger:84 - [Strategy][2025-05-21 12:24:03] 미체결 주문 없음.
+2025-05-21 12:24:03,387 - AppLogger - INFO - logger:84 - [Strategy][2025-05-21 12:24:03] 관심 종목 (1개):
+2025-05-21 12:24:03,387 - AppLogger - INFO - logger:84 - [Strategy][2025-05-21 12:24:03]   - 블루엠텍(439580): 현재가 7360.0, 상태: WAITING
+2025-05-21 12:24:03,388 - AppLogger - INFO - logger:84 - [Strategy][2025-05-21 12:24:03] 일일 매수 실행 횟수: 0 / 10
+2025-05-21 12:24:03,388 - AppLogger - INFO - logger:84 - [Strategy][2025-05-21 12:24:03] ===========================================
+2025-05-21 12:25:03,375 - AppLogger - INFO - logger:84 - [Strategy][2025-05-21 12:25:03] ===== 주기적 상태 보고 (2025-05-21 12:25:03) =====
+2025-05-21 12:25:03,378 - AppLogger - INFO - logger:84 - [Strategy][2025-05-21 12:25:03] 전략 실행 상태: 실행 중, 최종 초기화 성공: True
+2025-05-21 12:25:03,378 - AppLogger - INFO - logger:84 - [Strategy][2025-05-21 12:25:03] 현재 상태 메시지: TR 데이터 처리 완료: opw00018 (계좌잔고조회_8101891811)
+2025-05-21 12:25:03,379 - AppLogger - INFO - logger:84 - [Strategy][2025-05-21 12:25:03] 계좌번호: 8101891811
+2025-05-21 12:25:03,379 - AppLogger - INFO - logger:84 - [Strategy][2025-05-21 12:25:03] 예수금: 339440565
+2025-05-21 12:25:03,380 - AppLogger - INFO - logger:84 - [Strategy][2025-05-21 12:25:03] 보유 종목 (13개):
+2025-05-21 12:25:03,380 - AppLogger - INFO - logger:84 - [Strategy][2025-05-21 12:25:03]   - 와이투솔루션(011690): 2710주, 평가액 7,615,100 (수익률 4.26%)
+2025-05-21 12:25:03,380 - AppLogger - INFO - logger:84 - [Strategy][2025-05-21 12:25:03]   - 원익(032940): 263주, 평가액 996,770 (수익률 0.98%)
+2025-05-21 12:25:03,381 - AppLogger - INFO - logger:84 - [Strategy][2025-05-21 12:25:03]   - 에코플라스틱(038110): 1943주, 평가액 5,624,985 (수익률 6.70%)
+2025-05-21 12:25:03,381 - AppLogger - INFO - logger:84 - [Strategy][2025-05-21 12:25:03]   - 웹케시(053580): 6670주, 평가액 94,980,800 (수익률 3.42%)
+2025-05-21 12:25:03,381 - AppLogger - INFO - logger:84 - [Strategy][2025-05-21 12:25:03]   - 인피니트헬스케어(071200): 372주, 평가액 2,313,840 (수익률 0.15%)
+2025-05-21 12:25:03,382 - AppLogger - INFO - logger:84 - [Strategy][2025-05-21 12:25:03]   - 그린케미칼(083420): 653주, 평가액 5,524,380 (수익률 5.59%)
+2025-05-21 12:25:03,382 - AppLogger - INFO - logger:84 - [Strategy][2025-05-21 12:25:03]   - 에어레인(163280): 1010주, 평가액 19,907,100 (수익률 4.04%)
+2025-05-21 12:25:03,382 - AppLogger - INFO - logger:84 - [Strategy][2025-05-21 12:25:03]   - 토니모리(214420): 3460주, 평가액 30,275,000 (수익률 3.12%)
+2025-05-21 12:25:03,383 - AppLogger - INFO - logger:84 - [Strategy][2025-05-21 12:25:03]   - 일승(333430): 1224주, 평가액 6,077,160 (수익률 4.17%)
+2025-05-21 12:25:03,383 - AppLogger - INFO - logger:84 - [Strategy][2025-05-21 12:25:03]   - 로킷헬스케어(376900): 50주, 평가액 999,500 (수익률 0.70%)
+2025-05-21 12:25:03,383 - AppLogger - INFO - logger:84 - [Strategy][2025-05-21 12:25:03]   - 지투파워(388050): 968주, 평가액 7,802,080 (수익률 3.03%)
+2025-05-21 12:25:03,384 - AppLogger - INFO - logger:84 - [Strategy][2025-05-21 12:25:03]   - 블루엠텍(439580): 132주, 평가액 975,480 (수익률 2.47%)
+2025-05-21 12:25:03,384 - AppLogger - INFO - logger:84 - [Strategy][2025-05-21 12:25:03]   - 그리드위즈(453450): 398주, 평가액 7,514,240 (수익률 6.49%)
+2025-05-21 12:25:03,384 - AppLogger - INFO - logger:84 - [Strategy][2025-05-21 12:25:03] 미체결 주문 없음.
+2025-05-21 12:25:03,385 - AppLogger - INFO - logger:84 - [Strategy][2025-05-21 12:25:03] 관심 종목 (1개):
+2025-05-21 12:25:03,385 - AppLogger - INFO - logger:84 - [Strategy][2025-05-21 12:25:03]   - 블루엠텍(439580): 현재가 7340.0, 상태: WAITING
+2025-05-21 12:25:03,386 - AppLogger - INFO - logger:84 - [Strategy][2025-05-21 12:25:03] 일일 매수 실행 횟수: 0 / 10
+2025-05-21 12:25:03,387 - AppLogger - INFO - logger:84 - [Strategy][2025-05-21 12:25:03] ===========================================
+2025-05-21 12:26:03,373 - AppLogger - INFO - logger:84 - [Strategy][2025-05-21 12:26:03] ===== 주기적 상태 보고 (2025-05-21 12:26:03) =====
+2025-05-21 12:26:03,376 - AppLogger - INFO - logger:84 - [Strategy][2025-05-21 12:26:03] 전략 실행 상태: 실행 중, 최종 초기화 성공: True
+2025-05-21 12:26:03,376 - AppLogger - INFO - logger:84 - [Strategy][2025-05-21 12:26:03] 현재 상태 메시지: TR 데이터 처리 완료: opw00018 (계좌잔고조회_8101891811)
+2025-05-21 12:26:03,377 - AppLogger - INFO - logger:84 - [Strategy][2025-05-21 12:26:03] 계좌번호: 8101891811
+2025-05-21 12:26:03,377 - AppLogger - INFO - logger:84 - [Strategy][2025-05-21 12:26:03] 예수금: 339440565
+2025-05-21 12:26:03,377 - AppLogger - INFO - logger:84 - [Strategy][2025-05-21 12:26:03] 보유 종목 (13개):
+2025-05-21 12:26:03,378 - AppLogger - INFO - logger:84 - [Strategy][2025-05-21 12:26:03]   - 와이투솔루션(011690): 2710주, 평가액 7,615,100 (수익률 4.26%)
+2025-05-21 12:26:03,378 - AppLogger - INFO - logger:84 - [Strategy][2025-05-21 12:26:03]   - 원익(032940): 263주, 평가액 996,770 (수익률 0.98%)
+2025-05-21 12:26:03,378 - AppLogger - INFO - logger:84 - [Strategy][2025-05-21 12:26:03]   - 에코플라스틱(038110): 1943주, 평가액 5,624,985 (수익률 6.70%)
+2025-05-21 12:26:03,379 - AppLogger - INFO - logger:84 - [Strategy][2025-05-21 12:26:03]   - 웹케시(053580): 6670주, 평가액 94,980,800 (수익률 3.42%)
+2025-05-21 12:26:03,379 - AppLogger - INFO - logger:84 - [Strategy][2025-05-21 12:26:03]   - 인피니트헬스케어(071200): 372주, 평가액 2,313,840 (수익률 0.15%)
+2025-05-21 12:26:03,380 - AppLogger - INFO - logger:84 - [Strategy][2025-05-21 12:26:03]   - 그린케미칼(083420): 653주, 평가액 5,524,380 (수익률 5.59%)
+2025-05-21 12:26:03,380 - AppLogger - INFO - logger:84 - [Strategy][2025-05-21 12:26:03]   - 에어레인(163280): 1010주, 평가액 19,907,100 (수익률 4.04%)
+2025-05-21 12:26:03,380 - AppLogger - INFO - logger:84 - [Strategy][2025-05-21 12:26:03]   - 토니모리(214420): 3460주, 평가액 30,275,000 (수익률 3.12%)
+2025-05-21 12:26:03,381 - AppLogger - INFO - logger:84 - [Strategy][2025-05-21 12:26:03]   - 일승(333430): 1224주, 평가액 6,077,160 (수익률 4.17%)
+2025-05-21 12:26:03,381 - AppLogger - INFO - logger:84 - [Strategy][2025-05-21 12:26:03]   - 로킷헬스케어(376900): 50주, 평가액 999,500 (수익률 0.70%)
+2025-05-21 12:26:03,382 - AppLogger - INFO - logger:84 - [Strategy][2025-05-21 12:26:03]   - 지투파워(388050): 968주, 평가액 7,802,080 (수익률 3.03%)
+2025-05-21 12:26:03,382 - AppLogger - INFO - logger:84 - [Strategy][2025-05-21 12:26:03]   - 블루엠텍(439580): 132주, 평가액 975,480 (수익률 2.47%)
+2025-05-21 12:26:03,383 - AppLogger - INFO - logger:84 - [Strategy][2025-05-21 12:26:03]   - 그리드위즈(453450): 398주, 평가액 7,514,240 (수익률 6.49%)
+2025-05-21 12:26:03,384 - AppLogger - INFO - logger:84 - [Strategy][2025-05-21 12:26:03] 미체결 주문 없음.
+2025-05-21 12:26:03,384 - AppLogger - INFO - logger:84 - [Strategy][2025-05-21 12:26:03] 관심 종목 (1개):
+2025-05-21 12:26:03,385 - AppLogger - INFO - logger:84 - [Strategy][2025-05-21 12:26:03]   - 블루엠텍(439580): 현재가 7340.0, 상태: WAITING
+2025-05-21 12:26:03,385 - AppLogger - INFO - logger:84 - [Strategy][2025-05-21 12:26:03] 일일 매수 실행 횟수: 0 / 10
+2025-05-21 12:26:03,385 - AppLogger - INFO - logger:84 - [Strategy][2025-05-21 12:26:03] ===========================================
+2025-05-21 12:27:03,378 - AppLogger - INFO - logger:84 - [Strategy][2025-05-21 12:27:03] ===== 주기적 상태 보고 (2025-05-21 12:27:03) =====
+2025-05-21 12:27:03,380 - AppLogger - INFO - logger:84 - [Strategy][2025-05-21 12:27:03] 전략 실행 상태: 실행 중, 최종 초기화 성공: True
+2025-05-21 12:27:03,381 - AppLogger - INFO - logger:84 - [Strategy][2025-05-21 12:27:03] 현재 상태 메시지: TR 데이터 처리 완료: opw00018 (계좌잔고조회_8101891811)
+2025-05-21 12:27:03,381 - AppLogger - INFO - logger:84 - [Strategy][2025-05-21 12:27:03] 계좌번호: 8101891811
+2025-05-21 12:27:03,381 - AppLogger - INFO - logger:84 - [Strategy][2025-05-21 12:27:03] 예수금: 339440565
+2025-05-21 12:27:03,382 - AppLogger - INFO - logger:84 - [Strategy][2025-05-21 12:27:03] 보유 종목 (13개):
+2025-05-21 12:27:03,382 - AppLogger - INFO - logger:84 - [Strategy][2025-05-21 12:27:03]   - 와이투솔루션(011690): 2710주, 평가액 7,615,100 (수익률 4.26%)
+2025-05-21 12:27:03,382 - AppLogger - INFO - logger:84 - [Strategy][2025-05-21 12:27:03]   - 원익(032940): 263주, 평가액 996,770 (수익률 0.98%)
+2025-05-21 12:27:03,383 - AppLogger - INFO - logger:84 - [Strategy][2025-05-21 12:27:03]   - 에코플라스틱(038110): 1943주, 평가액 5,624,985 (수익률 6.70%)
+2025-05-21 12:27:03,383 - AppLogger - INFO - logger:84 - [Strategy][2025-05-21 12:27:03]   - 웹케시(053580): 6670주, 평가액 94,980,800 (수익률 3.42%)
+2025-05-21 12:27:03,383 - AppLogger - INFO - logger:84 - [Strategy][2025-05-21 12:27:03]   - 인피니트헬스케어(071200): 372주, 평가액 2,313,840 (수익률 0.15%)
+2025-05-21 12:27:03,384 - AppLogger - INFO - logger:84 - [Strategy][2025-05-21 12:27:03]   - 그린케미칼(083420): 653주, 평가액 5,524,380 (수익률 5.59%)
+2025-05-21 12:27:03,384 - AppLogger - INFO - logger:84 - [Strategy][2025-05-21 12:27:03]   - 에어레인(163280): 1010주, 평가액 19,907,100 (수익률 4.04%)
+2025-05-21 12:27:03,384 - AppLogger - INFO - logger:84 - [Strategy][2025-05-21 12:27:03]   - 토니모리(214420): 3460주, 평가액 30,275,000 (수익률 3.12%)
+2025-05-21 12:27:03,384 - AppLogger - INFO - logger:84 - [Strategy][2025-05-21 12:27:03]   - 일승(333430): 1224주, 평가액 6,077,160 (수익률 4.17%)
+2025-05-21 12:27:03,385 - AppLogger - INFO - logger:84 - [Strategy][2025-05-21 12:27:03]   - 로킷헬스케어(376900): 50주, 평가액 999,500 (수익률 0.70%)
+2025-05-21 12:27:03,385 - AppLogger - INFO - logger:84 - [Strategy][2025-05-21 12:27:03]   - 지투파워(388050): 968주, 평가액 7,802,080 (수익률 3.03%)
+2025-05-21 12:27:03,386 - AppLogger - INFO - logger:84 - [Strategy][2025-05-21 12:27:03]   - 블루엠텍(439580): 132주, 평가액 975,480 (수익률 2.47%)
+2025-05-21 12:27:03,386 - AppLogger - INFO - logger:84 - [Strategy][2025-05-21 12:27:03]   - 그리드위즈(453450): 398주, 평가액 7,514,240 (수익률 6.49%)
+2025-05-21 12:27:03,387 - AppLogger - INFO - logger:84 - [Strategy][2025-05-21 12:27:03] 미체결 주문 없음.
+2025-05-21 12:27:03,387 - AppLogger - INFO - logger:84 - [Strategy][2025-05-21 12:27:03] 관심 종목 (1개):
+2025-05-21 12:27:03,388 - AppLogger - INFO - logger:84 - [Strategy][2025-05-21 12:27:03]   - 블루엠텍(439580): 현재가 7320.0, 상태: WAITING
+2025-05-21 12:27:03,388 - AppLogger - INFO - logger:84 - [Strategy][2025-05-21 12:27:03] 일일 매수 실행 횟수: 0 / 10
+2025-05-21 12:27:03,388 - AppLogger - INFO - logger:84 - [Strategy][2025-05-21 12:27:03] ===========================================
+2025-05-21 12:28:03,379 - AppLogger - INFO - logger:84 - [Strategy][2025-05-21 12:28:03] ===== 주기적 상태 보고 (2025-05-21 12:28:03) =====
+2025-05-21 12:28:03,381 - AppLogger - INFO - logger:84 - [Strategy][2025-05-21 12:28:03] 전략 실행 상태: 실행 중, 최종 초기화 성공: True
+2025-05-21 12:28:03,381 - AppLogger - INFO - logger:84 - [Strategy][2025-05-21 12:28:03] 현재 상태 메시지: TR 데이터 처리 완료: opw00018 (계좌잔고조회_8101891811)
+2025-05-21 12:28:03,382 - AppLogger - INFO - logger:84 - [Strategy][2025-05-21 12:28:03] 계좌번호: 8101891811
+2025-05-21 12:28:03,382 - AppLogger - INFO - logger:84 - [Strategy][2025-05-21 12:28:03] 예수금: 339440565
+2025-05-21 12:28:03,382 - AppLogger - INFO - logger:84 - [Strategy][2025-05-21 12:28:03] 보유 종목 (13개):
+2025-05-21 12:28:03,383 - AppLogger - INFO - logger:84 - [Strategy][2025-05-21 12:28:03]   - 와이투솔루션(011690): 2710주, 평가액 7,615,100 (수익률 4.26%)
+2025-05-21 12:28:03,383 - AppLogger - INFO - logger:84 - [Strategy][2025-05-21 12:28:03]   - 원익(032940): 263주, 평가액 996,770 (수익률 0.98%)
+2025-05-21 12:28:03,383 - AppLogger - INFO - logger:84 - [Strategy][2025-05-21 12:28:03]   - 에코플라스틱(038110): 1943주, 평가액 5,624,985 (수익률 6.70%)
+2025-05-21 12:28:03,383 - AppLogger - INFO - logger:84 - [Strategy][2025-05-21 12:28:03]   - 웹케시(053580): 6670주, 평가액 94,980,800 (수익률 3.42%)
+2025-05-21 12:28:03,384 - AppLogger - INFO - logger:84 - [Strategy][2025-05-21 12:28:03]   - 인피니트헬스케어(071200): 372주, 평가액 2,313,840 (수익률 0.15%)
+2025-05-21 12:28:03,384 - AppLogger - INFO - logger:84 - [Strategy][2025-05-21 12:28:03]   - 그린케미칼(083420): 653주, 평가액 5,524,380 (수익률 5.59%)
+2025-05-21 12:28:03,384 - AppLogger - INFO - logger:84 - [Strategy][2025-05-21 12:28:03]   - 에어레인(163280): 1010주, 평가액 19,907,100 (수익률 4.04%)
+2025-05-21 12:28:03,385 - AppLogger - INFO - logger:84 - [Strategy][2025-05-21 12:28:03]   - 토니모리(214420): 3460주, 평가액 30,275,000 (수익률 3.12%)
+2025-05-21 12:28:03,385 - AppLogger - INFO - logger:84 - [Strategy][2025-05-21 12:28:03]   - 일승(333430): 1224주, 평가액 6,077,160 (수익률 4.17%)
+2025-05-21 12:28:03,385 - AppLogger - INFO - logger:84 - [Strategy][2025-05-21 12:28:03]   - 로킷헬스케어(376900): 50주, 평가액 999,500 (수익률 0.70%)
+2025-05-21 12:28:03,385 - AppLogger - INFO - logger:84 - [Strategy][2025-05-21 12:28:03]   - 지투파워(388050): 968주, 평가액 7,802,080 (수익률 3.03%)
+2025-05-21 12:28:03,386 - AppLogger - INFO - logger:84 - [Strategy][2025-05-21 12:28:03]   - 블루엠텍(439580): 132주, 평가액 975,480 (수익률 2.47%)
+2025-05-21 12:28:03,386 - AppLogger - INFO - logger:84 - [Strategy][2025-05-21 12:28:03]   - 그리드위즈(453450): 398주, 평가액 7,514,240 (수익률 6.49%)
+2025-05-21 12:28:03,387 - AppLogger - INFO - logger:84 - [Strategy][2025-05-21 12:28:03] 미체결 주문 없음.
+2025-05-21 12:28:03,387 - AppLogger - INFO - logger:84 - [Strategy][2025-05-21 12:28:03] 관심 종목 (1개):
+2025-05-21 12:28:03,388 - AppLogger - INFO - logger:84 - [Strategy][2025-05-21 12:28:03]   - 블루엠텍(439580): 현재가 7310.0, 상태: WAITING
+2025-05-21 12:28:03,389 - AppLogger - INFO - logger:84 - [Strategy][2025-05-21 12:28:03] 일일 매수 실행 횟수: 0 / 10
+2025-05-21 12:28:03,389 - AppLogger - INFO - logger:84 - [Strategy][2025-05-21 12:28:03] ===========================================
