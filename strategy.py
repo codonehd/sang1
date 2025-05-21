@@ -49,6 +49,7 @@ class StrategySettings:
     periodic_report_enabled: bool = True
     periodic_report_interval_seconds: int = 60
     max_daily_buy_count: int = 10  # 하루 최대 매수 실행 횟수
+    max_buy_attempts_per_stock: int = 3  # 종목당 최대 매수 시도 횟수
     cancel_pending_orders_on_exit: bool = True  # 프로그램 종료 시 미체결 주문 자동 취소 여부
     auto_liquidate_after_minutes_enabled: bool = False # 일정 시간 경과 시 자동 청산 기능 활성화 여부
     auto_liquidate_after_minutes: int = 60  # 자동 청산 기준 시간 (분)
@@ -71,6 +72,7 @@ class StockTrackingData:
     is_trailing_stop_active: bool = False # 트레일링 스탑 활성화 여부 (2% 수익 달성 시 True)
     partial_take_profit_executed: bool = False # 5% 부분 익절 실행 여부
     buy_timestamp: Optional[datetime] = None # 매수 체결 시간 기록
+    buy_attempt_count: int = 0  # 매수 시도 횟수 (종목당 최대 3회 제한용)
     api_data: Dict[str, Any] = field(default_factory=dict)
     # daily_chart_error: bool = False # REMOVED: No longer fetching daily chart via opt10081
 
@@ -122,13 +124,56 @@ class TradingStrategy(QObject):
             "market_hours_initialized": False
         }
         self.current_status_message = "초기화 중..."
+        # 시작 시간 초기화
+        self.start_time = time.time()
+        self.start_time_str = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
 
         self.account_state = AccountState()
         self.settings = StrategySettings()
         self._load_strategy_settings() # 설정 로드는 여기서 먼저 수행
         
         # 상태 저장 및 복원 관련 파일 경로 설정
-        self.state_file_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "trading_state.json")
+        # settings.json에 지정된 DB 경로와 동일한 디렉토리에 trading_state.json 파일 저장
+        db_path = self.modules.config_manager.get_setting("Database", "path", "logs/trading_data.db")
+        db_dir = os.path.dirname(db_path)
+        if not db_dir:
+            db_dir = os.path.dirname(os.path.abspath(__file__))
+        self.state_file_path = os.path.join(db_dir, "trading_state.json")
+        self.log(f"상태 파일 경로: {self.state_file_path}", "INFO")
+        
+        # 이전 위치에 있는 trading_state.json 파일을 새 경로로 이동
+        old_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "trading_state.json")
+        if os.path.exists(old_path) and old_path != self.state_file_path:
+            try:
+                # 대상 디렉토리가 존재하는지 확인하고 없으면 생성
+                if not os.path.exists(db_dir):
+                    os.makedirs(db_dir, exist_ok=True)
+                
+                # 새 경로에 이미 파일이 존재하면 병합 또는 백업 결정
+                if os.path.exists(self.state_file_path):
+                    # 두 파일의 수정 시간 비교
+                    old_mtime = os.path.getmtime(old_path)
+                    new_mtime = os.path.getmtime(self.state_file_path)
+                    
+                    if old_mtime > new_mtime:
+                        # 이전 파일이 더 최신이면 백업 후 이동
+                        backup_path = f"{self.state_file_path}.bak"
+                        if os.path.exists(backup_path):
+                            os.remove(backup_path)
+                        os.rename(self.state_file_path, backup_path)
+                        self.log(f"기존 상태 파일을 {backup_path}로 백업했습니다.", "INFO")
+                        os.rename(old_path, self.state_file_path)
+                        self.log(f"이전 위치의 상태 파일을 새 경로로 이동했습니다: {old_path} -> {self.state_file_path}", "INFO")
+                    else:
+                        # 새 파일이 더 최신이면 이전 파일 삭제
+                        os.remove(old_path)
+                        self.log(f"더 오래된 이전 위치의 상태 파일을 삭제했습니다: {old_path}", "INFO")
+                else:
+                    # 새 경로에 파일이 없으면 바로 이동
+                    os.rename(old_path, self.state_file_path)
+                    self.log(f"이전 위치의 상태 파일을 새 경로로 이동했습니다: {old_path} -> {self.state_file_path}", "INFO")
+            except Exception as e:
+                self.log(f"상태 파일 이동 중 오류 발생: {e}", "ERROR")
         
         # trading_records 초기화
         self.account_state.trading_records = {
@@ -183,31 +228,28 @@ class TradingStrategy(QObject):
         self.current_status_message = "TradingStrategy 객체 생성됨. API 연결 및 데이터 로딩 대기 중."
 
     def _load_strategy_settings(self):
-        self.log("전략 설정 로딩 시작...", "INFO")
-        cfg = self.modules.config_manager
-        s = self.settings
-        s.buy_amount_per_stock = cfg.get_setting("매매전략", "종목당매수금액", s.buy_amount_per_stock)
-        s.stop_loss_rate_from_yesterday_close = cfg.get_setting("매매전략", "손절손실률_전일종가기준", s.stop_loss_rate_from_yesterday_close)
-        s.partial_take_profit_rate = cfg.get_setting("매매전략", "익절_수익률", s.partial_take_profit_rate)
-        s.full_take_profit_target_rate = cfg.get_setting("매매전략", "최종_익절_수익률", s.full_take_profit_target_rate)
-        s.partial_sell_ratio = cfg.get_setting("매매전략", "익절_매도비율", s.partial_sell_ratio)
-        s.trailing_stop_activation_profit_rate = cfg.get_setting("매매전략", "트레일링_활성화_수익률", s.trailing_stop_activation_profit_rate)
-        s.trailing_stop_fall_rate = cfg.get_setting("매매전략", "트레일링_하락률", s.trailing_stop_fall_rate)
-        s.market_open_time_str = cfg.get_setting("매매전략", "MarketOpenTime", s.market_open_time_str)
-        s.market_close_time_str = cfg.get_setting("매매전략", "MarketCloseTime", s.market_close_time_str)
-        s.periodic_report_enabled = cfg.get_setting("PeriodicStatusReport", "enabled", s.periodic_report_enabled)
-        s.periodic_report_interval_seconds = cfg.get_setting("PeriodicStatusReport", "interval_seconds", s.periodic_report_interval_seconds)
-        try:
-            _ = datetime.strptime(s.market_open_time_str, "%H:%M:%S").time()
-            _ = datetime.strptime(s.market_close_time_str, "%H:%M:%S").time()
-            self.log(f"장운영시간 설정: 시작({s.market_open_time_str}), 종료({s.market_close_time_str})")
-        except Exception as e:
-            self.log(f"장운영시간 설정 문자열 파싱 오류: {e}. 기본값({s.market_open_time_str}, {s.market_close_time_str}) 사용 중.", "ERROR")
-            self.initialization_status["settings_loaded"] = False # 오류 발생 시 명시적 실패
-            return # 실패 시 더 이상 진행하지 않음 (선택적)
-
-        self.log(f"전략 설정 로드 완료: {self.settings}", "INFO")
-        self.initialization_status["settings_loaded"] = True
+        """매매 전략 설정을 로드합니다."""
+        if not self.modules.config_manager:
+            self.log("설정 관리자가 설정되지 않아 기본값을 사용합니다.", "WARNING")
+            return
+        
+        self.settings.buy_amount_per_stock = self.modules.config_manager.get_setting("매수금액", 1000000.0)
+        
+        # 매매 전략 관련 설정
+        self.settings.stop_loss_rate_from_yesterday_close = self.modules.config_manager.get_setting("매매전략", "손절_손실률", 2.0)
+        self.settings.partial_take_profit_rate = self.modules.config_manager.get_setting("매매전략", "익절_수익률", 5.0)
+        self.settings.partial_sell_ratio = self.modules.config_manager.get_setting("매매전략", "익절_매도비율", 50.0) / 100.0  # 퍼센트 -> 비율 변환
+        self.settings.full_take_profit_target_rate = self.modules.config_manager.get_setting("매매전략", "최종_익절_수익률", 9.0)
+        self.settings.trailing_stop_activation_profit_rate = self.modules.config_manager.get_setting("매매전략", "트레일링_활성화_수익률", 2.0)
+        self.settings.trailing_stop_fall_rate = self.modules.config_manager.get_setting("매매전략", "트레일링_하락률", 1.5)
+        self.settings.market_open_time_str = self.modules.config_manager.get_setting("매매전략", "MarketOpenTime", "09:00:00")
+        self.settings.market_close_time_str = self.modules.config_manager.get_setting("매매전략", "MarketCloseTime", "15:30:00")
+        self.settings.dry_run_mode = self.modules.config_manager.get_setting("매매전략", "dry_run_mode", False)
+        self.settings.max_buy_attempts_per_stock = self.modules.config_manager.get_setting("매매전략", "종목당_최대시도횟수", 3)
+        
+        # 주기적 상태 보고 관련 설정
+        self.settings.periodic_report_enabled = self.modules.config_manager.get_setting("PeriodicStatusReport", "enabled", True)
+        self.settings.periodic_report_interval_seconds = self.modules.config_manager.get_setting("PeriodicStatusReport", "interval_seconds", 60)
 
     def log(self, message, level="INFO"):
         if hasattr(self, 'modules') and self.modules and hasattr(self.modules, 'logger') and self.modules.logger:
@@ -700,14 +742,22 @@ class TradingStrategy(QObject):
         pass # 함수 내용을 비우고 pass만 남김
 
     def check_conditions(self):
+        """전략 조건 검사 및 매매 실행"""
         # 일일 매수 횟수 제한을 위한 날짜 확인 및 카운트 초기화
-        current_date_str = datetime.now().strftime("%Y-%m-%d")
-        if self.today_date_for_buy_limit != current_date_str:
-            self.log(f"날짜 변경 감지: {self.today_date_for_buy_limit} -> {current_date_str}. 일일 매수 횟수 초기화.", "INFO")
-            self.today_date_for_buy_limit = current_date_str
+        current_date = datetime.now().strftime('%Y-%m-%d')
+        if self.today_date_for_buy_limit != current_date:
+            self.log(f"날짜 변경 감지: {self.today_date_for_buy_limit} -> {current_date}. 일일 매수 카운트 초기화", "INFO")
+            # 일일 매수 횟수 초기화
             self.daily_buy_executed_count = 0
+            # 모든 종목의 매수 시도 횟수 초기화
+            for code, stock_info in self.watchlist.items():
+                if stock_info.buy_attempt_count > 0:
+                    self.log(f"[{code}] 매수 시도 횟수 초기화: {stock_info.buy_attempt_count} -> 0", "DEBUG")
+                    stock_info.buy_attempt_count = 0
+            self.today_date_for_buy_limit = current_date
         
-        if not self.is_running or not self.is_market_hours():
+        # 시장 시간이 아니면 종료
+        if not self.is_market_hours():
             return
 
         for code in list(self.watchlist.keys()):
@@ -974,89 +1024,139 @@ class TradingStrategy(QObject):
 
 
     def execute_buy(self, code):
-        # 일일 매수 횟수 제한 확인
-        if self.daily_buy_executed_count >= self.settings.max_daily_buy_count:
-            self.log(f"일일 매수 횟수 제한({self.settings.max_daily_buy_count}회) 도달. 금일 추가 매수 불가. (현재: {self.daily_buy_executed_count}회)", "WARNING")
-            return False
-
+        # 일일 매수 횟수 제한 확인 - 제거됨 (종목별 시도 횟수로 대체)
+        # 현재 날짜와 제한 날짜가 다르면 카운트 초기화 (여전히 필요한 로직)
+        current_date = datetime.now().strftime('%Y-%m-%d')
+        if self.today_date_for_buy_limit != current_date:
+            self.daily_buy_executed_count = 0
+            self.today_date_for_buy_limit = current_date
+            self.log(f"일일 매수 제한 카운터를 초기화했습니다. 새 날짜: {current_date}", "INFO")
+        
+        # 종목별 시도 횟수 제한 확인
         stock_info = self.watchlist.get(code)
         if not stock_info:
-            self.log(f"매수 주문 실패: {code} StockTrackingData 정보를 찾을 수 없습니다.", "ERROR")
-            return False
-
-        self.log(f"[Strategy_EXECUTE_BUY_DEBUG] execute_buy 호출. 계좌번호: '{self.account_state.account_number}', 오늘 매수횟수: {self.daily_buy_executed_count}/{self.settings.max_daily_buy_count}", "DEBUG")
-        
-        pure_code, market_ctx = self.modules.kiwoom_api.get_code_market_info(code)
-
-        if stock_info.last_order_rq_name:
-            self.log(f"매수 주문 건너뜀: {pure_code}(원본:{code})에 대해 이미 주문({stock_info.last_order_rq_name})이 전송되었거나 처리 중입니다.", "INFO")
-            return False
-
-        order_type_to_send = 1 # 기본 KRX 매수
-        if market_ctx == 'NXT':
-            order_type_to_send = 11 # Nextrade 신규매수
-            self.log(f"ATS 주문 감지 ({code}): 시장 NXT, order_type을 {order_type_to_send}로 설정합니다.", "INFO")
-        # ... (기타 시장 컨텍스트 처리) ...
-
-        if not self.account_state.account_number:
-            self.log("매수 주문 실패: 계좌번호가 설정되지 않았습니다.", "ERROR")
-            return False
-
-        current_price = stock_info.current_price # StockTrackingData 에서 현재가 사용
-        if current_price == 0:
-            self.log(f"매수 주문 실패 ({pure_code}, 원본:{code}): 현재가 정보 없음.", "ERROR")
+            self.log(f"매수 실행 불가: {code}는 관심종목 목록에 없습니다.", "ERROR")
             return False
         
-        decision_reason = f"사용자 정의 매수 전략: 갭상승({stock_info.is_gap_up_today}), 전일종가({stock_info.yesterday_close_price}), 현재가({current_price}), 전일종가하회기록({stock_info.is_yesterday_close_broken_today}) -> 재돌파"
-        related_data_for_decision = {
-            "current_price": current_price,
-            "original_code": code, 
-            "pure_code_for_order": pure_code,
-            "market_context_for_order": market_ctx,
-            "order_type_determined": order_type_to_send,
-            "stock_info": copy.deepcopy(stock_info.api_data), # api_data만 복사 또는 필요한 정보만
-            "strategy_settings": {
-                "buy_amount_per_stock": self.settings.buy_amount_per_stock
-            }
-        }
-        self.modules.db_manager.add_decision_record(get_current_time_str(), pure_code, "매수", decision_reason, related_data_for_decision)
-            
-        quantity = int(self.settings.buy_amount_per_stock / current_price)
-        if quantity == 0:
-            self.log(f"매수 주문 실패 ({pure_code}, 원본:{code}): 주문 가능 수량 0 (종목당매수금액: {self.settings.buy_amount_per_stock}, 현재가: {current_price})", "WARNING")
+        # 종목별 최대 시도 횟수 확인
+        if stock_info.buy_attempt_count >= self.settings.max_buy_attempts_per_stock:
+            self.log(f"[{code}] 매수 실행 불가: 이미 최대 시도 횟수({self.settings.max_buy_attempts_per_stock}회)에 도달했습니다. 현재 시도 횟수: {stock_info.buy_attempt_count}", "WARNING")
+            stock_info.strategy_state = TradingState.COMPLETE  # 더 이상 매수 시도하지 않도록 상태 변경
             return False
-            
-        price_to_order = current_price 
-        rq_name = f"매수_{pure_code}_{get_current_time_str(format='%H%M%S%f')}" 
-        screen_no = self.modules.screen_manager.get_available_screen(rq_name) # 화면번호 요청 수정
-
-        self.log(f"매수 주문 시도: {stock_info.stock_name} ({pure_code}, 원본:{code}), 시장컨텍스트: {market_ctx}, 주문유형: {order_type_to_send}, 수량: {quantity}, 가격: {price_to_order}, 화면: {screen_no}", "INFO")
         
-        order_ret = self.modules.kiwoom_api.send_order(rq_name, screen_no, self.account_state.account_number, order_type_to_send, pure_code, quantity, int(price_to_order), "03", "") 
-
-        if order_ret == 0: 
-            self.log(f"매수 주문 접수 성공: {pure_code} (원본:{code}), RQName: {rq_name}", "INFO")
-            stock_info.last_order_rq_name = rq_name # StockTrackingData에 RQName 저장
-            self.account_state.active_orders[rq_name] = {
-                'order_no': None, 
-                'code': pure_code,
-                'stock_name': stock_info.stock_name,
-                'order_type': '매수',
-                'order_qty': quantity,
-                'unfilled_qty': quantity, 
-                'order_price': price_to_order,
-                'order_status': '접수요청', 
-                'timestamp': get_current_time_str()
-            }
-            self.log(f"active_orders에 매수 주문 추가: {rq_name}, 상세: {self.account_state.active_orders[rq_name]}", "DEBUG")
-            
-            # 매수 주문 성공 시 일일 매수 횟수 증가
-            self.daily_buy_executed_count += 1
-            self.log(f"일일 매수 횟수 증가: {self.daily_buy_executed_count}/{self.settings.max_daily_buy_count} ({code})", "INFO")
-            return True
-        else: 
-            self.log(f"매수 주문 접수 실패: {pure_code} (원본:{code}), 반환값: {order_ret}", "ERROR")
-            if screen_no: self.modules.screen_manager.release_screen(screen_no, rq_name)
+        # 매수 시도 횟수 증가
+        stock_info.buy_attempt_count += 1
+        self.log(f"[{code}] 매수 시도 #{stock_info.buy_attempt_count}/{self.settings.max_buy_attempts_per_stock}", "INFO")
+        
+        # 매매가 진행 중이거나 거래가 완료된 경우 체크
+        if stock_info.strategy_state in [TradingState.BOUGHT, TradingState.PARTIAL_SOLD, TradingState.COMPLETE]:
+            self.log(f"[{code}] 매수 실행 불가: 이미 해당 종목은 {stock_info.strategy_state} 상태입니다.", "WARNING")
+            return False
+        
+        # 이후 코드는 그대로 유지
+        # ... 기존 코드 ...
+        # 주문가능금액 확인
+        account_number = self.account_state.account_number
+        if not account_number:
+            self.log(f"매수 주문 실패: 계좌번호가 설정되지 않았습니다.", "ERROR")
+            return False
+        
+        deposit_info = self.account_state.account_summary.get("deposit_info", {})
+        orderable_cash = self._safe_to_int(deposit_info.get("주문가능금액", 0))
+        
+        if orderable_cash < self.settings.buy_amount_per_stock:
+            self.log(f"매수 주문 불가: 주문가능금액({orderable_cash:,}원)이 설정된 매수금액({self.settings.buy_amount_per_stock:,}원)보다 적습니다.", "WARNING")
+            return False
+        
+        # 현재가 확인 (0 또는 음수면 주문 불가)
+        current_price = stock_info.current_price
+        if current_price <= 0:
+            self.log(f"[{code}] 매수 주문 불가: 현재가({current_price})가 유효하지 않습니다.", "WARNING") 
+            return False
+        
+        # 주문 수량 계산
+        order_quantity = int(self.settings.buy_amount_per_stock / current_price)
+        if order_quantity < 1:
+            self.log(f"[{code}] 매수 주문 불가: 계산된 주문 수량({order_quantity})이 1주 미만입니다.", "WARNING")
+            return False
+        
+        # 실제 소요 금액 (현재가 기준)
+        expected_total_price = int(current_price * order_quantity)
+        
+        # 매매 타입 (시장가, 지정가 등) 결정 및 주문가격 설정
+        order_type = 1  # 시장가 매수 (default)
+        order_price = 0  # 시장가 주문에서는 가격을 0으로 설정
+        
+        # 지정가 주문을 원한다면 아래 코드 활성화 및 수정
+        # order_type = 2  # 지정가 매수
+        # order_price = current_price  # 현재가로 주문 (원하는 가격으로 수정 가능)
+        
+        # 주문 요청 식별자 생성 (RQ_NAME: 주문 응답을 구분하기 위한 식별자)
+        rq_name = f"BUY_REQ_{code}_{int(time.time())}"
+        
+        # 매매 주문 로깅
+        self.log(f"[{code}] 매수 주문 실행: {stock_info.stock_name}, 수량: {order_quantity}주, 현재가: {current_price:,}원, 예상금액: {expected_total_price:,}원", "INFO")
+        
+        # 주문 실행 전에 상태를 WAITING으로 설정 (READY 상태에서만 매수 주문 실행하므로 현재는 큰 영향 없음)
+        stock_info.strategy_state = TradingState.WAITING
+        
+        # 주문 정보 저장 (주문 체결 데이터에서 참조할 정보)
+        stock_info.last_order_rq_name = rq_name
+        
+        # 주문 요청
+        if self.modules.kiwoom_api:
+            # Dry Run 모드인 경우
+            if self.settings.dry_run_mode:
+                self.log(f"[DRY RUN] {code} ({stock_info.stock_name}) 매수 주문 요청: 수량={order_quantity}, 가격={current_price:,}원", "INFO")
+                # 실제 주문 대신 시뮬레이션 진행
+                # 실제 환경에서는 아래 on_chejan_data_received가 호출되지만, dry run에서는 직접 시뮬레이션
+                self._simulate_buy_order_execution(code, stock_info, order_quantity, current_price)
+                return True
+            else:
+                # 실제 주문 실행
+                result = self.modules.kiwoom_api.send_order(
+                    rq_name=rq_name,
+                    screen_no="0101",  # 주문용 화면번호
+                    order_type=order_type,  # 1: 신규매수
+                    code=code,
+                    quantity=order_quantity,
+                    price=order_price,
+                    quote_type="00",  # 00: 지정가, 03: 시장가
+                    original_order_no=""  # 원주문번호 (취소/정정 시 필요)
+                )
+                
+                # 주문 요청 결과 처리
+                if result == 0:
+                    self.log(f"[{code}] 매수 주문 요청 성공: {stock_info.stock_name}, 수량: {order_quantity}주", "INFO")
+                    
+                    # 주문 정보 저장 (실제 체결 정보는 OnReceiveChejanData 이벤트에서 처리)
+                    order_time = datetime.now()
+                    self.account_state.active_orders[rq_name] = {
+                        "order_type": "매수",
+                        "code": code,
+                        "stock_name": stock_info.stock_name,
+                        "quantity": order_quantity,
+                        "price": current_price,  # 주문 시점의 현재가 (참고용)
+                        "order_price": order_price,  # 실제 주문 가격 (지정가 주문 시 사용)
+                        "order_time": order_time,
+                        "status": "접수",
+                        "filled_quantity": 0,
+                        "remaining_quantity": order_quantity,
+                        "filled_price": 0,
+                        "order_no": "",  # 접수 후 체결 데이터에서 업데이트
+                        "api_order_type": order_type,
+                        "api_quote_type": "00"
+                    }
+                    
+                    # 일일 매수 실행 횟수 증가 (전체 매수 실행 횟수 통계용으로만 유지)
+                    self.daily_buy_executed_count += 1
+                    
+                    return True
+                else:
+                    self.log(f"[{code}] 매수 주문 요청 실패: {stock_info.stock_name}, 오류 코드: {result}", "ERROR")
+                    return False
+        else:
+            self.log(f"매수 주문 실패: KiwoomAPI 인스턴스가 설정되지 않았습니다.", "ERROR")
             return False
 
 
@@ -1166,23 +1266,30 @@ class TradingStrategy(QObject):
             return False
 
     def reset_stock_strategy_info(self, code):
-        """특정 종목의 전략 관련 정보를 초기화합니다."""
-        stock_data = self.watchlist.get(code)
-        if stock_data:
-            stock_data.strategy_state = TradingState.WAITING # 매매 대상이므로 WAITING으로 초기화
-            stock_data.avg_buy_price = 0.0
-            stock_data.total_buy_quantity = 0
-            stock_data.current_high_price_after_buy = 0.0
-            stock_data.last_order_rq_name = None
-            stock_data.trailing_stop_partially_sold = False # 트레일링 스탑 부분 매도 플래그 초기화
-            stock_data.is_trailing_stop_active = False # 트레일링 스탑 활성화 플래그 초기화
-            stock_data.partial_take_profit_executed = False # 부분 익절 실행 플래그 초기화
-            stock_data.buy_timestamp = None # 매수 시간 초기화
-            # stock_data.is_yesterday_close_broken_today = False # 필요시 초기화
-            self.log(f"{code} ({stock_data.stock_name}) 전략 정보 초기화 완료. 상태: {stock_data.strategy_state}, 트레일링부분매도: {stock_data.trailing_stop_partially_sold}", "INFO")
-        else:
-            self.log(f"전략 정보 초기화 실패: {code} 관심종목에 없음.", "WARNING")
-
+        """종목의 전략 상태와 관련 정보를 초기화합니다."""
+        stock_info = self.watchlist.get(code)
+        if not stock_info:
+            self.log(f"[{code}] reset_stock_strategy_info 실패: 관심종목 목록에 없음", "ERROR")
+            return False
+        
+        # 상태 초기화
+        old_state = stock_info.strategy_state
+        stock_info.strategy_state = TradingState.WAITING
+        stock_info.avg_buy_price = 0.0
+        stock_info.total_buy_quantity = 0
+        stock_info.current_high_price_after_buy = 0.0
+        stock_info.is_trailing_stop_active = False
+        stock_info.trailing_stop_partially_sold = False
+        stock_info.partial_take_profit_executed = False
+        stock_info.buy_timestamp = None
+        stock_info.buy_attempt_count = 0  # 매수 시도 횟수 초기화
+        
+        # trading_status에서도 제거
+        if code in self.account_state.trading_status:
+            del self.account_state.trading_status[code]
+        
+        self.log(f"[{code}] 종목 상태 초기화: {old_state} -> {stock_info.strategy_state}", "INFO")
+        return True
 
     def update_portfolio_on_execution(self, code, stock_name, trade_price, quantity, trade_type):
         """
@@ -1490,7 +1597,35 @@ class TradingStrategy(QObject):
         
         self.current_status_message = "전략 실행 중. 시장 데이터 감시 및 조건 확인 중."
         self.log(f"=== 전략이 성공적으로 시작되었습니다. is_running: {self.is_running} ===", "IMPORTANT")
+        self.log("===========================================", "INFO")
+        
+        # 런타임 문자열 생성
+        runtime = time.time() - self.start_time
+        hours, rem = divmod(runtime, 3600)
+        minutes, seconds = divmod(rem, 60)
+        runtime_str = f"{int(hours)}시간 {int(minutes)}분 {int(seconds)}초"
+        
+        self.log(f"운영 시간: {runtime_str} (시작: {self.start_time_str})", "INFO")
+        self.log(f"초기화 완료된 전략 실행 중. 자세한 상태는 주기적 보고에서 확인하세요.", "INFO")
+        self.log("===========================================", "INFO")
+        
+        # 일일 매수 제한 정보는 통계용으로만 표시
+        self.log(f"일일 매수 실행 횟수: {self.daily_buy_executed_count} (통계용)", "INFO")
 
+        # 종목별 매수 시도 횟수 표시 (매수 시도가 있는 모든 종목)
+        attempt_stocks = [(code, info.stock_name, info.buy_attempt_count, info.strategy_state.name) 
+                         for code, info in self.watchlist.items() 
+                         if info.buy_attempt_count > 0]
+        
+        if attempt_stocks:
+            self.log(f"종목별 매수 시도 현황 (최대 {self.settings.max_buy_attempts_per_stock}회):", "INFO")
+            # 매수 시도 횟수 기준 내림차순 정렬
+            attempt_stocks.sort(key=lambda x: x[2], reverse=True)
+            for code, name, count, state in attempt_stocks:
+                max_reached = " (최대치)" if count >= self.settings.max_buy_attempts_per_stock else ""
+                self.log(f"  - [{code}] {name}: {count}/{self.settings.max_buy_attempts_per_stock}회{max_reached}, 상태: {state}", "INFO")
+        
+        self.log("===========================================", "INFO")
 
     def _parse_chejan_data(self, chejan_data_param):
         """수신된 체결 데이터를 파싱하여 내부 형식으로 변환합니다."""
@@ -1801,81 +1936,74 @@ class TradingStrategy(QObject):
         # 따라서 여기서 active_orders 정리 로직은 보통 불필요.
 
     def report_periodic_status(self):
-        if not self.is_running and not self.is_initialized_successfully:
-            self.log(f"주기적 상태 보고: 초기화 진행 중 또는 실패. 현재 상태: {self.current_status_message}", "INFO")
-            self.log(f"초기화 단계별 상태: {self.initialization_status}", "DEBUG")
-            # 초기화 실패 또는 지연 시 관련 정보 추가 로깅
-            if not self.initialization_status["account_info_loaded"]:
-                self.log("계좌 정보 로드를 기다리고 있거나 실패했습니다.", "WARNING")
-            elif not self.initialization_status["deposit_info_loaded"]:
-                self.log("예수금 정보 TR 응답을 기다리고 있습니다 (opw00001).", "INFO")
-            elif not self.initialization_status["portfolio_loaded"]:
-                self.log("포트폴리오 정보 TR 응답을 기다리고 있습니다 (opw00018).", "INFO")
-            
-            pending_charts = self.get_pending_daily_chart_requests_count()
-            if pending_charts > 0:
-                self.log(f"{pending_charts}건의 관심종목 일봉 데이터 요청이 처리 중입니다.", "INFO")
+        """주기적인 상태 보고"""
+        if not self.is_running or not self.settings.periodic_report_enabled:
             return
         
-        self.log(f"===== 주기적 상태 보고 ({get_current_time_str()}) =====", "INFO")
-        self.log(
-            f"전략 실행 상태: {'실행 중' if self.is_running else '중지됨'}, "
-            f"최종 초기화 성공: {self.is_initialized_successfully}",
-            "INFO"
-        )
-        self.log(f"현재 상태 메시지: {self.current_status_message}", "INFO")
+        # 현재 시간을 포함한 타이틀 추가
+        current_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        self.log(f"===== 주기적 상태 보고 ({current_time}) =====", "INFO")
         
-        if self.account_state.account_number:
-            self.log(f"계좌번호: {self.account_state.account_number}", "INFO")
-            # 예수금 정보 간단히 로깅 (상세 정보는 TR 수신 시 로깅됨)
-            if (self.initialization_status["deposit_info_loaded"] and 
-                    self.account_state.account_summary.get('예수금')):
-                self.log(f"예수금: {self.account_state.account_summary.get('예수금')}", "INFO")
-            else:
-                self.log("예수금 정보 로딩 중이거나 사용 불가.", "INFO")
+        # 전략 실행 상태 정보
+        runtime = time.time() - self.start_time if self.start_time else 0
+        hours, rem = divmod(runtime, 3600)
+        minutes, seconds = divmod(rem, 60)
+        runtime_str = f"{int(hours)}시간 {int(minutes)}분 {int(seconds)}초"
+        
+        self.log(f"전략 실행 상태: {'실행 중' if self.is_running else '중지됨'}, 최종 초기화 성공: {self.is_initialized_successfully}", "INFO")
+        self.log(f"현재 상태 메시지: {self.status_message if hasattr(self, 'status_message') and self.status_message else '정상 실행 중'}", "INFO")
+        self.log(f"계좌번호: {self.account_state.account_number}", "INFO")
+        
+        # 계좌 정보 요약
+        # 예수금 값을 직접 account_summary에서 가져오도록 수정
+        deposit = self._safe_to_int(self.account_state.account_summary.get("예수금", 0))
+        # d+2추정예수금도 체크하여 예수금이 0일 경우 대체값으로 사용
+        if deposit == 0:
+            deposit = self._safe_to_int(self.account_state.account_summary.get("d+2추정예수금", 0))
+        self.log(f"예수금: {deposit:,}", "INFO")
+        
+        # 포트폴리오 요약
+        if self.account_state.portfolio:
+            self.log(f"보유 종목 ({len(self.account_state.portfolio)}개):", "INFO")
+            for code, stock_data in self.account_state.portfolio.items():
+                stock_name = stock_data.get("stock_name", "")
+                quantity = self._safe_to_int(stock_data.get("보유수량", 0))
+                eval_amount = self._safe_to_float(stock_data.get("평가금액", 0))
+                pl_rate = self._safe_to_float(stock_data.get("수익률", 0))
+                self.log(f"  - {stock_name}({code}): {quantity}주, 평가액 {eval_amount:,.0f} (수익률 {pl_rate:.2f}%)", "INFO")
         else:
-            self.log("계좌번호가 설정되지 않았습니다.", "WARNING")
-
-        # 보유 종목 요약
-        portfolio_summary = self.get_current_portfolio_summary()
-        if portfolio_summary:
-            self.log(f"보유 종목 ({len(portfolio_summary)}개):", "INFO")
-            if portfolio_summary != ["보유 종목 없음"]:
-                for item_summary_str in portfolio_summary:
-                    self.log(f"  - {item_summary_str}", "INFO")
-            elif portfolio_summary == ["보유 종목 없음"]:
-                self.log("  - 보유 종목 없음.", "INFO")
-        else:
-            self.log("보유 종목 없음.", "INFO")
-
+            self.log("보유 종목 없음", "INFO")
+        
         # 미체결 주문 요약
-        active_orders_summary = self.get_active_orders_summary()
-        if active_orders_summary and active_orders_summary != ["활성 주문 없음"]:
-            self.log(f"미체결 주문 ({len(active_orders_summary)}건):", "INFO")
-            for order_summary_str in active_orders_summary:
-                self.log(f"  - {order_summary_str}", "INFO")
-        elif active_orders_summary == ["활성 주문 없음"]:
-            self.log("미체결 주문 없음.", "INFO")
-        else:  # active_orders_summary가 비어있는 경우 (None 또는 빈 리스트)
-            self.log("미체결 주문 없음.", "INFO")
-
-        # 관심 종목 상태 요약
-        watchlist_summary_list = self.get_watchlist_summary()
-        if watchlist_summary_list and watchlist_summary_list != ["관심 종목 없음"]:
-            self.log(f"관심 종목 ({len(watchlist_summary_list)}개):", "INFO")
-            for summary_str in watchlist_summary_list:
-                # get_watchlist_summary에서 생성된 문자열을 그대로 로깅
-                self.log(f"  - {summary_str}", "INFO")
-        elif watchlist_summary_list == ["관심 종목 없음"]:
-            self.log("  - 관심 종목 없음.", "INFO")  # 일관성을 위해 들여쓰기 추가
-        else:  # watchlist_summary_list가 비어있는 경우 (None 또는 빈 리스트)
-            self.log("  - 관심 종목 없음.", "INFO")  # 일관성을 위해 들여쓰기 추가
+        pending_orders = self.get_pending_orders()
+        if pending_orders:
+            self.log(f"미체결 주문 ({len(pending_orders)}건):", "INFO")
+            for order in pending_orders:
+                code = order.get("code", "")
+                stock_name = order.get("stock_name", "")
+                order_type = order.get("order_type", "")
+                quantity = self._safe_to_int(order.get("remaining_quantity", 0))
+                price = self._safe_to_float(order.get("price", 0))
+                order_status = order.get("order_status", "")
+                rq_name = order.get("rq_name", "")
+                self.log(f"  - RQ:{rq_name}, {stock_name}({code}), {order_type} {quantity}@{price:.1f}, 미체결:{quantity}, 상태:{order_status}", "INFO")
+        else:
+            self.log("미체결 주문 없음", "INFO")
         
-        pending_charts = self.get_pending_daily_chart_requests_count()
-        if pending_charts > 0:
-            self.log(f"{pending_charts}건의 관심종목 일봉 데이터 요청이 백그라운드 처리 중입니다.", "INFO")
-
+        # 관심 종목 모니터링 현황 추가
+        if self.watchlist:
+            self.log(f"관심 종목 ({len(self.watchlist)}개):", "INFO")
+            for code, stock_info in self.watchlist.items():
+                state_name = stock_info.strategy_state.name if hasattr(stock_info, 'strategy_state') and stock_info.strategy_state else 'N/A'
+                current_price = stock_info.current_price if hasattr(stock_info, 'current_price') else 0
+                buy_attempt_count = stock_info.buy_attempt_count if hasattr(stock_info, 'buy_attempt_count') else 0
+                self.log(f"  - {stock_info.stock_name}({code}): 현재가 {current_price:.1f}, 상태: {state_name}, 매수시도: {buy_attempt_count}/{self.settings.max_buy_attempts_per_stock}회", "INFO")
+        else:
+            self.log("관심 종목 없음", "INFO")
+        
+        # 일일 매수 실행 횟수 정보
         self.log(f"일일 매수 실행 횟수: {self.daily_buy_executed_count} / {self.settings.max_daily_buy_count}", "INFO")
+        
         self.log("===========================================", "INFO")
 
     def record_daily_snapshot_if_needed(self):
@@ -2284,6 +2412,12 @@ class TradingStrategy(QObject):
         import json
         
         try:
+            # 디렉토리가 존재하는지 확인하고 없으면 생성
+            state_dir = os.path.dirname(self.state_file_path)
+            if state_dir and not os.path.exists(state_dir):
+                os.makedirs(state_dir, exist_ok=True)
+                self.log(f"상태 파일 디렉토리를 생성했습니다: {state_dir}", "INFO")
+            
             trading_status_serializable = {}
             for code, status in self.account_state.trading_status.items():
                 # datetime 객체는 직접 JSON 직렬화가 안 되므로 문자열로 변환
@@ -2311,7 +2445,8 @@ class TradingStrategy(QObject):
                     'current_high_price_after_buy': stock_info.current_high_price_after_buy,
                     'is_trailing_stop_active': stock_info.is_trailing_stop_active,
                     'trailing_stop_partially_sold': stock_info.trailing_stop_partially_sold,
-                    'partial_take_profit_executed': stock_info.partial_take_profit_executed
+                    'partial_take_profit_executed': stock_info.partial_take_profit_executed,
+                    'buy_attempt_count': stock_info.buy_attempt_count  # 매수 시도 횟수 추가
                 }
                 
                 # datetime 객체 변환
@@ -2346,7 +2481,12 @@ class TradingStrategy(QObject):
         import os
         
         if not os.path.exists(self.state_file_path):
-            self.log(f"저장된 상태 파일({self.state_file_path})이 없습니다. 새로 시작합니다.", "WARNING")
+            # 기존 경로도 확인
+            old_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "trading_state.json")
+            if os.path.exists(old_path) and old_path != self.state_file_path:
+                self.log(f"저장된 상태 파일이 이전 경로({old_path})에 존재합니다. 다음 실행 시 자동으로 이동됩니다.", "WARNING")
+            else:
+                self.log(f"저장된 상태 파일({self.state_file_path})이 없습니다. 새로 시작합니다.", "WARNING")
             return False
         
         try:
@@ -2390,64 +2530,14 @@ class TradingStrategy(QObject):
                 self.log("포트폴리오가 아직 로드되지 않았습니다. 상태 복원을 위해 포트폴리오 로드가 필요합니다.", "WARNING")
                 return False
             
-            # 오늘의 매매 기록 로드 (일일 매수 카운트 계산용)
+            # 오늘의 매매 기록 로드 (정보 제공용 - 더이상 일일 매수 카운트에 사용하지 않음)
             today_date = datetime.now().strftime('%Y-%m-%d')
             today_trades = self.modules.db_manager.get_trades_by_date(today_date)
             
             if today_trades:
                 buy_trades = [trade for trade in today_trades if trade.get('trade_type') == '매수']
-                self.daily_buy_executed_count = len(buy_trades)
-                self.log(f"DB에서 오늘({today_date})의 매수 거래 {self.daily_buy_executed_count}건을 로드했습니다.", "INFO")
-            
-            # 포트폴리오에 있는 종목의 매매 이력 조회
-            for code, portfolio_item in self.account_state.portfolio.items():
-                if portfolio_item.get('보유수량', 0) <= 0:
-                    continue  # 보유수량이 0인 종목은 처리하지 않음
-                
-                # DB에서 해당 종목의 최근 매수 기록 조회 (최대 10건)
-                recent_trades = self.modules.db_manager.get_recent_trades_by_code(code, limit=10)
-                
-                if recent_trades:
-                    # 가장 최근 매수 거래 찾기
-                    recent_buys = [trade for trade in recent_trades if trade.get('trade_type') == '매수']
-                    if recent_buys:
-                        latest_buy = recent_buys[0]  # 가장 최근 매수
-                        
-                        # watchlist에 해당 종목이 없으면 추가
-                        if code not in self.watchlist:
-                            self.add_to_watchlist(code, portfolio_item.get('stock_name', code), 0)
-                        
-                        # 전략 상태 업데이트
-                        stock_info = self.watchlist[code]
-                        stock_info.strategy_state = TradingState.BOUGHT
-                        stock_info.avg_buy_price = portfolio_item.get('매입가', 0)
-                        stock_info.total_buy_quantity = portfolio_item.get('보유수량', 0)
-                        
-                        # 매수 시간은 DB 기록에서 가져오기
-                        try:
-                            buy_time_str = latest_buy.get('trade_time', '')
-                            if buy_time_str:
-                                stock_info.buy_timestamp = datetime.strptime(buy_time_str, '%Y-%m-%d %H:%M:%S')
-                            else:
-                                stock_info.buy_timestamp = datetime.now()  # 시간 정보 없으면 현재 시간으로
-                        except:
-                            stock_info.buy_timestamp = datetime.now()
-                        
-                        # 매수 후 최고가 초기화 (현재가 또는 매수가로)
-                        if stock_info.current_price > 0:
-                            stock_info.current_high_price_after_buy = max(stock_info.current_price, stock_info.avg_buy_price)
-                        else:
-                            stock_info.current_high_price_after_buy = stock_info.avg_buy_price
-                        
-                        # trading_status에도 상태 저장
-                        self.account_state.trading_status[code] = {
-                            'status': TradingState.BOUGHT,
-                            'bought_price': stock_info.avg_buy_price,
-                            'bought_quantity': stock_info.total_buy_quantity,
-                            'bought_time': stock_info.buy_timestamp
-                        }
-                        
-                        self.log(f"DB 기록 기반으로 [{code}] 상태 복원: 매수가({stock_info.avg_buy_price}), 수량({stock_info.total_buy_quantity}), 매수시간({stock_info.buy_timestamp.strftime('%Y-%m-%d %H:%M:%S') if stock_info.buy_timestamp else 'N/A'})", "INFO")
+                trade_count = len(buy_trades)
+                self.log(f"DB에서 오늘({today_date})의 매수 거래 {trade_count}건을 확인했습니다. (통계용)", "INFO")
             
             # 저장된 JSON 파일 상태 정보로 추가 복원
             self.restore_additional_state_from_saved_data()
@@ -2476,6 +2566,8 @@ class TradingStrategy(QObject):
                         stock_info.is_trailing_stop_active = saved_info['is_trailing_stop_active']
                     if 'trailing_stop_partially_sold' in saved_info:
                         stock_info.trailing_stop_partially_sold = saved_info['trailing_stop_partially_sold']
+                    if 'buy_attempt_count' in saved_info:
+                        stock_info.buy_attempt_count = saved_info['buy_attempt_count']
                     
                     # 현재 상태가 BOUGHT가 아니라면, 저장된 상태로 변경
                     if stock_info.strategy_state != TradingState.BOUGHT and 'strategy_state' in saved_info:

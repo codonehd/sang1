@@ -16,13 +16,14 @@ DEFAULT_SETTINGS = {
         "익절_매도비율": 50.0,
         "트레일링_하락률": 2.0, 
         "손절_손실률": 3.0,      
+        "종목당_최대시도횟수": 3,  # 종목당 최대 매수 시도 횟수 추가
         "MarketOpenTime": "09:00:00",
         "MarketCloseTime": "15:30:00",
         "dry_run_mode": False
     },
     "watchlist": [], # 변경: "매매대상종목" -> "watchlist", 객체 리스트를 위한 빈 리스트
     "Database": {
-        "path": "logs/trading_data.db"
+        "path": "logs/trading_data.test.db"
     },
     "Logging": {
         "level": "INFO",
@@ -122,6 +123,13 @@ class ConfigManager:
             trailing_stop = default_strategy["트레일링_하락률"]
         strategy_settings["트레일링_하락률"] = trailing_stop
 
+        # 6. 종목당 최대 시도 횟수 (max_buy_attempts_per_stock)
+        max_attempts = strategy_settings.get("종목당_최대시도횟수", default_strategy["종목당_최대시도횟수"])
+        if not isinstance(max_attempts, int) or max_attempts <= 0:
+            self._log_message(f"설정 오류: '매매전략.종목당_최대시도횟수'가 유효하지 않습니다 (값: {max_attempts}). 기본값 {default_strategy['종목당_최대시도횟수']}으로 대체합니다.", "WARNING")
+            max_attempts = default_strategy["종목당_최대시도횟수"]
+        strategy_settings["종목당_최대시도횟수"] = max_attempts
+
         # Dry Run 모드
         dry_run_mode = strategy_settings.get("dry_run_mode", default_strategy.get("dry_run_mode", False))
         if not isinstance(dry_run_mode, bool):
@@ -131,7 +139,7 @@ class ConfigManager:
         
         current_settings["매매전략"] = strategy_settings
 
-        # 6. 관심종목 (watchlist) - 객체 리스트 [{code, name, yesterday_close_price}, ...]
+        # 7. 관심종목 (watchlist) - 객체 리스트 [{code, name, yesterday_close_price}, ...]
         watchlist = current_settings.get("watchlist", DEFAULT_SETTINGS["watchlist"])
         if not isinstance(watchlist, list):
             self._log_message(f"설정 오류: 'watchlist'가 리스트가 아닙니다 (값: {watchlist}). 기본값 {DEFAULT_SETTINGS['watchlist']}으로 대체합니다.", "WARNING")
@@ -168,7 +176,7 @@ class ConfigManager:
         
         current_settings["watchlist"] = validated_watchlist
         
-        # 7. 주기적 상태 보고 (PeriodicStatusReport)
+        # 8. 주기적 상태 보고 (PeriodicStatusReport)
         report_settings = current_settings.get("PeriodicStatusReport", DEFAULT_SETTINGS["PeriodicStatusReport"].copy())
         default_report = DEFAULT_SETTINGS["PeriodicStatusReport"]
 

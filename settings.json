@@ -31,7 +31,11 @@
     },
     "watchlist": [
         
-	    { "code": "038070", "name": "서린바이오", "yesterday_close_price": 8150 }
+	    { "code": "214610", "name": "더바이오메드", "yesterday_close_price": 6520 },
+        { "code": "075580", "name": "세진중공업", "yesterday_close_price": 12030 },
+        { "code": "299660", "name": "셀리드", "yesterday_close_price": 5200 },
+        { "code": "114450", "name": "그린생명과학", "yesterday_close_price": 2205 },
+        { "code": "297090", "name": "씨에스베어링", "yesterday_close_price": 8690 }
     ],
     "PeriodicStatusReport": {
         "enabled": true,
