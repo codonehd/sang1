@@ -19,7 +19,7 @@
         "path": "logs/trading_data.test.db"
     },
     "Logging": {
-        "level": "INFO",
+        "level": "DEBUG",
         "max_bytes": 10485760,
         "backup_count": 5
     },
@@ -31,7 +31,7 @@
     },
     "watchlist": [
         
-	    { "code": "439580", "name": "블루엠텍", "yesterday_close_price": 7400 }
+	    { "code": "038070", "name": "서린바이오", "yesterday_close_price": 8150 }
     ],
     "PeriodicStatusReport": {
         "enabled": true,

@@ -458,3 +458,88 @@ class Database:
             else:
                 print(f"ERROR: 거래 내역 조회 오류: {e}")
             return [] 
+
+    def get_trades_by_date(self, date_str):
+        """지정된 날짜의 모든 거래 기록을 가져옵니다."""
+        try:
+            self._ensure_trades_table_exists()
+            
+            cursor = self.conn.cursor()
+            cursor.execute("""
+                SELECT * FROM trades 
+                WHERE date(trade_time) = date(?)
+                ORDER BY trade_time DESC
+            """, (date_str,))
+            
+            trades = []
+            columns = [col[0] for col in cursor.description]
+            for row in cursor.fetchall():
+                trades.append(dict(zip(columns, row)))
+            
+            self.logger.info(f"{date_str} 날짜의 거래 {len(trades)}건을 DB에서 로드했습니다.")
+            return trades
+        except Exception as e:
+            self.logger.error(f"날짜별 거래 기록 조회 중 오류: {e}")
+            return []
+    
+    def get_recent_trades_by_code(self, code, limit=10):
+        """특정 종목의 최근 거래 기록을 가져옵니다."""
+        try:
+            self._ensure_trades_table_exists()
+            
+            cursor = self.conn.cursor()
+            cursor.execute("""
+                SELECT * FROM trades 
+                WHERE code = ?
+                ORDER BY trade_time DESC
+                LIMIT ?
+            """, (code, limit))
+            
+            trades = []
+            columns = [col[0] for col in cursor.description]
+            for row in cursor.fetchall():
+                trades.append(dict(zip(columns, row)))
+            
+            self.logger.info(f"{code} 종목의 최근 거래 {len(trades)}건을 DB에서 로드했습니다.")
+            return trades
+        except Exception as e:
+            self.logger.error(f"종목별 거래 기록 조회 중 오류: {e}")
+            return [] 
+
+    def _ensure_trades_table_exists(self):
+        """trades 테이블이 존재하는지 확인하고, 없으면 생성합니다."""
+        try:
+            cursor = self.conn.cursor()
+            
+            # 테이블 존재 여부 확인
+            cursor.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='trades'")
+            if not cursor.fetchone():
+                # 테이블이 없으면 생성
+                cursor.execute('''
+                CREATE TABLE trades (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    order_no TEXT,
+                    code TEXT NOT NULL,
+                    name TEXT NOT NULL,
+                    trade_type TEXT NOT NULL,
+                    quantity INTEGER NOT NULL,
+                    price REAL NOT NULL,
+                    amount REAL NOT NULL,
+                    trade_time TEXT NOT NULL,
+                    trade_reason TEXT,
+                    fees REAL DEFAULT 0,
+                    tax REAL DEFAULT 0
+                )
+                ''')
+                self.conn.commit()
+                if self.logger:
+                    self.logger.info("trades 테이블이 생성되었습니다.")
+                else:
+                    print("INFO: trades 테이블이 생성되었습니다.")
+            return True
+        except sqlite3.Error as e:
+            if self.logger:
+                self.logger.error(f"trades 테이블 확인/생성 중 오류: {e}")
+            else:
+                print(f"ERROR: trades 테이블 확인/생성 중 오류: {e}")
+            return False 

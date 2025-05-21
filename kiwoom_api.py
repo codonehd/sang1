@@ -822,21 +822,39 @@ class KiwoomAPI(QObject):
             self.log(f"TR 오류 코드 형식 오류: '{sErrorCode}' ({type(sErrorCode)}). 0으로 처리. ({sRQName}, {sTrCode})", "WARNING")
 
         # 캐시가 comm_rq_data에서 미리 준비되었는지 확인 및 업데이트
-        if sRQName not in self.tr_data_cache or not isinstance(self.tr_data_cache.get(sRQName), dict):
-            self.log(f"on_receive_tr_data: {sRQName} 캐시가 없거나 dict가 아님! 비정상. 강제 초기화 시도.", "ERROR")
+        # sRQName으로 캐시를 가져오고, dict 타입인지 확인합니다.
+        cached_request_info = self.tr_data_cache.get(sRQName)
+        if not isinstance(cached_request_info, dict):
+            self.log(f"on_receive_tr_data: {sRQName} 캐시가 없거나 dict 타입이 아닙니다! (타입: {type(cached_request_info)}). 비정상. 강제 초기화 시도.", "ERROR")
+            # 캐시가 없거나 유효하지 않으면, API에서 받은 sTrCode를 사용합니다.
             self.tr_data_cache[sRQName] = {
-                'status': 'error', 'error': 'Cache not initialized by comm_rq_data',
-                'tr_code': sTrCode, 'screen_no': sScrNo, 'prev_next': sPrevNext,
-                'single_data':{}, 'multi_data':[], 'data':[] # 'data' 추가
+                'status': 'error', 
+                'error_message': 'Cache not initialized by comm_rq_data or invalid type', # 오류 메시지 명확화
+                'tr_code': sTrCode, # API에서 받은 TR 코드를 사용
+                'screen_no': sScrNo, 
+                'prev_next': sPrevNext,
+                'single_data':{}, 
+                'multi_data':[], 
+                'data':[] 
             }
+            # 이 경우에도 cached_request_info를 업데이트하여 아래 로직에서 사용 가능하게 함
+            cached_request_info = self.tr_data_cache[sRQName] 
         
+        # 캐시에서 tr_code를 가져옵니다. 없으면 API에서 받은 sTrCode를 사용합니다.
+        # 이 부분은 sTrCode를 API에서 받은 값으로 일관되게 사용하므로, 캐시의 tr_code는 참조/검증용입니다.
+        cached_tr_code_from_cache = cached_request_info.get('tr_code')
+        if cached_tr_code_from_cache and cached_tr_code_from_cache != sTrCode:
+            self.log(f"경고: API 수신 TR 코드({sTrCode})와 캐시된 TR 코드({cached_tr_code_from_cache}) 불일치. API 수신 코드({sTrCode})를 우선 사용합니다. ({sRQName})", "WARNING")
+        # 실제 로직에서는 API로부터 받은 sTrCode를 일관되게 사용합니다.
+
         # 에러 발생 시 우선 처리
         if processed_error_code != 0:
             full_error_message = f"TR API 오류: {self.get_error_message(processed_error_code)} (코드:{processed_error_code}) - 서버메시지: {sMessage} ({sSplmMsg})"
             self.log(f"{full_error_message} ({sRQName}, {sTrCode})", "ERROR")
-            if sRQName in self.tr_data_cache and isinstance(self.tr_data_cache[sRQName], dict): # 방어 코드
-                self.tr_data_cache[sRQName]['error'] = full_error_message
-                self.tr_data_cache[sRQName]['status'] = 'error'
+            # cached_request_info는 위에서 dict임이 보장되었으므로 직접 접근
+            cached_request_info['error_message'] = full_error_message # error -> error_message로 키 변경 일관성
+            cached_request_info['status'] = 'error'
+            
             self.screen_manager.release_screen(sScrNo, sRQName) # 에러 시 화면번호 즉시 반환
             self.log(f"화면번호 반납 (TR API 오류): {sScrNo} ({sRQName})", "DEBUG")
             if self.tr_event_loop and self.tr_event_loop.isRunning(): self.tr_event_loop.exit()
@@ -846,16 +864,14 @@ class KiwoomAPI(QObject):
             return
 
         # 정상 응답 데이터 파싱
-        parsed_data = self._parse_tr_data(sTrCode, sRQName, sScrNo, sPrevNext) # 수정된 _parse_tr_data 사용
-        if sRQName in self.tr_data_cache and isinstance(self.tr_data_cache[sRQName], dict): # 방어 코드
-            self.tr_data_cache[sRQName].update(parsed_data) # 파싱된 결과를 캐시에 반영 (single_data, multi_data 등)
-        else: # 캐시가 여전히 없다면 (위에서 초기화 실패 등 극히 예외적 상황)
-            self.log(f"on_receive_tr_data: 파싱 후에도 {sRQName} 캐시 없거나 dict 아님. 데이터 처리 불가.", "ERROR")
-            self.screen_manager.release_screen(sScrNo, sRQName)
-            if self.tr_event_loop and self.tr_event_loop.isRunning(): self.tr_event_loop.exit()
-            return
+        # _parse_tr_data는 API에서 받은 sTrCode를 사용합니다.
+        parsed_data = self._parse_tr_data(sTrCode, sRQName, sScrNo, sPrevNext) 
+        
+        # 파싱된 결과를 캐시에 반영 (single_data, multi_data 등)
+        # cached_request_info는 dict임이 보장됨
+        cached_request_info.update(parsed_data) 
 
-        # TR 코드별 핸들러 호출 또는 직접 처리
+        # TR 코드별 핸들러 호출 또는 직접 처리 (sTrCode는 API에서 직접 받은 값 사용)
         if sTrCode == "opt10001":
             self._handle_opt10001(sRQName, parsed_data)
         elif sTrCode == "opt10081":
@@ -944,7 +960,7 @@ class KiwoomAPI(QObject):
                 cached_item = self.tr_data_cache[sRQName]
                 original_params = cached_item.get('params', {})
                 code_for_signal_raw = original_params.get('input_values', {}).get('종목코드')
-                pure_code_for_signal, _, _, _ = self._parse_stock_code(str(code_for_signal_raw)) # 순수 코드 추출
+                pure_code_for_signal, _, _, _ = self._parse_stock_code(str(code_for_signal_raw))
 
                 all_accumulated_data = cached_item.get('data', [])
                 self.log(f"opt10081 모든 데이터 수신 완료 (RQ='{sRQName}', CodeForSignal='{pure_code_for_signal}'). 총 {len(all_accumulated_data)}건. Strategy로 전달.", "INFO")
@@ -974,9 +990,8 @@ class KiwoomAPI(QObject):
         elif sPrevNext != '2': # 연속 조회가 아니거나, opt10081이 아닌 TR의 최종/단일 응답
             self.log(f"TR({sTrCode}, RQ='{sRQName}') 단일/최종 응답. 화면번호({sScrNo}) 반환 예정.", "DEBUG")
             self.screen_manager.release_screen(sScrNo, sRQName)
-            if sRQName in self.tr_data_cache and isinstance(self.tr_data_cache[sRQName], dict) and \
-               self.tr_data_cache[sRQName].get('status') != 'error': # 에러가 아니었다면 completed
-                self.tr_data_cache[sRQName]['status'] = 'completed'
+            if cached_request_info.get('status') != 'error': # 에러가 아니었다면 completed
+                cached_request_info['status'] = 'completed'
             
             # if self.tr_event_loop and self.tr_event_loop.isRunning(): # REMOVED: Should not exit global/shared event loop from TR callback
             #     self.log(f"이벤트 루프 종료 (TR: {sTrCode}, RQ: {sRQName})", "CRITICAL")

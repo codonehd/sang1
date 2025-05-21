@@ -147,57 +147,56 @@ def main():
     import time # time.sleep 및 시간 측정용
 
     # 향상된 signal_handler 정의
-    def enhanced_signal_handler(sig, frame, kiwoom_instance, strategy_instance, logger_instance, db_instance, q_application_instance):
-        logger_instance.info("Ctrl+C 입력 감지. 프로그램 즉시 종료 절차를 시작합니다...")
-
+    def enhanced_signal_handler(signal_num, frame):
+        """향상된 시그널 핸들러: 주요 리소스 정리 및 앱 종료 시퀀스"""
         try:
-            # 1. 매매 전략 우선 중지 (새로운 주문 발생 방지 및 내부 상태 정리)
-            logger_instance.info("매매 전략 중지를 시도합니다...")
-            if strategy_instance and hasattr(strategy_instance, 'stop') and callable(strategy_instance.stop):
-                try:
-                    strategy_instance.stop() 
-                    logger_instance.info("매매 전략이 중지되었습니다.")
-                except Exception as e_strat_stop:
-                    logger_instance.error(f"매매 전략 중지 중 예외 발생: {e_strat_stop}", exc_info=True)
-            else:
-                logger_instance.warning("매매 전략 중지 기능을 찾을 수 없습니다 (strategy_instance.stop).")
-
-            # 2. KiwoomAPI 리소스 해제 및 연결 종료 (가장 중요)
-            logger_instance.info("KiwoomAPI 리소스 해제 및 연결 종료를 시작합니다...")
-            if kiwoom_instance and hasattr(kiwoom_instance, 'disconnect_api') and callable(kiwoom_instance.disconnect_api):
-                try:
-                    kiwoom_instance.disconnect_api() # 이 메소드에서 shutdown_mode, 실시간 해제, 화면 해제, CommTerminate 모두 처리
-                    logger_instance.info("KiwoomAPI 연결 해제 절차 호출 완료.")
-                except Exception as e_disconnect:
-                    logger_instance.error(f"KiwoomAPI disconnect_api 호출 중 예외 발생: {e_disconnect}", exc_info=True)
-            else:
-                logger_instance.warning("KiwoomAPI 또는 disconnect_api 메소드를 찾을 수 없습니다. 수동 종료 시도 필요할 수 있음.")
+            # 외부 함수(main)의 변수에 접근하기 위해 nonlocal 사용
+            nonlocal app, kiwoom, db, strategy
+            print(f"[SIG_HANDLER] 시그널 {signal_num} 수신. 정상 종료 시퀀스 시작.")
             
-            # 3. 데이터베이스 연결 해제
-            if db_instance and hasattr(db_instance, 'close_connection') and callable(db_instance.close_connection):
+            # 매매 전략 중지
+            if strategy:
                 try:
-                    db_instance.close() # close_connection -> close 로 변경
-                    logger_instance.info("데이터베이스 연결이 해제되었습니다.")
-                except Exception as e_db_close:
-                    logger_instance.error(f"데이터베이스 연결 해제 중 예외 발생: {e_db_close}", exc_info=True)
-            else:
-                logger_instance.warning("DB 인스턴스 또는 close_connection 메소드를 찾을 수 없습니다.")
+                    print("[SIG_HANDLER] 매매 전략 중지 시작...")
+                    strategy.stop()  # 정확한 stop 메서드 호출 확인
+                    print("[SIG_HANDLER] 매매 전략 중지 완료.")
+                except Exception as e:
+                    print(f"[SIG_HANDLER] 매매 전략 중지 중 오류: {e}")
             
-            # 4. QApplication 종료는 가장 마지막에 수행
-            if q_application_instance:
-                logger_instance.info("QApplication 종료를 시도합니다.")
-                # q_application_instance.processEvents() # 이미 disconnect_api 등에서 이벤트 처리했을 수 있음
-                q_application_instance.quit()
-                logger_instance.info("QApplication.quit() 호출됨.")
-            else:
-                logger_instance.warning("QApplication 인스턴스가 없어 quit()을 호출할 수 없습니다.")
-
-        except Exception as e_main_handler:
-            logger_instance.error(f"enhanced_signal_handler 메인 로직 중 예외 발생: {e_main_handler}", exc_info=True)
-        finally:
-            logger_instance.info("프로그램이 정상적으로 종료될 예정입니다.")
-            # os._exit(0) 또는 sys.exit(0)은 QApplication.quit()이 주 메커니즘이므로 여기서는 호출하지 않음.
-            # 루프가 완전히 종료된 후 main의 finally 블록에서 최종 로깅.
+            # API 연결 종료
+            if kiwoom:
+                try:
+                    print("[SIG_HANDLER] KiwoomAPI 리소스 해제 및 연결 종료 시작...")
+                    kiwoom.disconnect_api()
+                    print("[SIG_HANDLER] KiwoomAPI disconnect_api 호출 완료 (실제 종료는 비동기적일 수 있음).")
+                except Exception as e:
+                    print(f"[SIG_HANDLER] KiwoomAPI 연결 종료 중 오류: {e}")
+            
+            # DB 연결 종료
+            if db:
+                try:
+                    db.close()
+                    print("[SIG_HANDLER] DB 연결 종료 완료.")
+                except Exception as e:
+                    print(f"[SIG_HANDLER] DB 연결 종료 중 오류: {e}")
+            
+            # QApplication 종료
+            if app:
+                try:
+                    print("[SIG_HANDLER] QApplication.quit() 호출...")
+                    app.quit()
+                    print("[SIG_HANDLER] QApplication.quit() 호출 완료.")
+                except Exception as e:
+                    print(f"[SIG_HANDLER] QApplication 종료 중 오류: {e}")
+            
+            print("[SIG_HANDLER] enhanced_signal_handler 실행 완료. 프로그램이 정상적으로 종료됩니다.")
+        except Exception as e:
+            print(f"[SIG_HANDLER] 종료 처리 중 예상치 못한 오류 발생: {e}")
+            # 심각한 오류 발생 시 즉시 종료
+            sys.exit(1)
+        
+        # 정상 종료
+        sys.exit(0)
 
     try:
         # 관심종목 추가 (설정 파일에서 로드 - ConfigManager가 유효성 검사 및 기본값 처리)
@@ -228,13 +227,7 @@ def main():
         print("DEBUG: QApplication 이벤트 루프 시작...")
         # SIGINT 핸들러는 이벤트 루프 시작 전에 설정되어야 합니다.
         # enhanced_signal_handler가 이 시점에 정의되어 있으므로 여기서 설정합니다.
-        final_signal_handler = partial(enhanced_signal_handler, 
-                                     kiwoom_instance=kiwoom, 
-                                     strategy_instance=strategy, 
-                                     logger_instance=logger, 
-                                     db_instance=db,
-                                     q_application_instance=app)
-        signal.signal(signal.SIGINT, final_signal_handler)
+        signal.signal(signal.SIGINT, enhanced_signal_handler)
         logger.info("Ctrl+C (SIGINT) 핸들러 최종 설정 완료. 이벤트 루프 시작 직전.")
 
         sys.exit(app.exec_())
