@@ -1,13 +1,13 @@
 {
-  "daily_buy_executed_count": 15,
-  "today_date_for_buy_limit": "2025-05-21",
+  "daily_buy_executed_count": 0,
+  "today_date_for_buy_limit": "2025-05-22",
   "trading_status": {},
   "watchlist": {
-    "214610": {
-      "code": "214610",
-      "stock_name": "더바이오메드",
-      "current_price": 0.0,
-      "yesterday_close_price": 6520.0,
+    "388050": {
+      "code": "388050",
+      "stock_name": "지투파워",
+      "current_price": 8980.0,
+      "yesterday_close_price": 9000.0,
       "strategy_state": "WAITING",
       "avg_buy_price": 0.0,
       "total_buy_quantity": 0,
@@ -15,63 +15,7 @@
       "is_trailing_stop_active": false,
       "trailing_stop_partially_sold": false,
       "partial_take_profit_executed": false,
-      "buy_attempt_count": 0
-    },
-    "075580": {
-      "code": "075580",
-      "stock_name": "세진중공업",
-      "current_price": 0.0,
-      "yesterday_close_price": 12030.0,
-      "strategy_state": "WAITING",
-      "avg_buy_price": 0.0,
-      "total_buy_quantity": 0,
-      "current_high_price_after_buy": 0.0,
-      "is_trailing_stop_active": false,
-      "trailing_stop_partially_sold": false,
-      "partial_take_profit_executed": false,
-      "buy_attempt_count": 0
-    },
-    "299660": {
-      "code": "299660",
-      "stock_name": "셀리드",
-      "current_price": 0.0,
-      "yesterday_close_price": 5200.0,
-      "strategy_state": "WAITING",
-      "avg_buy_price": 0.0,
-      "total_buy_quantity": 0,
-      "current_high_price_after_buy": 0.0,
-      "is_trailing_stop_active": false,
-      "trailing_stop_partially_sold": false,
-      "partial_take_profit_executed": false,
-      "buy_attempt_count": 0
-    },
-    "114450": {
-      "code": "114450",
-      "stock_name": "그린생명과학",
-      "current_price": 0.0,
-      "yesterday_close_price": 2205.0,
-      "strategy_state": "WAITING",
-      "avg_buy_price": 0.0,
-      "total_buy_quantity": 0,
-      "current_high_price_after_buy": 0.0,
-      "is_trailing_stop_active": false,
-      "trailing_stop_partially_sold": false,
-      "partial_take_profit_executed": false,
-      "buy_attempt_count": 0
-    },
-    "297090": {
-      "code": "297090",
-      "stock_name": "씨에스베어링",
-      "current_price": 0.0,
-      "yesterday_close_price": 8690.0,
-      "strategy_state": "WAITING",
-      "avg_buy_price": 0.0,
-      "total_buy_quantity": 0,
-      "current_high_price_after_buy": 0.0,
-      "is_trailing_stop_active": false,
-      "trailing_stop_partially_sold": false,
-      "partial_take_profit_executed": false,
-      "buy_attempt_count": 0
+      "buy_completion_count": 0
     }
   },
   "trading_records": {
@@ -86,5 +30,5 @@
     "손실금액": 0
   },
   "last_snapshot_date": null,
-  "saved_datetime": "2025-05-21 20:04:43"
+  "saved_datetime": "2025-05-22 11:30:58"
 }

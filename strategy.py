@@ -72,7 +72,7 @@ class StockTrackingData:
     is_trailing_stop_active: bool = False # 트레일링 스탑 활성화 여부 (2% 수익 달성 시 True)
     partial_take_profit_executed: bool = False # 5% 부분 익절 실행 여부
     buy_timestamp: Optional[datetime] = None # 매수 체결 시간 기록
-    buy_attempt_count: int = 0  # 매수 시도 횟수 (종목당 최대 3회 제한용)
+    buy_completion_count: int = 0  # 매수 체결 완료 횟수 (종목당 최대 3회 제한용)
     api_data: Dict[str, Any] = field(default_factory=dict)
     # daily_chart_error: bool = False # REMOVED: No longer fetching daily chart via opt10081
 
@@ -751,9 +751,9 @@ class TradingStrategy(QObject):
             self.daily_buy_executed_count = 0
             # 모든 종목의 매수 시도 횟수 초기화
             for code, stock_info in self.watchlist.items():
-                if stock_info.buy_attempt_count > 0:
-                    self.log(f"[{code}] 매수 시도 횟수 초기화: {stock_info.buy_attempt_count} -> 0", "DEBUG")
-                    stock_info.buy_attempt_count = 0
+                if stock_info.buy_completion_count > 0:
+                    self.log(f"[{code}] 매수 시도 횟수 초기화: {stock_info.buy_completion_count} -> 0", "DEBUG")
+                    stock_info.buy_completion_count = 0
             self.today_date_for_buy_limit = current_date
         
         # 시장 시간이 아니면 종료
@@ -1026,7 +1026,7 @@ class TradingStrategy(QObject):
     def execute_buy(self, code):
         # 일일 매수 횟수 제한 확인 - 제거됨 (종목별 시도 횟수로 대체)
         # 현재 날짜와 제한 날짜가 다르면 카운트 초기화 (여전히 필요한 로직)
-        current_date = datetime.now().strftime('%Y-%m-%d')
+        current_date = datetime.now().strftime("%Y-%m-%d")
         if self.today_date_for_buy_limit != current_date:
             self.daily_buy_executed_count = 0
             self.today_date_for_buy_limit = current_date
@@ -1038,15 +1038,13 @@ class TradingStrategy(QObject):
             self.log(f"매수 실행 불가: {code}는 관심종목 목록에 없습니다.", "ERROR")
             return False
         
-        # 종목별 최대 시도 횟수 확인
-        if stock_info.buy_attempt_count >= self.settings.max_buy_attempts_per_stock:
-            self.log(f"[{code}] 매수 실행 불가: 이미 최대 시도 횟수({self.settings.max_buy_attempts_per_stock}회)에 도달했습니다. 현재 시도 횟수: {stock_info.buy_attempt_count}", "WARNING")
+        # 종목별 최대 체결 횟수 확인
+        if stock_info.buy_completion_count >= self.settings.max_buy_attempts_per_stock:
+            self.log(f"[{code}] 매수 실행 불가: 이미 최대 체결 횟수({self.settings.max_buy_attempts_per_stock}회)에 도달했습니다. 현재 체결 횟수: {stock_info.buy_completion_count}", "WARNING")
             stock_info.strategy_state = TradingState.COMPLETE  # 더 이상 매수 시도하지 않도록 상태 변경
             return False
         
-        # 매수 시도 횟수 증가
-        stock_info.buy_attempt_count += 1
-        self.log(f"[{code}] 매수 시도 #{stock_info.buy_attempt_count}/{self.settings.max_buy_attempts_per_stock}", "INFO")
+        # 매수 시도 횟수 증가 부분 제거 - 체결 시에만 증가하도록 변경
         
         # 매매가 진행 중이거나 거래가 완료된 경우 체크
         if stock_info.strategy_state in [TradingState.BOUGHT, TradingState.PARTIAL_SOLD, TradingState.COMPLETE]:
@@ -1282,7 +1280,7 @@ class TradingStrategy(QObject):
         stock_info.trailing_stop_partially_sold = False
         stock_info.partial_take_profit_executed = False
         stock_info.buy_timestamp = None
-        stock_info.buy_attempt_count = 0  # 매수 시도 횟수 초기화
+        stock_info.buy_completion_count = 0  # 매수 체결 완료 횟수 초기화
         
         # trading_status에서도 제거
         if code in self.account_state.trading_status:
@@ -1613,9 +1611,9 @@ class TradingStrategy(QObject):
         self.log(f"일일 매수 실행 횟수: {self.daily_buy_executed_count} (통계용)", "INFO")
 
         # 종목별 매수 시도 횟수 표시 (매수 시도가 있는 모든 종목)
-        attempt_stocks = [(code, info.stock_name, info.buy_attempt_count, info.strategy_state.name) 
+        attempt_stocks = [(code, info.stock_name, info.buy_completion_count, info.strategy_state.name) 
                          for code, info in self.watchlist.items() 
-                         if info.buy_attempt_count > 0]
+                         if info.buy_completion_count > 0]
         
         if attempt_stocks:
             self.log(f"종목별 매수 시도 현황 (최대 {self.settings.max_buy_attempts_per_stock}회):", "INFO")
@@ -1744,6 +1742,7 @@ class TradingStrategy(QObject):
         self.current_status_message = f"체결/잔고 처리 완료 (구분: {gubun}, 종목: {code if code else '코드없음'})"
 
     def _handle_order_execution_report(self, chejan_data, active_order_entry_ref, original_rq_name_key, code, stock_name, stock_info: Optional[StockTrackingData]):
+        """주문 체결 보고를 처리합니다. 매수 체결 완료 시 buy_completion_count를 증가시킵니다."""
         # active_order_entry_ref가 None이면 더 이상 진행할 수 없음
         if active_order_entry_ref is None:
             log_api_order_no = chejan_data.get("9203", "N/A")
@@ -1809,6 +1808,10 @@ class TradingStrategy(QObject):
                 # active_orders에서 제거는 아래에서 수행
             else: # stock_info가 있는 경우에만 상태 업데이트
                 if active_order_entry_ref['order_type'] == '매수':
+                    # 매수 체결 완료 시 체결 횟수 증가
+                    stock_info.buy_completion_count += 1
+                    self.log(f"[{code}] 매수 체결 완료 #{stock_info.buy_completion_count}/{self.settings.max_buy_attempts_per_stock}", "INFO")
+                    
                     stock_info.strategy_state = TradingState.BOUGHT
                     # 이 로그가 사용자님이 찾으시는 로그!
                     self.log(f"[매수 체결 완료] {code} ({stock_name}) 상태 변경: {stock_info.strategy_state.name}, RQNameKey: {original_rq_name_key}", "IMPORTANT") 
@@ -1879,7 +1882,6 @@ class TradingStrategy(QObject):
                         if portfolio_item and portfolio_item.get('보유수량', 0) > 0 :
                              stock_info.strategy_state = TradingState.PARTIAL_SOLD # 만약 아직 보유량이 있다면 PARTIAL_SOLD
                              self.log(f"{code} ({stock_name}) 매도 전량체결이나 포트폴리오 잔량 남아있어 PARTIAL_SOLD로 상태 유지. 수량: {portfolio_item.get('보유수량')}", "WARNING")
-
 
                 # stock_info의 last_order_rq_name 초기화 조건: 현재 완료된 주문의 original_rq_name_key와 일치할 때
                 if stock_info.last_order_rq_name == original_rq_name_key:
@@ -1996,8 +1998,8 @@ class TradingStrategy(QObject):
             for code, stock_info in self.watchlist.items():
                 state_name = stock_info.strategy_state.name if hasattr(stock_info, 'strategy_state') and stock_info.strategy_state else 'N/A'
                 current_price = stock_info.current_price if hasattr(stock_info, 'current_price') else 0
-                buy_attempt_count = stock_info.buy_attempt_count if hasattr(stock_info, 'buy_attempt_count') else 0
-                self.log(f"  - {stock_info.stock_name}({code}): 현재가 {current_price:.1f}, 상태: {state_name}, 매수시도: {buy_attempt_count}/{self.settings.max_buy_attempts_per_stock}회", "INFO")
+                buy_completion_count = stock_info.buy_completion_count if hasattr(stock_info, 'buy_completion_count') else 0
+                self.log(f"  - {stock_info.stock_name}({code}): 현재가 {current_price:.1f}, 상태: {state_name}, 매수시도: {buy_completion_count}/{self.settings.max_buy_attempts_per_stock}회", "INFO")
         else:
             self.log("관심 종목 없음", "INFO")
         
@@ -2446,7 +2448,7 @@ class TradingStrategy(QObject):
                     'is_trailing_stop_active': stock_info.is_trailing_stop_active,
                     'trailing_stop_partially_sold': stock_info.trailing_stop_partially_sold,
                     'partial_take_profit_executed': stock_info.partial_take_profit_executed,
-                    'buy_attempt_count': stock_info.buy_attempt_count  # 매수 시도 횟수 추가
+                    'buy_completion_count': stock_info.buy_completion_count  # 매수 체결 완료 횟수 추가
                 }
                 
                 # datetime 객체 변환
@@ -2566,8 +2568,8 @@ class TradingStrategy(QObject):
                         stock_info.is_trailing_stop_active = saved_info['is_trailing_stop_active']
                     if 'trailing_stop_partially_sold' in saved_info:
                         stock_info.trailing_stop_partially_sold = saved_info['trailing_stop_partially_sold']
-                    if 'buy_attempt_count' in saved_info:
-                        stock_info.buy_attempt_count = saved_info['buy_attempt_count']
+                    if 'buy_completion_count' in saved_info:
+                        stock_info.buy_completion_count = saved_info['buy_completion_count']
                     
                     # 현재 상태가 BOUGHT가 아니라면, 저장된 상태로 변경
                     if stock_info.strategy_state != TradingState.BOUGHT and 'strategy_state' in saved_info:
