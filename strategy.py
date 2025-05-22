@@ -996,65 +996,53 @@ class TradingStrategy(QObject):
                 return
 
     def process_strategy(self, code):
-        # self.log(f"[Strategy_DEBUG] ENTERING process_strategy for {code}.", "DEBUG") # 상태 정보는 stock_info에서 직접 참조
-        
+        """코드 전략을 실행합니다."""
+        # watchlist에 없는 종목 처리
         stock_info = self.watchlist.get(code)
         if not stock_info:
-            # self.log(f"Cannot process strategy for {code}: not in watchlist.", "ERROR")
+            # self.log(f"[ProcessStrategy] 관심종목 목록에 없는 종목({code})의 전략 실행 요청이 무시됨", "DEBUG")
             return
 
-        # 매수 체결 확인: 포트폴리오에 종목이 있는데 상태가 WAITING이면 BOUGHT로 변경
-        if stock_info.strategy_state != TradingState.BOUGHT and code in self.account_state.portfolio:
-            portfolio_item = self.account_state.portfolio.get(code)
-            if portfolio_item and portfolio_item.get('보유수량', 0) > 0:
-                # 보유 중인데 상태가 BOUGHT가 아니면 BOUGHT로 변경
-                old_state = stock_info.strategy_state
-                stock_info.strategy_state = TradingState.BOUGHT
-                stock_info.avg_buy_price = portfolio_item.get('매입가', 0)
-                stock_info.total_buy_quantity = portfolio_item.get('보유수량', 0)
-                stock_info.current_high_price_after_buy = max(stock_info.current_high_price_after_buy, stock_info.current_price)
-                stock_info.buy_timestamp = datetime.now() if not stock_info.buy_timestamp else stock_info.buy_timestamp
-                
-                # trading_status에도 상태 저장
-                self.account_state.trading_status[code] = {
-                    'status': TradingState.BOUGHT,
-                    'bought_price': stock_info.avg_buy_price,
-                    'bought_quantity': stock_info.total_buy_quantity,
-                    'bought_time': stock_info.buy_timestamp
-                }
-                
-                self.log(f"[상태 자동 교정] {code}가 포트폴리오에 존재하지만 상태가 {old_state}입니다. BOUGHT로 상태를 변경합니다. 보유량: {stock_info.total_buy_quantity}, 매입가: {stock_info.avg_buy_price}", "IMPORTANT")
-        
+        # 현재가 확인
         current_price = stock_info.current_price
-        if current_price == 0:
-            self.log(f"Cannot process strategy for {code}: current_price is 0.", "WARNING")
+        if current_price <= 0:
+            # 현재가가 0 이하인 경우 처리하지 않음
+            self.log(f"[ProcessStrategy] 종목({code})의 현재가({current_price})가 0 이하이므로 전략 실행 불가", "WARNING")
             return
 
-        # 현재 가격이 매수 이후 최고가 보다 높으면 최고가 업데이트
-        if stock_info.strategy_state == TradingState.BOUGHT and current_price > stock_info.current_high_price_after_buy:
-            stock_info.current_high_price_after_buy = current_price
-            self.log(f"{code}의 매수 후 최고가 업데이트: {stock_info.current_high_price_after_buy}", "DEBUG")
-
-        current_state = stock_info.strategy_state
-        yesterday_close = stock_info.yesterday_close_price
-
-        self.log(f"[ProcessStrategy] 종목: {code}, 현재상태: {current_state.name}, 현재가: {current_price}, 전일종가: {yesterday_close}", "DEBUG") # 로그 추가
-
-        if current_price == 0 or yesterday_close == 0:
-            self.log(f"[ProcessStrategy] 종목: {code}, 현재가 또는 전일종가 정보 부족으로 처리 중단.", "DEBUG") # 로그 추가
-            return
-
-        order_executed = False
-        if current_state == TradingState.WAITING:
-            order_executed = self._handle_waiting_state(code, stock_info, current_price)
-        elif current_state == TradingState.BOUGHT or current_state == TradingState.PARTIAL_SOLD:
-            self.log(f"[ProcessStrategy] 종목: {code}, 상태: {current_state.name}. 매도 조건 검사 함수 (_handle_holding_state) 호출 시도.", "INFO") # 로그 추가
-            order_executed = self._handle_holding_state(code, stock_info, current_price)
-        elif current_state in [TradingState.IDLE, TradingState.READY, TradingState.COMPLETE]:
-            pass # 의도적으로 아무 작업도 하지 않음
-        else:
-            self.log(f"[{code}] process_strategy: 알 수 없는 전략 상태({current_state}). 확인 필요.", "WARNING")
-
+        # 주문 처리 타임아웃 확인 (주문 접수 후 5분 이상 경과한 경우)
+        if stock_info.last_order_rq_name and stock_info.buy_timestamp:
+            current_time = datetime.now()
+            order_elapsed_minutes = (current_time - stock_info.buy_timestamp).total_seconds() / 60
+            
+            # 최소 5분이 경과한 주문은 타임아웃으로 간주
+            if order_elapsed_minutes > 5:
+                self.log(f"[{code}] 미처리 주문({stock_info.last_order_rq_name}) 감지 - {order_elapsed_minutes:.1f}분 경과. 주문 상태 초기화", "WARNING")
+                stock_info.last_order_rq_name = None
+                
+                # 포트폴리오에 종목이 있는지 확인하여 상태 조정
+                if code in self.account_state.portfolio and self._safe_to_int(self.account_state.portfolio[code].get('보유수량', 0)) > 0:
+                    self.log(f"[{code}] 포트폴리오에 종목이 존재함 - 상태를 BOUGHT로 변경", "WARNING")
+                    stock_info.strategy_state = TradingState.BOUGHT
+                    stock_info.avg_buy_price = self._safe_to_float(self.account_state.portfolio[code].get('매입가', 0))
+                    stock_info.total_buy_quantity = self._safe_to_int(self.account_state.portfolio[code].get('보유수량', 0))
+                    
+                    # trading_status에도 상태 저장
+                    self.account_state.trading_status[code] = {
+                        'status': TradingState.BOUGHT,
+                        'bought_price': stock_info.avg_buy_price,
+                        'bought_quantity': stock_info.total_buy_quantity,
+                        'bought_time': stock_info.buy_timestamp or datetime.now()
+                    }
+        
+        # 현재 상태 로깅
+        self.log(f"[ProcessStrategy] 종목: {code}, 현재상태: {stock_info.strategy_state.name}, 현재가: {current_price}, 전일종가: {stock_info.yesterday_close_price}", "DEBUG")
+        
+        # 현재 상태에 따른 전략 실행
+        if stock_info.strategy_state == TradingState.WAITING:
+            self._handle_waiting_state(code, stock_info, current_price)
+        elif stock_info.strategy_state == TradingState.BOUGHT or stock_info.strategy_state == TradingState.PARTIAL_SOLD:
+            self._handle_holding_state(code, stock_info, current_price)
 
     def execute_buy(self, code):
         # 일일 매수 횟수 제한 확인 - 제거됨 (종목별 시도 횟수로 대체)
@@ -1690,45 +1678,51 @@ class TradingStrategy(QObject):
         self.log(f"_find_active_order_rq_name_key: 종목코드({code_from_chejan} -> {normalized_code}), API주문번호({api_order_no_from_chejan if api_order_no_from_chejan else 'N/A'}) 탐색 시작.", "DEBUG")
 
         if not self.account_state or not self.account_state.active_orders:
-            self.log("_find_active_order_rq_name_key: self.account_state.active_orders가 비어있거나 없습니다.", "WARNING")
+            self.log(f"_find_active_order_rq_name_key: self.account_state.active_orders가 비어있거나 없습니다.", "WARNING")
             return None
 
-        # 1. API 주문번호가 있고, active_orders의 'order_no'와 일치하는 경우 (가장 확실한 케이스)
+        # 1. API 주문번호가 있고, active_orders의 'order_no'와 일치하는 경우
         if api_order_no_from_chejan:
-            for rq_name, order_details in self.account_state.active_orders.items():
-                order_code = order_details.get('code', '')
-                # 종목코드도 정규화하여 비교
-                if order_code.startswith('A') and len(order_code) > 1:
-                    order_code = order_code[1:]
-                
-                if order_details.get('order_no') == api_order_no_from_chejan and order_code == normalized_code:
-                    self.log(f"_find_active_order_rq_name_key: API 주문번호({api_order_no_from_chejan}) 및 종목코드({normalized_code})로 활성 주문 발견 (RQName: {rq_name})", "INFO")
-                    return rq_name
+            for rq_name_key, order_entry in self.account_state.active_orders.items():
+                order_no_from_entry = order_entry.get('order_no')
+                if order_no_from_entry and order_no_from_entry == api_order_no_from_chejan:
+                    self.log(f"_find_active_order_rq_name_key: API주문번호({api_order_no_from_chejan})로 active_orders에서 일치하는 항목 찾음: {rq_name_key}", "DEBUG")
+                    return rq_name_key
 
-        # 2. API 주문번호가 있고, active_orders의 'order_no'는 아직 None이지만, 종목코드가 일치하고 유일한 후보일 경우
-        #    (주로 첫 '접수' 또는 '체결' 이벤트 시)
-        #    이 경우, 해당 주문의 'order_no'는 이후 _handle_order_execution_report에서 업데이트됨.
-        candidate_rq_names = []
-        for rq_name, order_details in self.account_state.active_orders.items():
-            order_code = order_details.get('code', '')
-            # 종목코드도 정규화하여 비교
-            if order_code.startswith('A') and len(order_code) > 1:
-                order_code = order_code[1:]
+        # 2. 종목코드로 매칭 (마지막으로 해당 종목에 대해 요청된 주문)
+        if normalized_code:
+            matching_entries = []
+            for rq_name_key, order_entry in self.account_state.active_orders.items():
+                code_from_entry = order_entry.get('code')
+                # 종목코드도 정규화하여 비교
+                normalized_code_from_entry = code_from_entry
+                if normalized_code_from_entry and normalized_code_from_entry.startswith('A') and len(normalized_code_from_entry) > 1:
+                    normalized_code_from_entry = normalized_code_from_entry[1:]
                 
-            # 종목코드가 일치하고 order_no가 없거나 일치하는 경우 후보에 추가
-            if order_code == normalized_code:
-                if order_details.get('order_no') is None or (api_order_no_from_chejan and order_details.get('order_no') == api_order_no_from_chejan):
-                    candidate_rq_names.append(rq_name)
+                if normalized_code_from_entry and normalized_code_from_entry == normalized_code:
+                    matching_entries.append((rq_name_key, order_entry))
             
-        if len(candidate_rq_names) == 1:
-            rq_name = candidate_rq_names[0]
-            self.log(f"_find_active_order_rq_name_key: 종목코드({normalized_code})에 대해 유일한 활성 주문 발견 (RQName: {rq_name}). API주문번호({api_order_no_from_chejan})와 연결 예정.", "INFO")
-            return rq_name
-        elif len(candidate_rq_names) > 1:
-            # 여러 개 후보가 있는 경우, 가장 최근의 주문을 선택
-            rq_name = candidate_rq_names[-1]  # 마지막(가장 최근) 후보 선택
-            self.log(f"_find_active_order_rq_name_key: 종목코드({normalized_code})에 대해 여러 활성 주문({len(candidate_rq_names)}개) 발견. 가장 최근 주문 선택: {rq_name}", "WARNING")
-            return rq_name
+            # 가장 최근 주문 선택 (마지막에 추가된 항목이 최근 주문이라고 가정)
+            if matching_entries:
+                # timestamp가 있으면 timestamp로 정렬, 없으면 마지막 항목 선택
+                if all('timestamp' in entry[1] for entry in matching_entries):
+                    # 타임스탬프 기준 내림차순 정렬
+                    matching_entries.sort(key=lambda x: x[1].get('timestamp', 0), reverse=True)
+                
+                latest_rq_name_key, latest_entry = matching_entries[0]
+                self.log(f"_find_active_order_rq_name_key: 종목코드({normalized_code})로 active_orders에서 일치하는 항목 찾음: {latest_rq_name_key}", "DEBUG")
+                return latest_rq_name_key
+
+        # 3. BUY_REQ, SELL_REQ로 시작하는 RQName에서 코드 추출 시도
+        if normalized_code:
+            buy_req_prefix = f"BUY_REQ_{normalized_code}_"
+            sell_req_prefix = f"SELL_REQ_{normalized_code}_"
+            
+            for rq_name_key in self.account_state.active_orders.keys():
+                if (rq_name_key.startswith(buy_req_prefix) or 
+                    rq_name_key.startswith(sell_req_prefix)):
+                    self.log(f"_find_active_order_rq_name_key: RQName 패턴({buy_req_prefix} 또는 {sell_req_prefix})으로 active_orders에서 일치하는 항목 찾음: {rq_name_key}", "DEBUG")
+                    return rq_name_key
 
         self.log(f"_find_active_order_rq_name_key: 종목코드({normalized_code}), API주문번호({api_order_no_from_chejan if api_order_no_from_chejan else 'N/A'})로 일치하는 활성 주문을 찾지 못했습니다.", "WARNING")
         return None
@@ -1750,9 +1744,10 @@ class TradingStrategy(QObject):
         order_status = chejan_data.get('913', '')  # 주문상태 (접수, 체결 등)
         filled_qty = chejan_data.get('911', '')    # 체결량
         filled_price = chejan_data.get('10', '')   # 체결가
+        order_type_fid = chejan_data.get('905', '') # 주문구분 (매도/매수)
         
         # 처리 전 중요 필드 로깅
-        self.log(f"체결 처리 시작 - 종목코드: {code_raw}, 주문번호: {api_order_no}, 상태: {order_status}, 체결량: {filled_qty}, 체결가: {filled_price}", "INFO")
+        self.log(f"체결 처리 시작 - 종목코드: {code_raw}, 주문번호: {api_order_no}, 상태: {order_status}, 체결량: {filled_qty}, 체결가: {filled_price}, 주문구분: {order_type_fid}", "INFO")
         
         code = code_raw
         if code.startswith('A') and len(code) > 1: # 'A' 접두사 제거 ('A'만 있는 경우 제외)
@@ -1779,13 +1774,76 @@ class TradingStrategy(QObject):
             self.log(f"체결 데이터({code}, API주문번호 {api_order_no if api_order_no else 'N/A'})에 대한 활성 주문 참조 획득 성공 (RQName Key: {original_rq_name_key})", "DEBUG")
         else:
             self.log(f"체결 데이터({code}, API주문번호 {api_order_no if api_order_no else 'N/A'})에 대한 활성 주문 참조 획득 실패. original_rq_name_key: {original_rq_name_key}", "DEBUG")
+            
+            # 활성 주문 참조를 찾지 못했지만 체결 데이터가 존재하는 경우 백업 처리
+            if gubun == '0' and stock_info and code and order_status == '체결' and filled_qty:
+                self.log(f"[백업 처리] {code} ({stock_name}) 주문 참조 없이 체결 데이터 수신. 포트폴리오 정보로 상태 업데이트 시도", "WARNING")
+                
+                # 체결량과 체결가 가져오기
+                filled_qty_int = self._safe_to_int(filled_qty)
+                filled_price_float = self._safe_to_float(filled_price)
+                
+                # 매수/매도 구분 확인
+                is_buy_order = order_type_fid and ('매수' in order_type_fid)
+                is_sell_order = order_type_fid and ('매도' in order_type_fid)
+                
+                # 매수 체결인 경우
+                if is_buy_order and filled_qty_int > 0:
+                    # 이미 stock_info.last_order_rq_name이 있는 경우 초기화
+                    if stock_info.last_order_rq_name:
+                        self.log(f"[백업 처리] {code} ({stock_name}) last_order_rq_name 초기화: {stock_info.last_order_rq_name} -> None", "WARNING")
+                        stock_info.last_order_rq_name = None
+                    
+                    # 매수 체결 횟수 증가
+                    stock_info.buy_completion_count += 1
+                    self.log(f"[백업 처리] [{code}] 매수 체결 완료 #{stock_info.buy_completion_count}/{self.settings.max_buy_attempts_per_stock}", "WARNING")
+                    
+                    # 상태 업데이트
+                    stock_info.strategy_state = TradingState.BOUGHT
+                    self.log(f"[백업 처리] [매수 체결 완료] {code} ({stock_name}) 상태 변경: {stock_info.strategy_state.name}", "IMPORTANT")
+                    
+                    # 포트폴리오 정보 업데이트
+                    portfolio_item = self.account_state.portfolio.get(code)
+                    if portfolio_item:
+                        stock_info.avg_buy_price = self._safe_to_float(portfolio_item.get('매입가'))
+                        stock_info.total_buy_quantity = self._safe_to_int(portfolio_item.get('보유수량'))
+                        stock_info.current_high_price_after_buy = stock_info.avg_buy_price
+                        stock_info.buy_timestamp = datetime.now()
+                        
+                        # trading_status에도 상태 저장
+                        self.account_state.trading_status[code] = {
+                            'status': TradingState.BOUGHT,
+                            'bought_price': stock_info.avg_buy_price,
+                            'bought_quantity': stock_info.total_buy_quantity,
+                            'bought_time': stock_info.buy_timestamp
+                        }
+                        
+                        self.log(f"[백업 처리] [매수 정보 기록] {code}: 매수가({stock_info.avg_buy_price}), 수량({stock_info.total_buy_quantity}), 매수시간({stock_info.buy_timestamp.strftime('%Y-%m-%d %H:%M:%S') if stock_info.buy_timestamp else 'N/A'})", "WARNING")
+                        
+                        # 즉시 process_strategy 호출하여 매도 조건 확인
+                        self.log(f"[백업 처리] [즉시 매도 조건 확인] {code} 매수 체결 후 즉시 매도 조건 확인 시작", "WARNING")
+                        self.process_strategy(code)
+                    else:
+                        self.log(f"[백업 처리] 매수 완료 후 포트폴리오 항목을 찾을 수 없어 StockTrackingData 일부 업데이트 실패 ({code})", "ERROR")
+                
+                # 매도 체결인 경우
+                elif is_sell_order and filled_qty_int > 0:
+                    self.log(f"[백업 처리] {code} ({stock_name}) 매도 체결 처리 - 상태 변경 필요 여부 확인", "WARNING")
+                    
+                    # 포트폴리오 확인하여 보유 수량이 0이면 초기화
+                    portfolio_item = self.account_state.portfolio.get(code)
+                    if portfolio_item and self._safe_to_int(portfolio_item.get('보유수량', 0)) == 0:
+                        self.log(f"[백업 처리] {code} ({stock_name}) 전량 매도 완료. 관련 전략 정보 초기화.", "WARNING")
+                        self.reset_stock_strategy_info(code)
 
         if gubun == '0':  # 주문체결통보
             log_msg_prefix = f"주문 체결 통보 - 종목: {stock_name}({code if code else '코드없음'})"
             log_msg_suffix = f"API 주문번호: {api_order_no if api_order_no else 'N/A'}, 연결된 RQName Key: {original_rq_name_key if original_rq_name_key else 'N/A'}"
             self.log(f"{log_msg_prefix}, {log_msg_suffix}", "INFO")
-            # active_order_entry_ref (참조)와 original_rq_name_key (키)를 전달
-            self._handle_order_execution_report(chejan_data, active_order_entry_ref, original_rq_name_key, code, stock_name, stock_info)
+            # active_order_entry_ref가 있는 경우만 정상 처리
+            if active_order_entry_ref:
+                # active_order_entry_ref (참조)와 original_rq_name_key (키)를 전달
+                self._handle_order_execution_report(chejan_data, active_order_entry_ref, original_rq_name_key, code, stock_name, stock_info)
         elif gubun == '1':  # 국내주식 잔고통보
             self.log(f"계좌 잔고 변경 통보 - 종목: {stock_name}({code if code else '코드없음'}), API 주문번호: {api_order_no if api_order_no else 'N/A'}", "INFO")
             # active_order_entry_ref (참조)와 original_rq_name_key (키)를 전달
@@ -1995,6 +2053,9 @@ class TradingStrategy(QObject):
         """주기적인 상태 보고"""
         if not self.is_running or not self.settings.periodic_report_enabled:
             return
+            
+        # 미처리 주문 확인 및 정리
+        self._check_and_cleanup_stale_orders()
         
         # 현재 시간을 포함한 타이틀 추가
         current_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
@@ -2630,3 +2691,70 @@ class TradingStrategy(QObject):
         self.log("매매 전략 중지 완료.", "INFO")
         # stop_strategy 자체에는 이벤트 시그널 핸들러 제거나 리소스 해제는 포함되어 있지 않음
         # 메인 프로그램에서 이를 수행
+
+    def _check_and_cleanup_stale_orders(self):
+        """오래된 미처리 주문을 확인하고 정리합니다."""
+        current_time = datetime.now()
+        
+        # 모든 관심종목에 대해 확인
+        for code, stock_info in list(self.watchlist.items()):
+            # last_order_rq_name이 있고 buy_timestamp가 설정된 경우만 확인
+            if stock_info.last_order_rq_name and stock_info.buy_timestamp:
+                elapsed_minutes = (current_time - stock_info.buy_timestamp).total_seconds() / 60
+                
+                # 5분 이상 경과한 주문은 타임아웃으로 간주
+                if elapsed_minutes > 5:
+                    self.log(f"[자동 정리] [{code}] 미처리 주문({stock_info.last_order_rq_name}) 감지 - {elapsed_minutes:.1f}분 경과", "WARNING")
+                    
+                    # 포트폴리오에 종목이 있는지 확인
+                    if code in self.account_state.portfolio and self._safe_to_int(self.account_state.portfolio[code].get('보유수량', 0)) > 0:
+                        # 보유 중이지만 상태가 BOUGHT가 아니면 상태 교정
+                        if stock_info.strategy_state != TradingState.BOUGHT:
+                            self.log(f"[자동 정리] [{code}] 포트폴리오에 존재하지만 상태가 {stock_info.strategy_state.name}입니다. BOUGHT로 변경합니다.", "WARNING")
+                            stock_info.strategy_state = TradingState.BOUGHT
+                            stock_info.avg_buy_price = self._safe_to_float(self.account_state.portfolio[code].get('매입가', 0))
+                            stock_info.total_buy_quantity = self._safe_to_int(self.account_state.portfolio[code].get('보유수량', 0))
+                            
+                            # trading_status에도 상태 저장
+                            self.account_state.trading_status[code] = {
+                                'status': TradingState.BOUGHT,
+                                'bought_price': stock_info.avg_buy_price,
+                                'bought_quantity': stock_info.total_buy_quantity,
+                                'bought_time': stock_info.buy_timestamp or current_time
+                            }
+                    else:
+                        # 포트폴리오에 없고 상태가 WAITING이 아니면 상태 초기화
+                        if stock_info.strategy_state != TradingState.WAITING:
+                            self.log(f"[자동 정리] [{code}] 포트폴리오에 존재하지 않고 상태가 {stock_info.strategy_state.name}입니다. WAITING으로 초기화합니다.", "WARNING")
+                            self.reset_stock_strategy_info(code)
+                    
+                    # last_order_rq_name 초기화
+                    stock_info.last_order_rq_name = None
+                    self.log(f"[자동 정리] [{code}] last_order_rq_name을 초기화했습니다.", "INFO")
+        
+        # 활성 주문 중에서 5분 이상 경과한 주문이 있는지 확인
+        active_orders_to_remove = []
+        for rq_name_key, order_entry in self.account_state.active_orders.items():
+            # timestamp가 있는 경우만 확인
+            if 'timestamp' in order_entry:
+                order_time = order_entry['timestamp']
+                if isinstance(order_time, (int, float)):
+                    # timestamp가 유닉스 타임스탬프인 경우
+                    order_time = datetime.fromtimestamp(order_time)
+                
+                if isinstance(order_time, datetime):
+                    elapsed_minutes = (current_time - order_time).total_seconds() / 60
+                    
+                    # 5분 이상 경과한 주문은 타임아웃으로 간주
+                    if elapsed_minutes > 5:
+                        active_orders_to_remove.append(rq_name_key)
+                        self.log(f"[자동 정리] 활성 주문({rq_name_key}) 타임아웃 감지 - {elapsed_minutes:.1f}분 경과", "WARNING")
+        
+        # 타임아웃된 활성 주문 제거
+        for rq_name_key in active_orders_to_remove:
+            if rq_name_key in self.account_state.active_orders:
+                order_entry = self.account_state.active_orders[rq_name_key]
+                code = order_entry.get('code')
+                order_type = order_entry.get('order_type')
+                self.log(f"[자동 정리] 활성 주문 제거: {rq_name_key}, 종목: {code}, 유형: {order_type}", "INFO")
+                del self.account_state.active_orders[rq_name_key]
