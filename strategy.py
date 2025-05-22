@@ -1397,9 +1397,20 @@ class TradingStrategy(QObject):
             
             # StockTrackingData 업데이트
             if stock_data:
+                # 이전 보유 수량 기록 (로깅용)
+                prev_total_buy_quantity = stock_data.total_buy_quantity
+                
+                # 매수 체결 시 - 포트폴리오 보유수량으로 StockTrackingData 업데이트
                 stock_data.total_buy_quantity = new_total_quantity
                 stock_data.avg_buy_price = portfolio[code]['매입가']
-                self.log(f"[{code}] 매수 체결 후 StockTrackingData 업데이트: 보유량({stock_data.total_buy_quantity}), 매입가({stock_data.avg_buy_price})", "INFO")
+                
+                # 매수 시 항상 상태를 BOUGHT로 설정 (부분체결 시에도)
+                if stock_data.strategy_state != TradingState.BOUGHT:
+                    stock_data.strategy_state = TradingState.BOUGHT
+                    stock_data.buy_timestamp = datetime.now()
+                    self.log(f"[{code}] 매수 체결로 상태 변경: {stock_data.strategy_state.name}, 보유량 업데이트: {prev_total_buy_quantity} -> {stock_data.total_buy_quantity}", "INFO")
+                else:
+                    self.log(f"[{code}] 추가 매수 체결: 보유량 업데이트: {prev_total_buy_quantity} -> {stock_data.total_buy_quantity}", "INFO")
             
             # 매수 시 trading_status에 항목 추가
             self.account_state.trading_status[code] = {
@@ -1427,14 +1438,21 @@ class TradingStrategy(QObject):
                     portfolio[code]['매입가'] = 0 
                     portfolio[code]['매입금액'] = 0
                     
-                    # StockTrackingData 수량도 0으로 설정
+                    # StockTrackingData 수량도 0으로 설정하고 상태 초기화
                     if stock_data:
                         stock_data.total_buy_quantity = 0
+                        # 전량 매도 시 상태 초기화
+                        self.reset_stock_strategy_info(code)
                     
                     # 매도 완료 시 trading_status에서 SOLD로 상태 변경
                     if code in self.account_state.trading_status:
                         self.account_state.trading_status[code]['status'] = TradingState.SOLD
                         self.log(f"[상태 업데이트] {code} ({stock_name}) 트레이딩 상태를 SOLD로 변경", "INFO")
+                else:
+                    # 부분 매도 시 상태를 PARTIAL_SOLD로 변경
+                    if stock_data and stock_data.strategy_state == TradingState.BOUGHT:
+                        stock_data.strategy_state = TradingState.PARTIAL_SOLD
+                        self.log(f"[{code}] 부분 매도로 상태 변경: {stock_data.strategy_state.name}, 잔여 수량: {stock_data.total_buy_quantity}", "INFO")
             else:
                 self.log(f"매도 체결 처리 오류: {code}가 포트폴리오에 없음.", "WARNING")
                 return 
@@ -1959,6 +1977,18 @@ class TradingStrategy(QObject):
                 
                 self.update_portfolio_on_execution(code, stock_name, last_filled_price, last_filled_qty, trade_type)
 
+                # 매수 체결인 경우 추가 처리 (부분 체결 시에도 체결 정보와 상태 업데이트)
+                if trade_type == '매수' and stock_info:
+                    # 첫 번째 매수 체결인 경우에만 buy_completion_count 증가
+                    if stock_info.strategy_state != TradingState.BOUGHT:
+                        stock_info.buy_completion_count += 1
+                        self.log(f"[{code}] 첫 매수 체결 시 buy_completion_count 증가: {stock_info.buy_completion_count}", "INFO")
+                    
+                    # 매수 체결 시 현재가를 기준으로 고점 초기화
+                    if stock_info.current_high_price_after_buy < stock_info.current_price:
+                        stock_info.current_high_price_after_buy = stock_info.current_price
+                        self.log(f"[{code}] 매수 체결 후 고점 업데이트: {stock_info.current_high_price_after_buy}", "DEBUG")
+                
                 # 체결 데이터에서 수수료 및 세금 정보 가져오기 시도
                 fees_from_chejan = self._safe_to_float(chejan_data.get("938", 0)) # 수수료 FID
                 tax_from_chejan = self._safe_to_float(chejan_data.get("939", 0))   # 세금 FID
@@ -1985,28 +2015,14 @@ class TradingStrategy(QObject):
                 # active_orders에서 제거는 아래에서 수행
             else: # stock_info가 있는 경우에만 상태 업데이트
                 if active_order_entry_ref['order_type'] == '매수':
-                    # 매수 체결 완료 시 체결 횟수 증가
-                    stock_info.buy_completion_count += 1
-                    self.log(f"[{code}] 매수 체결 완료 #{stock_info.buy_completion_count}/{self.settings.max_buy_attempts_per_stock}", "INFO")
-                    
-                    stock_info.strategy_state = TradingState.BOUGHT
                     # 이 로그가 사용자님이 찾으시는 로그!
                     self.log(f"[매수 체결 완료] {code} ({stock_name}) 상태 변경: {stock_info.strategy_state.name}, RQNameKey: {original_rq_name_key}", "IMPORTANT") 
                     
                     portfolio_item = self.account_state.portfolio.get(code)
                     if portfolio_item:
+                        # 부분 체결 처리 개선: 포트폴리오 보유량으로 다시 동기화
                         stock_info.avg_buy_price = self._safe_to_float(portfolio_item.get('매입가'))
                         stock_info.total_buy_quantity = self._safe_to_int(portfolio_item.get('보유수량'))
-                        stock_info.current_high_price_after_buy = stock_info.avg_buy_price
-                        stock_info.buy_timestamp = datetime.now()
-                        
-                        # trading_status에도 상태 저장
-                        self.account_state.trading_status[code] = {
-                            'status': TradingState.BOUGHT,
-                            'bought_price': stock_info.avg_buy_price,
-                            'bought_quantity': stock_info.total_buy_quantity,
-                            'bought_time': stock_info.buy_timestamp
-                        }
                         
                         self.log(f"[매수 정보 기록] {code}: 매수가({stock_info.avg_buy_price}), 수량({stock_info.total_buy_quantity}), 매수시간({stock_info.buy_timestamp.strftime('%Y-%m-%d %H:%M:%S') if stock_info.buy_timestamp else 'N/A'})", "INFO")
                         
