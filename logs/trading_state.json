@@ -3,11 +3,11 @@
   "today_date_for_buy_limit": "2025-05-22",
   "trading_status": {},
   "watchlist": {
-    "388050": {
-      "code": "388050",
-      "stock_name": "지투파워",
-      "current_price": 8980.0,
-      "yesterday_close_price": 9000.0,
+    "377220": {
+      "code": "377220",
+      "stock_name": "프롬바이오",
+      "current_price": 3395.0,
+      "yesterday_close_price": 3500.0,
       "strategy_state": "WAITING",
       "avg_buy_price": 0.0,
       "total_buy_quantity": 0,
@@ -30,5 +30,5 @@
     "손실금액": 0
   },
   "last_snapshot_date": null,
-  "saved_datetime": "2025-05-22 11:30:58"
+  "saved_datetime": "2025-05-22 11:45:47"
 }

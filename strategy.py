@@ -1059,8 +1059,8 @@ class TradingStrategy(QObject):
             self.log(f"매수 주문 실패: 계좌번호가 설정되지 않았습니다.", "ERROR")
             return False
         
-        deposit_info = self.account_state.account_summary.get("deposit_info", {})
-        orderable_cash = self._safe_to_int(deposit_info.get("주문가능금액", 0))
+        # 수정된 부분: account_summary에서 직접 주문가능금액을 찾도록 수정
+        orderable_cash = self._safe_to_int(self.account_state.account_summary.get("주문가능금액", 0))
         
         if orderable_cash < self.settings.buy_amount_per_stock:
             self.log(f"매수 주문 불가: 주문가능금액({orderable_cash:,}원)이 설정된 매수금액({self.settings.buy_amount_per_stock:,}원)보다 적습니다.", "WARNING")
@@ -2179,8 +2179,13 @@ class TradingStrategy(QObject):
         if 'single_data' in data:
             deposit_info = self._ensure_numeric_fields(data['single_data'])
             self.account_state.account_summary.update(deposit_info)
-            self.log(f"예수금 정보 업데이트 (opw00001): {deposit_info}", "INFO")
-            # self.account_info_requested_time = None # 실제 API 호출 시 사용되던 변수, 드라이런에서는 불필요할 수 있음
+            
+            # 주문가능금액 로그 추가
+            orderable_cash = self._safe_to_int(deposit_info.get("주문가능금액", 0))
+            self.log(f"예수금 정보 업데이트 (opw00001): 주문가능금액={orderable_cash:,}원, 전체정보={deposit_info}", "INFO")
+        else:
+            self.log("예수금 정보 없음 (opw00001 응답에 single_data 없음)", "WARNING")
+            
         self.initialization_status["deposit_info_loaded"] = True # 핸들러 호출 시 로드된 것으로 간주
         self.log(f"opw00001 핸들러 완료. deposit_info_loaded: {self.initialization_status['deposit_info_loaded']}", "DEBUG")
         self._check_all_data_loaded_and_start_strategy()
@@ -2347,67 +2352,6 @@ class TradingStrategy(QObject):
             self.log(f"포트폴리오에 {code} 정보 없음 (전량 매도된 경우 정상)", "INFO")
         
         self.log(f"=== 드라이런 테스트 시나리오 종료: {scenario_name} ===\\n", "IMPORTANT") # 로그 구분을 위해 개행 추가
-
-        def _handle_opt10001_response(self, rq_name, data):
-            """ opt10001 (주식기본정보) 응답 처리 """
-            self.log(f"TR 데이터 수신 (opt10001 - {rq_name}): 처리는 get_stock_basic_info 내부에서 완료.", "DEBUG")
-            # get_stock_basic_info 또는 이와 유사한 함수 호출 결과로 이미 처리되었을 수 있음.
-            # KiwoomAPI에서 캐시에 저장하므로, Strategy에서 별도 처리 안 할 수도 있음.
-            # 필요시 여기서 추가 로직 (예: stock_data 업데이트)
-            code_match = re.search(r"opt10001_([A-Za-z0-9]+)_", rq_name) # RQName의 종목코드 부분만 추출하도록 수정
-            if code_match:
-                code = code_match.group(1)
-                stock_info = self.watchlist.get(code) # self.stock_data -> self.watchlist.get(code)
-                if stock_info:
-                    # 예시: 현재가, 종목명 등 주요 정보 업데이트
-                    single_data = data.get('single_data', {})
-                    if single_data:
-                        stock_info.stock_name = single_data.get('종목명', stock_info.stock_name) # stock_data[code] -> stock_info
-                        stock_info.current_price = self._safe_to_float(single_data.get('현재가', stock_info.current_price)) # stock_data[code] -> stock_info
-                        self.log(f"opt10001 응답으로 {code} 기본 정보 일부 업데이트: {stock_info.stock_name}, 현재가: {stock_info.current_price}", "DEBUG")
-                else:
-                    self.log(f"opt10001 응답 처리 중: RQName {rq_name}에 해당하는 종목({code})이 watchlist에 없음", "WARNING")
-            else:
-                self.log(f"opt10001 응답 처리 중: RQName {rq_name}에서 종목코드를 추출할 수 없음", "WARNING")
-
-        def _handle_opw00001_response(self, rq_name, data):
-            """ opw00001 (예수금 상세현황) 응답 처리 """
-            if 'single_data' in data:
-                deposit_info = self._ensure_numeric_fields(data['single_data'])
-                self.account_state.account_summary.update(deposit_info)
-                self.log(f"예수금 정보 업데이트 (opw00001): {deposit_info}", "INFO")
-                self.account_info_requested_time = None # 요청 완료 처리
-
-        def _handle_opw00018_response(self, rq_name, data):
-            """ opw00018 (계좌평가잔고내역) 응답 처리 """
-            if 'single_data' in data:
-                summary_info = self._ensure_numeric_fields(data['single_data'])
-                self.account_state.account_summary.update(summary_info)
-                self.log(f"계좌 평가 요약 정보 업데이트 (opw00018): {summary_info}", "INFO")
-
-            if 'multi_data' in data:
-                current_portfolio = {}
-                for item_raw in data['multi_data']:
-                    item = self._ensure_numeric_fields(item_raw)
-                    code = item.get("종목번호")
-                    if code:
-                        code = code.replace('A', '').strip() # 종목코드 클리닝 (A 제거)
-                        if '수익률(%)' in item: # API 응답 필드명 확인 필요
-                            item['수익률'] = self._safe_to_float(item['수익률(%)'])
-                        current_portfolio[code] = {
-                            'stock_name': item.get("종목명"),
-                            '보유수량': self._safe_to_int(item.get("보유수량")),
-                            '매입가': self._safe_to_float(item.get("매입가")),
-                            '현재가': self._safe_to_float(item.get("현재가")),
-                            '평가금액': self._safe_to_float(item.get("평가금액")),
-                            '매입금액': self._safe_to_float(item.get("매입금액")),
-                            '평가손익': self._safe_to_float(item.get("평가손익")),
-                            '수익률': self._safe_to_float(item.get("수익률", item.get("수익률(%)"))),
-                        }
-                self.account_state.portfolio = current_portfolio
-                self.log(f"계좌 잔고(포트폴리오) 업데이트 (opw00018): {len(self.account_state.portfolio)} 종목", "INFO")
-                # self.update_portfolio_and_log() # 포트폴리오 업데이트 후 로깅 - 해당 메서드 없음, 관련 로깅은 이미 수행됨
-            self.portfolio_requested_time = None # 요청 완료 처리
 
     def save_current_state(self):
         """현재 상태를 JSON 파일에 저장합니다."""
