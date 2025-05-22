@@ -876,28 +876,61 @@ class TradingStrategy(QObject):
         return False
 
     def _handle_waiting_state(self, code, stock_info: StockTrackingData, current_price):
-        """매수 조건을 검사하고 매수 주문을 실행합니다 (WAITING 상태)."""
-        #is_gap_up = stock_info.is_gap_up_today
-        yesterday_cp = stock_info.yesterday_close_price 
-        is_broken = stock_info.is_yesterday_close_broken_today
-
-        #if not is_gap_up:
-        #    return False
-
-        if yesterday_cp == 0:
+        """
+        종목이 WAITING 상태일 때 현재가가 매수 조건을 충족하는지 확인하고, 충족하면 매수 주문을 실행합니다.
+        """
+        # 이미 보유중인지 확인 (watchlist 상태와 실제 portfolio 모두 확인)
+        if code in self.account_state.portfolio:
+            holding_quantity = self._safe_to_int(self.account_state.portfolio[code].get('보유수량', 0))
+            if holding_quantity > 0:
+                # 이미 종목을 보유 중인데 상태가 잘못되어 있는 경우 상태 교정
+                if stock_info.strategy_state != TradingState.BOUGHT:
+                    self.log(f"[{code}] 상태 교정: 실제로 {holding_quantity}주 보유 중이지만 상태가 {stock_info.strategy_state.name}입니다. BOUGHT로 변경", "WARNING")
+                    stock_info.strategy_state = TradingState.BOUGHT
+                    stock_info.avg_buy_price = self._safe_to_float(self.account_state.portfolio[code].get('매입가', 0))
+                    stock_info.total_buy_quantity = holding_quantity
+                    stock_info.current_high_price_after_buy = max(stock_info.current_high_price_after_buy, current_price)
+                    stock_info.buy_timestamp = datetime.now()  # 정확한 시간은 알 수 없으므로 현재 시간으로 설정
+                    
+                    # trading_status에도 상태 저장
+                    self.account_state.trading_status[code] = {
+                        'status': TradingState.BOUGHT,
+                        'bought_price': stock_info.avg_buy_price,
+                        'bought_quantity': stock_info.total_buy_quantity,
+                        'bought_time': stock_info.buy_timestamp
+                    }
+                return False  # 이미 보유 중이므로 추가 매수 없음
+        
+        # 관련 주문이 처리 중인지 확인
+        if stock_info.last_order_rq_name is not None:
+            self.log(f"[{code}] 매수 조건 검사 건너뜀. 이전 주문({stock_info.last_order_rq_name})이 아직 처리 중입니다.", "DEBUG")
             return False
 
-        if current_price < yesterday_cp and not is_broken: # (3) 현재가가 전일 종가 미만이고, 아직 하회 기록이 없으면
-            stock_info.is_yesterday_close_broken_today = True # 하회 기록 플래그 설정
-            self.log(f"[{code}] 전일 종가 하회 기록 (전일종가: {yesterday_cp}, 현재가: {current_price})", "INFO")
+        # 매수 실행 가능 시간인지 확인
+        if not self.is_market_hours():
+            self.log(f"[{code}] 매수 조건 충족하지만 장 시간이 아니므로 매수 보류.", "DEBUG")
             return False
 
-        elif is_broken and current_price > yesterday_cp: # (4) 하회 기록이 있고, 현재가가 전일 종가 초과 시 (돌파)
-            self.log(f"[{code}] 전일 종가 재돌파, 매수 조건 충족 (전일종가: {yesterday_cp}, 현재가: {current_price})", "INFO")
-            if self.execute_buy(code): # 매수 실행
-                stock_info.is_yesterday_close_broken_today = False # 매수 성공 시 플래그 리셋
-                self.log(f"[{code}] 매수 주문 접수 성공 후 'is_yesterday_close_broken_today' 플래그 리셋.", "DEBUG")
-                return True
+        # 현재가와 전일 종가 비교 로직
+        if stock_info.is_yesterday_close_broken_today:
+            # 전일 종가를 하회했던 이력이 있는 경우, 다시 전일 종가 이상으로 회복했는지 확인
+            if current_price >= stock_info.yesterday_close_price:
+                self.log(f"[{code}] 전일 종가 재돌파, 매수 조건 충족 (전일종가: {stock_info.yesterday_close_price}, 현재가: {current_price})", "INFO")
+                if self.execute_buy(code): # 매수 실행
+                    # 매수 주문 성공 시 플래그 리셋
+                    stock_info.is_yesterday_close_broken_today = False
+                    self.log(f"[{code}] 매수 주문 접수 성공 후 'is_yesterday_close_broken_today' 플래그 리셋.", "DEBUG")
+                    return True
+            else:
+                # 전일 종가 아래이지만 이미 기록된 상태이므로 별도 로깅 없음
+                pass
+        else:
+            # 처음으로 전일 종가 아래로 내려간 상황 기록
+            if current_price < stock_info.yesterday_close_price:
+                stock_info.is_yesterday_close_broken_today = True
+                self.log(f"[{code}] 전일 종가 하회 기록 (전일종가: {stock_info.yesterday_close_price}, 현재가: {current_price})", "INFO")
+            # 전일 종가보다 같거나 큰 경우는 아무 동작 없음 (기본 상태)
+
         return False
 
     def _handle_holding_state(self, code, stock_info: StockTrackingData, current_price):
@@ -1649,7 +1682,12 @@ class TradingStrategy(QObject):
         return parsed_data
 
     def _find_active_order_rq_name_key(self, code_from_chejan, api_order_no_from_chejan, chejan_data_dict): # chejan_data_dict는 로깅용으로만 사용될 수 있음
-        self.log(f"_find_active_order_rq_name_key: 종목코드({code_from_chejan}), API주문번호({api_order_no_from_chejan if api_order_no_from_chejan else 'N/A'}) 탐색 시작.", "DEBUG")
+        # 종목코드 정규화 ('A'로 시작하는 경우 제거)
+        normalized_code = code_from_chejan
+        if normalized_code and normalized_code.startswith('A') and len(normalized_code) > 1:
+            normalized_code = normalized_code[1:]
+        
+        self.log(f"_find_active_order_rq_name_key: 종목코드({code_from_chejan} -> {normalized_code}), API주문번호({api_order_no_from_chejan if api_order_no_from_chejan else 'N/A'}) 탐색 시작.", "DEBUG")
 
         if not self.account_state or not self.account_state.active_orders:
             self.log("_find_active_order_rq_name_key: self.account_state.active_orders가 비어있거나 없습니다.", "WARNING")
@@ -1658,34 +1696,41 @@ class TradingStrategy(QObject):
         # 1. API 주문번호가 있고, active_orders의 'order_no'와 일치하는 경우 (가장 확실한 케이스)
         if api_order_no_from_chejan:
             for rq_name, order_details in self.account_state.active_orders.items():
-                if order_details.get('order_no') == api_order_no_from_chejan and order_details.get('code') == code_from_chejan:
-                    self.log(f"_find_active_order_rq_name_key: API 주문번호({api_order_no_from_chejan}) 및 종목코드({code_from_chejan})로 활성 주문 발견 (RQName: {rq_name})", "INFO")
+                order_code = order_details.get('code', '')
+                # 종목코드도 정규화하여 비교
+                if order_code.startswith('A') and len(order_code) > 1:
+                    order_code = order_code[1:]
+                
+                if order_details.get('order_no') == api_order_no_from_chejan and order_code == normalized_code:
+                    self.log(f"_find_active_order_rq_name_key: API 주문번호({api_order_no_from_chejan}) 및 종목코드({normalized_code})로 활성 주문 발견 (RQName: {rq_name})", "INFO")
                     return rq_name
 
         # 2. API 주문번호가 있고, active_orders의 'order_no'는 아직 None이지만, 종목코드가 일치하고 유일한 후보일 경우
         #    (주로 첫 '접수' 또는 '체결' 이벤트 시)
         #    이 경우, 해당 주문의 'order_no'는 이후 _handle_order_execution_report에서 업데이트됨.
-        if api_order_no_from_chejan: # API 주문번호는 여전히 있어야 함
-            candidate_rq_names = []
-            for rq_name, order_details in self.account_state.active_orders.items():
-                if order_details.get('code') == code_from_chejan and order_details.get('order_no') is None:
-                    # 추가적으로 주문 유형 (매수/매도) 등을 비교하면 더 정확해질 수 있으나,
-                    # chejan_data에서 주문 유형을 항상 얻을 수 있는지 확인 필요.
-                    # 우선은 종목코드와 order_no is None 조건으로 후보 선정
+        candidate_rq_names = []
+        for rq_name, order_details in self.account_state.active_orders.items():
+            order_code = order_details.get('code', '')
+            # 종목코드도 정규화하여 비교
+            if order_code.startswith('A') and len(order_code) > 1:
+                order_code = order_code[1:]
+                
+            # 종목코드가 일치하고 order_no가 없거나 일치하는 경우 후보에 추가
+            if order_code == normalized_code:
+                if order_details.get('order_no') is None or (api_order_no_from_chejan and order_details.get('order_no') == api_order_no_from_chejan):
                     candidate_rq_names.append(rq_name)
             
-            if len(candidate_rq_names) == 1:
-                rq_name = candidate_rq_names[0]
-                self.log(f"_find_active_order_rq_name_key: 종목코드({code_from_chejan})에 대해 'order_no'가 None인 유일한 활성 주문 발견 (RQName: {rq_name}). API주문번호({api_order_no_from_chejan})와 연결 예정.", "INFO")
-                return rq_name
-            elif len(candidate_rq_names) > 1:
-                self.log(f"_find_active_order_rq_name_key: 종목코드({code_from_chejan})에 대해 'order_no'가 None인 활성 주문이 여러 개({len(candidate_rq_names)}개) 발견되어 특정할 수 없음. RQNames: {candidate_rq_names}", "WARNING")
-                # 이 경우, 더 정교한 매칭 로직이 필요하거나, 가장 오래된 주문을 선택하는 등의 정책 필요
-                # 현재는 실패로 간주
-                return None 
-            # else: len == 0 이면 아래로 진행
+        if len(candidate_rq_names) == 1:
+            rq_name = candidate_rq_names[0]
+            self.log(f"_find_active_order_rq_name_key: 종목코드({normalized_code})에 대해 유일한 활성 주문 발견 (RQName: {rq_name}). API주문번호({api_order_no_from_chejan})와 연결 예정.", "INFO")
+            return rq_name
+        elif len(candidate_rq_names) > 1:
+            # 여러 개 후보가 있는 경우, 가장 최근의 주문을 선택
+            rq_name = candidate_rq_names[-1]  # 마지막(가장 최근) 후보 선택
+            self.log(f"_find_active_order_rq_name_key: 종목코드({normalized_code})에 대해 여러 활성 주문({len(candidate_rq_names)}개) 발견. 가장 최근 주문 선택: {rq_name}", "WARNING")
+            return rq_name
 
-        self.log(f"_find_active_order_rq_name_key: 종목코드({code_from_chejan}), API주문번호({api_order_no_from_chejan if api_order_no_from_chejan else 'N/A'})로 일치하는 활성 주문을 찾지 못했습니다.", "WARNING")
+        self.log(f"_find_active_order_rq_name_key: 종목코드({normalized_code}), API주문번호({api_order_no_from_chejan if api_order_no_from_chejan else 'N/A'})로 일치하는 활성 주문을 찾지 못했습니다.", "WARNING")
         return None
 
     def on_chejan_data_received(self, gubun, chejan_data):  # item_cnt, fid_list_str 제거, chejan_data는 dict
@@ -1702,6 +1747,12 @@ class TradingStrategy(QObject):
         code_raw = chejan_data.get('9001', '')  # 종목코드 FID (예: A005930)
         api_order_no = chejan_data.get('9203', '') # 주문번호 FID
         stock_name_fid = chejan_data.get('302', '') # 종목명 FID (KOA Studio 기준)
+        order_status = chejan_data.get('913', '')  # 주문상태 (접수, 체결 등)
+        filled_qty = chejan_data.get('911', '')    # 체결량
+        filled_price = chejan_data.get('10', '')   # 체결가
+        
+        # 처리 전 중요 필드 로깅
+        self.log(f"체결 처리 시작 - 종목코드: {code_raw}, 주문번호: {api_order_no}, 상태: {order_status}, 체결량: {filled_qty}, 체결가: {filled_price}", "INFO")
         
         code = code_raw
         if code.startswith('A') and len(code) > 1: # 'A' 접두사 제거 ('A'만 있는 경우 제외)
@@ -1720,7 +1771,7 @@ class TradingStrategy(QObject):
 
         # _find_active_order_entry 대신 _find_active_order_rq_name_key 사용
         # 이 함수는 self.account_state.active_orders의 '키' (즉, rq_name)를 반환함.
-        original_rq_name_key = self._find_active_order_rq_name_key(code, api_order_no, chejan_data)
+        original_rq_name_key = self._find_active_order_rq_name_key(code_raw, api_order_no, chejan_data)
         
         active_order_entry_ref = None # 실제 active_orders 딕셔너리 내의 주문 객체에 대한 참조
         if original_rq_name_key and original_rq_name_key in self.account_state.active_orders:
