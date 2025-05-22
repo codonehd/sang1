@@ -950,17 +950,31 @@ class TradingStrategy(QObject):
             self.reset_stock_strategy_info(code)
             return
         
-        # 매도 주문이 이미 진행 중인지 확인
-        if stock_info.last_order_rq_name:
-            active_order_entry = self._find_active_order(None, code)
-            if active_order_entry:
-                order_type = active_order_entry.get('order_type', '')
-                if order_type == '매도':
-                    self.log(f"{code} 매도 주문 진행 중 ({stock_info.last_order_rq_name}). 추가 전략 처리 건너뜀.", "INFO")
-                    return
+        # 매도 주문이 이미 진행 중인지 확인 (활성 주문 검색)
+        active_orders_for_code = []
+        for key, order in self.account_state.active_orders.items():
+            if order.get('code') == code and order.get('order_type') == '매도':
+                active_orders_for_code.append(order)
+        
+        if active_orders_for_code:
+            total_unfilled = sum(self._safe_to_int(order.get('unfilled_qty', 0)) for order in active_orders_for_code)
+            self.log(f"{code} 매도 주문 진행 중: {len(active_orders_for_code)}개 주문, 미체결 총량: {total_unfilled}. 추가 전략 처리 건너뜀.", "INFO")
+            return
 
-        # 손절 조건 검사 (priority 1)
-        if self._check_and_execute_stop_loss(code, stock_info, current_price, avg_buy_price, holding_quantity):
+        # 주문 임시 수량 가져오기
+        temp_order_quantity = getattr(stock_info, 'temp_order_quantity', 0)
+        portfolio_temp_order_quantity = portfolio_item.get('임시_주문수량', 0)
+        
+        # 실제 사용 가능한 수량 계산 (보유량 - 임시 주문 수량)
+        available_quantity = holding_quantity - max(temp_order_quantity, portfolio_temp_order_quantity)
+        
+        # 실제 가용 수량이 0 이하면 건너뜀
+        if available_quantity <= 0:
+            self.log(f"{code} 가용 수량이 0 이하입니다. 보유량: {holding_quantity}, 임시주문량: {max(temp_order_quantity, portfolio_temp_order_quantity)}. 전략 처리 건너뜀.", "INFO")
+            return
+            
+        # 손절 조건 검사 (priority 1) - 실제 가용 수량 전달
+        if self._check_and_execute_stop_loss(code, stock_info, current_price, avg_buy_price, available_quantity):
             self.log(f"{code} 손절 실행완료, 다음 조건검사 건너뜀.", "INFO")
             return
 
@@ -1280,6 +1294,20 @@ class TradingStrategy(QObject):
                 'timestamp': get_current_time_str(),
                 'reason': reason
             }
+            
+            # 주문 접수 성공 시 포트폴리오와 StockTrackingData의 보유량을 임시로 감소
+            # 이렇게 하면 중복 주문 발생을 방지할 수 있음
+            old_portfolio_quantity = portfolio_item.get('보유수량', 0)
+            portfolio_item['임시_주문수량'] = portfolio_item.get('임시_주문수량', 0) + sell_quantity
+            
+            # StockTrackingData에 임시 주문 수량 기록
+            old_tracking_quantity = stock_info.total_buy_quantity
+            stock_info.temp_order_quantity = getattr(stock_info, 'temp_order_quantity', 0) + sell_quantity
+            
+            self.log(f"매도 주문 접수 후 임시 수량 처리: {pure_code} (원본:{code}), 주문량: {sell_quantity}, "
+                     f"포트폴리오 임시주문량: {portfolio_item['임시_주문수량']}, "
+                     f"StockTracking 임시주문량: {stock_info.temp_order_quantity}", "INFO")
+            
             self.log(f"active_orders에 매도 주문 추가: {rq_name}, 상세: {self.account_state.active_orders[rq_name]}", "DEBUG")
             return True
         else:
@@ -1306,6 +1334,23 @@ class TradingStrategy(QObject):
         stock_info.buy_timestamp = None
         stock_info.buy_completion_count = 0  # 매수 체결 완료 횟수 초기화
         
+        # 임시 주문 수량 초기화
+        if hasattr(stock_info, 'temp_order_quantity'):
+            old_temp_qty = getattr(stock_info, 'temp_order_quantity', 0)
+            stock_info.temp_order_quantity = 0
+            self.log(f"[{code}] 상태 초기화 중 임시 주문 수량도 초기화: {old_temp_qty} -> 0", "DEBUG")
+        
+        # trading_status에서도 제거
+        if code in self.account_state.trading_status:
+            del self.account_state.trading_status[code]
+        
+        self.log(f"[{code}] 종목 상태 초기화: {old_state} -> {stock_info.strategy_state}", "INFO")
+        return True
+
+        # 임시 주문 수량 초기화
+        if hasattr(stock_info, 'temp_order_quantity'):
+            stock_info.temp_order_quantity = 0
+        
         # trading_status에서도 제거
         if code in self.account_state.trading_status:
             del self.account_state.trading_status[code]
@@ -1321,6 +1366,9 @@ class TradingStrategy(QObject):
         trade_price = self._safe_to_float(trade_price)
         quantity = self._safe_to_int(quantity)
         portfolio = self.account_state.portfolio # portfolio 참조 수정
+        
+        # watchlist에서 StockTrackingData 가져오기
+        stock_data = self.watchlist.get(code)
 
         if trade_type == '매수':
             if code not in portfolio:
@@ -1347,6 +1395,12 @@ class TradingStrategy(QObject):
             else:
                  portfolio[code]['매입가'] = 0
             
+            # StockTrackingData 업데이트
+            if stock_data:
+                stock_data.total_buy_quantity = new_total_quantity
+                stock_data.avg_buy_price = portfolio[code]['매입가']
+                self.log(f"[{code}] 매수 체결 후 StockTrackingData 업데이트: 보유량({stock_data.total_buy_quantity}), 매입가({stock_data.avg_buy_price})", "INFO")
+            
             # 매수 시 trading_status에 항목 추가
             self.account_state.trading_status[code] = {
                 'status': TradingState.BOUGHT,
@@ -1358,12 +1412,24 @@ class TradingStrategy(QObject):
 
         elif trade_type == '매도':
             if code in portfolio:
+                old_quantity = portfolio[code]['보유수량']
                 portfolio[code]['보유수량'] -= quantity
+                
+                # StockTrackingData 업데이트 (매도 체결 시 total_buy_quantity 동기화)
+                if stock_data:
+                    old_tracking_quantity = stock_data.total_buy_quantity
+                    stock_data.total_buy_quantity = portfolio[code]['보유수량']
+                    self.log(f"[{code}] 매도 체결 후 StockTrackingData 업데이트: 보유량 {old_tracking_quantity} -> {stock_data.total_buy_quantity} (포트폴리오: {old_quantity} -> {portfolio[code]['보유수량']})", "INFO")
+                
                 if portfolio[code]['보유수량'] <= 0:
                     self.log(f"{stock_name}({code}) 전량 매도 완료. 포트폴리오 항목 유지 (수량 0).", "INFO")
                     portfolio[code]['보유수량'] = 0 
                     portfolio[code]['매입가'] = 0 
                     portfolio[code]['매입금액'] = 0
+                    
+                    # StockTrackingData 수량도 0으로 설정
+                    if stock_data:
+                        stock_data.total_buy_quantity = 0
                     
                     # 매도 완료 시 trading_status에서 SOLD로 상태 변경
                     if code in self.account_state.trading_status:
@@ -1373,7 +1439,6 @@ class TradingStrategy(QObject):
                 self.log(f"매도 체결 처리 오류: {code}가 포트폴리오에 없음.", "WARNING")
                 return 
 
-        stock_data = self.watchlist.get(code)
         if stock_data and code in portfolio and portfolio[code]['보유수량'] > 0:
             current_price = stock_data.current_price # watchlist의 StockTrackingData에서 현재가 사용
             avg_buy_price = self._safe_to_float(portfolio[code]['매입가'])
@@ -1980,6 +2045,19 @@ class TradingStrategy(QObject):
                         ts['status'] = TradingState.SOLD
                         self.log(f"[상태 업데이트] {code} ({stock_name}) 트레이딩 상태를 SOLD로 변경", "INFO")
                     
+                    # 포트폴리오 임시 주문 수량 초기화
+                    portfolio_item = self.account_state.portfolio.get(code)
+                    if portfolio_item and portfolio_item.get('임시_주문수량', 0) > 0:
+                        old_temp_qty = portfolio_item.get('임시_주문수량', 0)
+                        portfolio_item['임시_주문수량'] = 0
+                        self.log(f"[{code}] 매도 체결 완료 후 포트폴리오 임시 주문 수량 초기화: {old_temp_qty} -> 0", "INFO")
+                    
+                    # StockTrackingData 임시 주문 수량 초기화
+                    if stock_info and hasattr(stock_info, 'temp_order_quantity') and stock_info.temp_order_quantity > 0:
+                        old_temp_qty = stock_info.temp_order_quantity
+                        stock_info.temp_order_quantity = 0
+                        self.log(f"[{code}] 매도 체결 완료 후 StockTrackingData 임시 주문 수량 초기화: {old_temp_qty} -> 0", "INFO")
+                    
                     portfolio_item = self.account_state.portfolio.get(code)
                     if portfolio_item and portfolio_item.get('보유수량', 0) == 0:
                         self.log(f"{code} ({stock_name}) 전량 매도 완료. 관련 전략 정보 초기화.", "INFO")
@@ -1994,6 +2072,12 @@ class TradingStrategy(QObject):
                         if portfolio_item and portfolio_item.get('보유수량', 0) > 0 :
                              stock_info.strategy_state = TradingState.PARTIAL_SOLD # 만약 아직 보유량이 있다면 PARTIAL_SOLD
                              self.log(f"{code} ({stock_name}) 매도 전량체결이나 포트폴리오 잔량 남아있어 PARTIAL_SOLD로 상태 유지. 수량: {portfolio_item.get('보유수량')}", "WARNING")
+                             
+                             # StockTrackingData 임시 주문 수량 초기화
+                             if hasattr(stock_info, 'temp_order_quantity') and stock_info.temp_order_quantity > 0:
+                                old_temp_qty = stock_info.temp_order_quantity
+                                stock_info.temp_order_quantity = 0
+                                self.log(f"[{code}] 매도 체결 완료 후 StockTrackingData 임시 주문 수량 초기화: {old_temp_qty} -> 0", "INFO")
 
                 # stock_info의 last_order_rq_name 초기화 조건: 현재 완료된 주문의 original_rq_name_key와 일치할 때
                 if stock_info.last_order_rq_name == original_rq_name_key:
