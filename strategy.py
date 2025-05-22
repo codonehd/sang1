@@ -1115,12 +1115,13 @@ class TradingStrategy(QObject):
                 result = self.modules.kiwoom_api.send_order(
                     rq_name=rq_name,
                     screen_no="0101",  # 주문용 화면번호
+                    acc_no=self.account_state.account_number,  # 계좌번호 추가
                     order_type=order_type,  # 1: 신규매수
                     code=code,
                     quantity=order_quantity,
                     price=order_price,
-                    quote_type="00",  # 00: 지정가, 03: 시장가
-                    original_order_no=""  # 원주문번호 (취소/정정 시 필요)
+                    hoga_gb="00",  # 00: 지정가, 03: 시장가 (quote_type에서 hoga_gb로 변경)
+                    org_order_no=""  # 원주문번호 (취소/정정 시 필요)
                 )
                 
                 # 주문 요청 결과 처리
