@@ -1,13 +1,13 @@
 {
-  "daily_buy_executed_count": 2,
+  "daily_buy_executed_count": 4,
   "today_date_for_buy_limit": "2025-05-22",
   "trading_status": {},
   "watchlist": {
     "330350": {
       "code": "330350",
       "stock_name": "위더스제약",
-      "current_price": 7620.0,
-      "yesterday_close_price": 7650.0,
+      "current_price": 7730.0,
+      "yesterday_close_price": 7670.0,
       "strategy_state": "WAITING",
       "avg_buy_price": 0.0,
       "total_buy_quantity": 0,
@@ -30,5 +30,5 @@
     "손실금액": 0
   },
   "last_snapshot_date": null,
-  "saved_datetime": "2025-05-22 12:00:19"
+  "saved_datetime": "2025-05-22 12:07:38"
 }

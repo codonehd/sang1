@@ -1084,10 +1084,12 @@ class TradingStrategy(QObject):
         # 매매 타입 (시장가, 지정가 등) 결정 및 주문가격 설정
         order_type = 1  # 시장가 매수 (default)
         order_price = 0  # 시장가 주문에서는 가격을 0으로 설정
+        hoga_gb = "03"  # 시장가 주문에 맞는 호가구분 설정
         
         # 지정가 주문을 원한다면 아래 코드 활성화 및 수정
         # order_type = 2  # 지정가 매수
         # order_price = current_price  # 현재가로 주문 (원하는 가격으로 수정 가능)
+        # hoga_gb = "00"  # 지정가 주문에 맞는 호가구분 설정
         
         # 주문 요청 식별자 생성 (RQ_NAME: 주문 응답을 구분하기 위한 식별자)
         rq_name = f"BUY_REQ_{code}_{int(time.time())}"
@@ -1120,7 +1122,7 @@ class TradingStrategy(QObject):
                     code=code,
                     quantity=order_quantity,
                     price=order_price,
-                    hoga_gb="00",  # 00: 지정가, 03: 시장가 (quote_type에서 hoga_gb로 변경)
+                    hoga_gb=hoga_gb,  # 시장가 주문(03) 또는 지정가 주문(00)
                     org_order_no=""  # 원주문번호 (취소/정정 시 필요)
                 )
                 
