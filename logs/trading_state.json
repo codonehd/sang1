@@ -1,21 +1,29 @@
 {
   "daily_buy_executed_count": 4,
   "today_date_for_buy_limit": "2025-05-22",
-  "trading_status": {},
+  "trading_status": {
+    "388050": {
+      "status": "BOUGHT",
+      "bought_price": 9830.0,
+      "bought_quantity": 101,
+      "bought_time": "2025-05-22 12:46:25"
+    }
+  },
   "watchlist": {
-    "330350": {
-      "code": "330350",
-      "stock_name": "위더스제약",
-      "current_price": 7730.0,
-      "yesterday_close_price": 7670.0,
-      "strategy_state": "WAITING",
-      "avg_buy_price": 0.0,
-      "total_buy_quantity": 0,
-      "current_high_price_after_buy": 0.0,
+    "388050": {
+      "code": "388050",
+      "stock_name": "지투파워",
+      "current_price": 9800.0,
+      "yesterday_close_price": 9840.0,
+      "strategy_state": "BOUGHT",
+      "avg_buy_price": 9830.0,
+      "total_buy_quantity": 101,
+      "current_high_price_after_buy": 9890.0,
       "is_trailing_stop_active": false,
       "trailing_stop_partially_sold": false,
       "partial_take_profit_executed": false,
-      "buy_completion_count": 0
+      "buy_completion_count": 0,
+      "buy_timestamp": "2025-05-22 12:46:25"
     }
   },
   "trading_records": {
@@ -30,5 +38,5 @@
     "손실금액": 0
   },
   "last_snapshot_date": null,
-  "saved_datetime": "2025-05-22 12:07:38"
+  "saved_datetime": "2025-05-22 12:51:49"
 }
