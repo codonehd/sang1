@@ -190,13 +190,17 @@ def main():
                     print(f"[SIG_HANDLER] QApplication 종료 중 오류: {e}")
             
             print("[SIG_HANDLER] enhanced_signal_handler 실행 완료. 프로그램이 정상적으로 종료됩니다.")
+            
+            # 프로세스 강제 종료를 추가 - quit()만으로는 완전히 종료되지 않는 문제 해결
+            print("[SIG_HANDLER] 프로세스 강제 종료 진행...")
+            os._exit(0)  # 프로세스를 즉시 종료
         except Exception as e:
             print(f"[SIG_HANDLER] 종료 처리 중 예상치 못한 오류 발생: {e}")
             # 심각한 오류 발생 시 즉시 종료
-            sys.exit(1)
+            os._exit(1)
         
-        # 정상 종료
-        sys.exit(0)
+        # 정상 종료 (여기까지 도달하지 않을 것임)
+        # sys.exit(0)
 
     try:
         # 관심종목 추가 (설정 파일에서 로드 - ConfigManager가 유효성 검사 및 기본값 처리)
@@ -243,6 +247,9 @@ def main():
         if strategy and strategy.is_running: # strategy가 실행 중일 때만 stop 호출
             strategy.stop()
         logger.info("프로그램이 종료됩니다.")
+        # 강제 종료 추가 - 종료되지 않는 문제 해결
+        print("[MAIN] 프로세스 강제 종료 진행...")
+        os._exit(0)
 
 if __name__ == "__main__":
     main()

@@ -236,7 +236,7 @@ class TradingStrategy(QObject):
         self.settings.buy_amount_per_stock = self.modules.config_manager.get_setting("매수금액", 1000000.0)
         
         # 매매 전략 관련 설정
-        self.settings.stop_loss_rate_from_yesterday_close = self.modules.config_manager.get_setting("매매전략", "손절_손실률", 2.0)
+        self.settings.stop_loss_rate_from_yesterday_close = self.modules.config_manager.get_setting("매매전략", "손절손실률_전일종가기준", 2.0)
         self.settings.partial_take_profit_rate = self.modules.config_manager.get_setting("매매전략", "익절_수익률", 5.0)
         self.settings.partial_sell_ratio = self.modules.config_manager.get_setting("매매전략", "익절_매도비율", 50.0) / 100.0  # 퍼센트 -> 비율 변환
         self.settings.full_take_profit_target_rate = self.modules.config_manager.get_setting("매매전략", "최종_익절_수익률", 9.0)
@@ -2758,3 +2758,78 @@ class TradingStrategy(QObject):
                 order_type = order_entry.get('order_type')
                 self.log(f"[자동 정리] 활성 주문 제거: {rq_name_key}, 종목: {code}, 유형: {order_type}", "INFO")
                 del self.account_state.active_orders[rq_name_key]
+
+    def _find_active_order(self, api_order_no, code):
+        """
+        코드나 주문번호를 통해 활성 주문을 찾아 반환합니다.
+        _find_active_order_rq_name_key 메서드를 사용하여 RQName을 찾은 후 해당 키로 active_orders에서 주문 항목을 반환합니다.
+        
+        Args:
+            api_order_no: API 주문번호 (없으면 None)
+            code: 종목코드
+        
+        Returns:
+            찾은 주문 항목 (딕셔너리) 또는 None
+        """
+        rq_name_key = self._find_active_order_rq_name_key(code, api_order_no, None)
+        if rq_name_key and rq_name_key in self.account_state.active_orders:
+            return self.account_state.active_orders[rq_name_key]
+        return None
+
+    def _find_active_order_rq_name_key(self, code_from_chejan, api_order_no_from_chejan, chejan_data_dict): # chejan_data_dict는 로깅용으로만 사용될 수 있음
+        # 종목코드 정규화 ('A'로 시작하는 경우 제거)
+        normalized_code = code_from_chejan
+        if normalized_code and normalized_code.startswith('A') and len(normalized_code) > 1:
+            normalized_code = normalized_code[1:]
+        
+        self.log(f"_find_active_order_rq_name_key: 종목코드({code_from_chejan} -> {normalized_code}), API주문번호({api_order_no_from_chejan if api_order_no_from_chejan else 'N/A'}) 탐색 시작.", "DEBUG")
+
+        if not self.account_state or not self.account_state.active_orders:
+            self.log(f"_find_active_order_rq_name_key: self.account_state.active_orders가 비어있거나 없습니다.", "WARNING")
+            return None
+
+        # 1. API 주문번호가 있고, active_orders의 'order_no'와 일치하는 경우
+        if api_order_no_from_chejan:
+            for rq_name_key, order_entry in self.account_state.active_orders.items():
+                order_no_from_entry = order_entry.get('order_no')
+                if order_no_from_entry and order_no_from_entry == api_order_no_from_chejan:
+                    self.log(f"_find_active_order_rq_name_key: API주문번호({api_order_no_from_chejan})로 active_orders에서 일치하는 항목 찾음: {rq_name_key}", "DEBUG")
+                    return rq_name_key
+
+        # 2. 종목코드로 매칭 (마지막으로 해당 종목에 대해 요청된 주문)
+        if normalized_code:
+            matching_entries = []
+            for rq_name_key, order_entry in self.account_state.active_orders.items():
+                code_from_entry = order_entry.get('code')
+                # 종목코드도 정규화하여 비교
+                normalized_code_from_entry = code_from_entry
+                if normalized_code_from_entry and normalized_code_from_entry.startswith('A') and len(normalized_code_from_entry) > 1:
+                    normalized_code_from_entry = normalized_code_from_entry[1:]
+                
+                if normalized_code_from_entry and normalized_code_from_entry == normalized_code:
+                    matching_entries.append((rq_name_key, order_entry))
+            
+            # 가장 최근 주문 선택 (마지막에 추가된 항목이 최근 주문이라고 가정)
+            if matching_entries:
+                # timestamp가 있으면 timestamp로 정렬, 없으면 마지막 항목 선택
+                if all('timestamp' in entry[1] for entry in matching_entries):
+                    # 타임스탬프 기준 내림차순 정렬
+                    matching_entries.sort(key=lambda x: x[1].get('timestamp', 0), reverse=True)
+                
+                latest_rq_name_key, latest_entry = matching_entries[0]
+                self.log(f"_find_active_order_rq_name_key: 종목코드({normalized_code})로 active_orders에서 일치하는 항목 찾음: {latest_rq_name_key}", "DEBUG")
+                return latest_rq_name_key
+
+        # 3. BUY_REQ, SELL_REQ로 시작하는 RQName에서 코드 추출 시도
+        if normalized_code:
+            buy_req_prefix = f"BUY_REQ_{normalized_code}_"
+            sell_req_prefix = f"SELL_REQ_{normalized_code}_"
+            
+            for rq_name_key in self.account_state.active_orders.keys():
+                if (rq_name_key.startswith(buy_req_prefix) or 
+                    rq_name_key.startswith(sell_req_prefix)):
+                    self.log(f"_find_active_order_rq_name_key: RQName 패턴({buy_req_prefix} 또는 {sell_req_prefix})으로 active_orders에서 일치하는 항목 찾음: {rq_name_key}", "DEBUG")
+                    return rq_name_key
+
+        self.log(f"_find_active_order_rq_name_key: 종목코드({normalized_code}), API주문번호({api_order_no_from_chejan if api_order_no_from_chejan else 'N/A'})로 일치하는 활성 주문을 찾지 못했습니다.", "WARNING")
+        return None
