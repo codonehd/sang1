@@ -31,7 +31,11 @@
     },
     "watchlist": [
         
-        { "code": "389470", "name": "인벤티지랩", "yesterday_close_price": 44650 }
+        
+        { "code": "384470", "name": "코어라인소프트", "yesterday_close_price": 7550 },
+        { "code": "330350", "name": "위더스제약", "yesterday_close_price": 8300 },
+        { "code": "464080", "name": "에스오에스랩", "yesterday_close_price": 13850 },
+        { "code": "481070", "name": "에이유브랜즈", "yesterday_close_price": 16000 }
     ],
     "PeriodicStatusReport": {
         "enabled": true,

@@ -15,6 +15,8 @@
     *   거래 내역, 매매 결정 근거, 일별 계좌 스냅샷, OHLCV 데이터 등을 SQLite 데이터베이스에 저장합니다.
 *   **화면 번호 관리:** 키움 API의 화면 번호를 효율적으로 관리하여 API 요청 제한을 준수합니다.
 *   **안전 종료:** Ctrl+C 입력 시 안전하게 리소스를 해제하고 프로그램을 종료합니다.
+*   **날짜 변경 시 연속성 보장:** 프로그램 재시작이나 날짜 변경 시에도 보유 종목에 대한 매매 전략이 연속적으로 적용됩니다.
+*   **부분 체결 처리:** 주문이 여러 번에 걸쳐 부분적으로 체결될 때도 정확하게 보유 수량을 추적하고 전략을 실행합니다.
 
 ## 3. 모듈별 설명 및 의존성
 
@@ -92,8 +94,11 @@
     *   실시간 시세 및 체결 데이터 기반으로 매매 조건 판단.
     *   매수/매도 주문 실행 요청 (`KiwoomAPI` 사용).
     *   손절, 익절, 트레일링 스탑 등 매매 규칙 적용.
-    *   일일 매수 횟수 제한.
+    *   종목별 매매 횟수 제한한.
     *   주기적인 상태 보고 및 일일 계좌 스냅샷 기록.
+    *   부분 체결 처리 및 전략 상태 동기화.
+    *   주문 체결 보고 처리 (`_handle_order_execution_report`).
+    *   포트폴리오 정보 업데이트 (`update_portfolio_on_execution`).
 *   **의존성:** `PyQt5.QtCore`, `time`, `datetime`, `logger`, `config`, `database`, `util`, `enum`, `dataclasses`, `copy`, `re`.
 
 ### 3.8. `util.py`
@@ -150,14 +155,74 @@
     *   `StrategySettings` (dataclass): 각종 매매 전략 파라미터.
     *   `StockTrackingData` (dataclass): 관심 종목별 추적 데이터 (현재가, 상태, 매수/매도 관련 정보).
     *   `watchlist` (dict): `{stock_code: StockTrackingData}`.
+    *   `TradingState` (enum): 매매 상태 정의 (WAITING, READY, BUYING, BOUGHT, PARTIAL_SOLD, SOLD, CANCELED).
 *   **`ScreenManager`:** `available_screens` (list), `screen_map` (dict), `used_screens` (dict)를 사용하여 화면 번호 관리.
 
-## 6. 초기 오류 해결 (`TypeError` in `on_chejan_data_received`)
+## 6. 주문 처리 및 체결 로직
 
-*   **문제 원인:** `kiwoom_api.py`의 `on_receive_chejan_data` 메서드에서 `strategy.py`의 `on_chejan_data_received` 메서드를 호출할 때, `strategy.py`에서 정의한 세 개의 인자(`gubun`, `item_cnt`, `fid_list_str`) 대신 두 개의 인자(`gubun`, `current_chejan_data`)를 전달하여 발생했습니다.
-*   **해결:** `kiwoom_api.py`의 해당 호출 부분을 `self.strategy_instance.on_chejan_data_received(gubun, item_cnt, fid_list_str)`로 수정하여 올바른 인자를 전달하도록 변경했습니다.
+### 6.1. 주문 처리 흐름
 
-## 7. 향후 개선 방향 (제안)
+1. **매수/매도 조건 확인:** `process_strategy` 메서드에서 각 종목별 매매 조건 확인.
+2. **주문 요청:** 조건 충족 시 `_request_buy_order` 또는 `_request_sell_order` 메서드로 주문 요청.
+3. **주문 접수:** 주문 요청이 접수되면 `account_state.active_orders`에 주문 정보 추가.
+4. **체결 알림 수신:** `on_chejan_data_received` 메서드에서 체결 데이터 수신.
+5. **체결 처리:** `_handle_order_execution_report` 메서드에서 체결 데이터 처리.
+6. **포트폴리오 업데이트:** `update_portfolio_on_execution` 메서드에서 포트폴리오 정보 업데이트.
+
+### 6.2. 부분 체결 처리
+
+주문이 여러 번에 걸쳐 부분적으로 체결될 때의 처리 로직:
+
+1. **매수 부분 체결 시:**
+   - 각 체결마다 `update_portfolio_on_execution`을 호출하여 포트폴리오 업데이트
+   - 첫 체결 시 `strategy_state`를 `BOUGHT`로 변경 및 `buy_completion_count` 증가
+   - 모든 체결에서 `StockTrackingData`의 `total_buy_quantity` 업데이트
+   - 종목의 현재가가 매수 후 최고가보다 높으면 `current_high_price_after_buy` 업데이트
+
+2. **매도 부분 체결 시:**
+   - 각 체결마다 포트폴리오의 보유수량 감소
+   - `StockTrackingData`의 `total_buy_quantity`를 포트폴리오 보유수량과 동기화
+   - 부분 매도 시 `strategy_state`를 `PARTIAL_SOLD`로 변경
+   - 전량 매도 시 `reset_stock_strategy_info` 호출하여 전략 상태 초기화
+
+3. **주문 전량 체결 완료 시:**
+   - `account_state.active_orders`에서 주문 제거
+   - 매수 완료 시 즉시 `process_strategy`를 호출하여 매도 조건 확인
+   - 매도 완료 시 손익 계산 및 통계 업데이트
+
+### 6.3. 날짜 변경 후 연속성 보장
+
+프로그램이 종료되었다가 다음 날 다시 실행되어도 매매 전략의 연속성이 보장됩니다:
+
+1. **프로그램 시작 시 계좌 정보 복원:**
+   - 키움 API를 통해 현재 보유 종목 정보 로드
+   - 각 종목에 대해 `StockTrackingData` 생성 및 `TradingState.BOUGHT` 상태로 설정
+
+2. **거래 내역 데이터베이스 활용:**
+   - 필요 시 DB에 저장된 거래 내역을 조회하여 매매 이력 확인 가능
+   - `get_recent_trades_by_code` 메서드로 특정 종목의 최근 거래 내역 조회
+
+3. **매매 전략 지속 적용:**
+   - 보유 중인 종목에 대해 익절, 손절, 트레일링 스탑 등의 매도 전략 지속 적용
+   - 날짜가 바뀌어도 매수 시점의 정보(매수가, 매수 시간 등)를 유지하여 전략 판단에 활용
+
+## 7. 초기 오류 해결 및 개선사항
+
+### 7.1. 초기 오류 해결 (`TypeError` in `on_chejan_data_received`)
+
+*   **문제 원인:** `kiwoom_api.py`의 `on_receive_chejan_data` 메서드에서 `strategy.py`의 `on_chejan_data_received` 메서드를 호출할 때, 인자 불일치 문제.
+*   **해결:** 올바른 인자 전달 방식으로 수정.
+
+### 7.2. 부분 체결 문제 해결
+
+*   **문제 원인:** 매수 주문이 부분적으로 체결될 때 `StockTrackingData`의 보유 수량이 정확하게 업데이트되지 않는 문제.
+*   **해결 방법:**
+    * `update_portfolio_on_execution` 함수 개선: 매수/매도 체결 시 `StockTrackingData`와 포트폴리오 정보 동기화
+    * `_handle_order_execution_report` 함수 개선: 부분 체결 시에도 전략 상태 올바르게 업데이트
+    * 첫 번째 매수 체결 시에만 `buy_completion_count` 증가하도록 로직 수정
+    * 매수 체결 후 고점 업데이트 로직 추가
+
+## 8. 향후 개선 방향 (제안)
 
 *   **GUI 구현:** 현재 콘솔 기반 프로그램에 PyQt5 등을 활용한 GUI를 추가하여 사용자 편의성 증대.
 *   **다양한 매매 전략 지원:** 사용자가 직접 전략을 쉽게 추가하거나 수정할 수 있는 플러그인 형태의 구조 고려.
@@ -165,5 +230,8 @@
 *   **상세한 오류 처리 및 알림:** 예외 상황 발생 시 사용자에게 보다 명확한 알림 (예: 시스템 트레이 알림, 이메일 알림) 제공.
 *   **성능 최적화:** 대량의 데이터 처리 또는 다수 종목 동시 거래 시 성능 최적화.
 *   **보안 강화:** 계좌 비밀번호 등 민감 정보 암호화 저장.
+*   **장 마감 후 보고서:** 일일 매매 결과 및 수익률 분석 보고서 자동 생성.
+*   **동적 매매 전략 조정:** 시장 상황에 따라 매매 전략 파라미터를 동적으로 조정하는 기능.
+*   **매수/매도 타이밍 최적화:** 호가 분석을 통한 주문 시점 최적화.
 
 이 문서는 프로젝트의 현재 상태를 기준으로 작성되었으며, 지속적인 개발 및 유지보수를 통해 기능이 변경되거나 추가될 수 있습니다.
