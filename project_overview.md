@@ -235,3 +235,87 @@
 *   **매수/매도 타이밍 최적화:** 호가 분석을 통한 주문 시점 최적화.
 
 이 문서는 프로젝트의 현재 상태를 기준으로 작성되었으며, 지속적인 개발 및 유지보수를 통해 기능이 변경되거나 추가될 수 있습니다.
+
+## 9. 개발 진행 상황 및 오류 분석 (2024년 12월 기준)
+
+### 9.1. AI 어시스턴트의 현재 프로그램 파악 수준
+
+**코드 분석 완료된 영역:**
+- ✅ **프로젝트 구조 전체**: `main.py`, `config.py`, `kiwoom_api.py`, `strategy.py`, `database.py`, `logger.py`, `util.py` 등 전체 모듈 구조 파악
+- ✅ **데이터 클래스 구조**: `TradingState`, `AccountState`, `StrategySettings`, `StockTrackingData`, `ExternalModules` 등 핵심 데이터 구조 이해
+- ✅ **매매 전략 로직**: 매수/매도 조건, 손절/익절, 트레일링 스탑, 부분 체결 처리 로직 파악
+- ✅ **FID 매핑 구조**: `kiwoom_api.py`의 `fid_map` 딕셔너리 구조 및 사용 방식 확인
+- ✅ **ATS(대체거래소) 지원**: TR별 거래소구분 파라미터 설정 및 종목코드 접미사 처리 로직 확인
+- ✅ **체결 처리 흐름**: `on_chejan_data_received` → `_handle_order_execution_report` → `update_portfolio_on_execution` 흐름 파악
+
+**파악하지 못한 영역:**
+- ❌ **실제 수정 이력**: 사용자가 언급한 FID 수정, 부분체결 로직 수정 등의 구체적인 변경 내용
+- ❌ **현재 발생 중인 오류**: "매수 완료된 종목을 매수조건 충족시마다 계속 매수하는 문제"의 구체적인 발생 위치
+- ❌ **최근 코드 변경점**: 어떤 메서드나 로직이 언제 수정되었는지에 대한 기록
+- ❌ **런타임 동작**: 실제 실행 시 어떤 순서로 메서드가 호출되고 어떤 상태 변화가 일어나는지
+
+### 9.2. 중복 매수 문제 근본 원인 분석 (2024년 12월)
+
+#### 9.2.1. 매수 조건 판단 기준 분석 결과
+
+**매수 중복 방지 3단계 방어 시스템:**
+
+1. **1차 방어 - 포트폴리오 보유량 확인** (`_handle_waiting_state`, 라인 920-928)
+   ```python
+   if code in self.account_state.portfolio:
+       holding_quantity = self._safe_to_int(self.account_state.portfolio[code].get('보유수량', 0))
+       if holding_quantity > 0:
+           return False  # 추가 매수 차단
+   ```
+
+2. **2차 방어 - 매수 체결 횟수 확인** (`execute_buy`, 라인 1113-1116)  
+   ```python
+   if stock_info.buy_completion_count >= self.settings.max_buy_attempts_per_stock:
+       stock_info.strategy_state = TradingState.COMPLETE
+       return False
+   ```
+
+3. **3차 방어 - 상태 플래그 확인** (`execute_buy`, 라인 1120-1123)
+   ```python
+   if stock_info.strategy_state in [TradingState.BOUGHT, TradingState.PARTIAL_SOLD, TradingState.COMPLETE]:
+       return False
+   ```
+
+#### 9.2.2. 발견된 핵심 문제점
+
+**🚨 문제 1: `buy_completion_count` 증가 로직 결함**
+- **위치**: `_handle_order_execution_report`, 라인 2047-2051
+- **문제**: 첫 번째 매수 체결에서만 `buy_completion_count` 증가
+- **결과**: 부분체결 → 전량체결 과정에서 카운트가 1회만 증가하여 2차 방어선 약화
+
+**🚨 문제 2: 포트폴리오 업데이트 시점 문제**  
+- **위치**: `update_portfolio_on_execution`, 라인 1434-1442
+- **문제**: 부분체결 시마다 상태를 `BOUGHT`로 변경하지만 전량체결 완료 시점과 혼재
+- **결과**: 상태 관리와 포트폴리오 동기화 불일치 가능성
+
+**🚨 문제 3: 방어선 간 의존성 문제**
+- 1차 방어(포트폴리오)가 실패하면 2차 방어(`buy_completion_count`)에 의존
+- 2차 방어 로직 결함으로 인해 3차 방어(상태 플래그)까지 우회 가능
+- 포트폴리오 데이터 동기화 지연이나 특정 상황에서 다중 방어선 모두 우회될 위험
+
+#### 9.2.3. 중복 매수 발생 추정 시나리오
+
+1. **정상 케이스**: 1차 매수 → 포트폴리오 업데이트 → 추가 매수 조건 충족 시 1차 방어에서 차단 ✅
+
+2. **문제 케이스**: 
+   - 특정 조건에서 포트폴리오 데이터 동기화 지연 발생
+   - 1차 방어 우회 → 2차 방어(`buy_completion_count` 확인)
+   - `buy_completion_count` 증가 로직 결함으로 2차 방어도 우회
+   - 3차 방어(상태 플래그)만 남아 있지만 특정 상황에서 우회 가능
+   - 결과: 중복 매수 발생 (044490 종목 4회 매수 사례)
+
+#### 9.2.4. 확인이 필요한 추가 분석 포인트
+
+- 포트폴리오 데이터와 실제 잔고 데이터 동기화 시점 차이
+- 부분체결 과정에서 상태 변경 타이밍과 매수 조건 재검사 타이밍 충돌
+- `process_strategy` 호출 빈도와 포트폴리오 업데이트 완료 시점 간 경합 조건
+
+**결론**: 사용자 추정이 정확함. 상태 플래그만으로는 중복 매수 방지 불충분하며, 포트폴리오 확인이 주 방어선이나 `buy_completion_count` 로직 결함으로 인해 다중 방어 시스템에 취약점 존재.
+
+---
+*이 섹션은 2024년 12월 현재 AI 어시스턴트의 프로그램 파악 수준을 기록한 것으로, 향후 협업 효율성 향상을 위해 지속적으로 업데이트될 예정입니다.*
