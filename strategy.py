@@ -7,7 +7,7 @@ from PyQt5.QtCore import QTimer, QObject
 from logger import Logger
 import copy
 import re
-from util import ScreenManager, get_current_time_str
+from util import ScreenManager, get_current_time_str, _safe_to_int, _safe_to_float
 from enum import Enum, auto
 from dataclasses import dataclass, field
 from typing import Dict, Any, List, Optional
@@ -116,24 +116,6 @@ class ExternalModules:
 # --- 데이터 클래스 정의 끝 ---
 
 class TradingStrategy(QObject):
-    def _safe_to_int(self, value, default=0):
-        try:
-            cleaned_value = str(value).strip().replace('+', '').replace('-', '')
-            if not cleaned_value:
-                return default
-            return int(cleaned_value)
-        except (ValueError, TypeError):
-            return default
-
-    def _safe_to_float(self, value, default=0.0):
-        try:
-            cleaned_value = str(value).strip().replace('+', '').replace('-', '')
-            if not cleaned_value:
-                return default
-            return float(cleaned_value)
-        except (ValueError, TypeError):
-            return default
-    
     def _normalize_stock_code(self, code):
         """종목코드를 일관된 형태로 정규화"""
         if not code:
@@ -145,34 +127,48 @@ class TradingStrategy(QObject):
     
     def _recover_missing_stock_from_portfolio(self, code):
         """포트폴리오에 있지만 watchlist에 없는 종목을 자동 복구"""
+        original_code_param = code # 로깅용
         normalized_code = self._normalize_stock_code(code)
-        
-        # 원본 코드와 정규화된 코드 모두 확인
-        for check_code in [code, normalized_code]:
-            if check_code in self.account_state.portfolio and check_code not in self.watchlist:
-                portfolio_item = self.account_state.portfolio[check_code]
-                stock_name = portfolio_item.get('stock_name', check_code)
+        if original_code_param != normalized_code:
+            self.log(f"[RECOVER_NORMALIZE] _recover_missing_stock_from_portfolio: Input code '{original_code_param}' normalized to '{normalized_code}'", "DEBUG")
+
+        # 이제 normalized_code를 사용하여 포트폴리오와 watchlist를 확인합니다.
+        # 원본 코드로도 확인하는 로직은 제거하고 정규화된 코드로 일관되게 처리합니다.
+        if normalized_code in self.account_state.portfolio and normalized_code not in self.watchlist:
+            portfolio_item = self.account_state.portfolio[normalized_code]
+            stock_name = portfolio_item.get('stock_name', normalized_code)
+            
+            # watchlist에 다시 추가 (add_to_watchlist는 내부적으로 정규화하므로 normalized_code 전달)
+            self.add_to_watchlist(normalized_code, stock_name, yesterday_close_price=0.0)
+            
+            # 보유 상태로 복구 (watchlist의 키는 add_to_watchlist에 의해 정규화됨)
+            stock_info = self.watchlist.get(normalized_code) # 정규화된 코드로 조회
+            if not stock_info: # 혹시 모를 경우 방어
+                self.log(f"[RECOVER_FAIL] _recover_missing_stock_from_portfolio: Failed to retrieve {normalized_code} from watchlist after adding.", "ERROR")
+                return None
                 
-                # watchlist에 다시 추가
-                self.add_to_watchlist(check_code, stock_name, yesterday_close_price=0.0)
-                
-                # 보유 상태로 복구
-                stock_info = self.watchlist[check_code]
-                stock_info.strategy_state = TradingState.BOUGHT
-                stock_info.avg_buy_price = self._safe_to_float(portfolio_item.get('매입가'))
-                stock_info.total_buy_quantity = self._safe_to_int(portfolio_item.get('보유수량'))
-                stock_info.buy_timestamp = datetime.now()  # 정확한 시간은 알 수 없으므로 현재 시간으로 설정
-                
-                # trading_status에도 상태 저장
-                self.account_state.trading_status[check_code] = {
-                    'status': TradingState.BOUGHT,
-                    'bought_price': stock_info.avg_buy_price,
-                    'bought_quantity': stock_info.total_buy_quantity,
-                    'bought_time': stock_info.buy_timestamp
-                }
-                
-                self.log(f"[AUTO_RECOVERY] {check_code} ({stock_name}) watchlist 자동 복구 완료", "WARNING")
-                return stock_info
+            stock_info.strategy_state = TradingState.BOUGHT
+            stock_info.avg_buy_price = self._safe_to_float(portfolio_item.get('매입가'))
+            stock_info.total_buy_quantity = self._safe_to_int(portfolio_item.get('보유수량'))
+            stock_info.buy_timestamp = datetime.now()  # 정확한 시간은 알 수 없으므로 현재 시간으로 설정
+            
+            # trading_status에도 상태 저장 (정규화된 코드로)
+            self.account_state.trading_status[normalized_code] = {
+                'status': TradingState.BOUGHT,
+                'bought_price': stock_info.avg_buy_price,
+                'bought_quantity': stock_info.total_buy_quantity,
+                'bought_time': stock_info.buy_timestamp
+            }
+            
+            self.log(f"[AUTO_RECOVERY] {normalized_code} ({stock_name}) watchlist 자동 복구 완료 (원본 입력: {original_code_param})", "WARNING")
+            return stock_info
+        elif normalized_code in self.account_state.portfolio and normalized_code in self.watchlist:
+            # 포트폴리오에도 있고, watchlist에도 이미 있는 경우 (정상)
+            pass
+        elif normalized_code not in self.account_state.portfolio:
+            # 포트폴리오에 없는 경우 (복구 대상 아님)
+            pass
+            
         return None
 
     def __init__(self, kiwoom_api, config_manager, logger, db_manager, screen_manager=None):
@@ -376,11 +372,16 @@ class TradingStrategy(QObject):
         self.current_real_data_count += 1
         if not self.is_running:
             return
+        
+        original_code_param = code # 로깅용
+        normalized_code = self._normalize_stock_code(code)
+        if original_code_param != normalized_code:
+            self.log(f"[REAL_DATA_NORMALIZE] on_actual_real_data_received: Input code '{original_code_param}' normalized to '{normalized_code}'", "DEBUG")
 
-        stock_info = self.watchlist.get(code)
+        stock_info = self.watchlist.get(normalized_code) # 정규화된 코드로 조회
         if not stock_info:
-            if self.current_real_data_count % 500 == 0:
-                self.log(f"수신된 실시간 데이터({code})가 관심종목에 없어 무시합니다. (500건마다 로깅)", "DEBUG")
+            if self.current_real_data_count % 500 == 0: # 500건마다 로깅하는 것은 유지
+                self.log(f"수신된 실시간 데이터({original_code_param} -> {normalized_code})가 관심종목에 없어 무시합니다.", "DEBUG")
             return
 
         update_occurred = False
@@ -422,11 +423,11 @@ class TradingStrategy(QObject):
                 # update_occurred = True
 
         if update_occurred:
-            if self.current_real_data_count % 100 == 0:
-                 self.log(f"실시간 데이터 업데이트 ({code}): 현재가({stock_info.current_price}), API데이터({stock_info.api_data.get('현재가', 'N/A')})", "DEBUG")
+            if self.current_real_data_count % 100 == 0: # 100건마다 로깅하는 것은 유지
+                 self.log(f"실시간 데이터 업데이트 ({normalized_code}): 현재가({stock_info.current_price}), API데이터({stock_info.api_data.get('현재가', 'N/A')})", "DEBUG")
 
         if update_occurred and stock_info.strategy_state != TradingState.IDLE :
-            self.process_strategy(code)
+            self.process_strategy(normalized_code) # 정규화된 코드로 process_strategy 호출
 
     def start(self):
         self.log("TradingStrategy 시작 요청 접수...", "INFO")
@@ -665,73 +666,84 @@ class TradingStrategy(QObject):
     #     pass
 
     def add_to_watchlist(self, code, stock_name, yesterday_close_price=0.0): # yesterday_close_price 추가
-        # 🔧 핵심 수정: 입력된 코드 정규화 후 저장
+        original_code_param = code # 로깅용
         normalized_code = self._normalize_stock_code(code)
-        if normalized_code != code:
-            self.log(f"[WATCHLIST_NORMALIZE] 종목코드 정규화: '{code}' -> '{normalized_code}'", "INFO")
-            code = normalized_code
+        if original_code_param != normalized_code:
+            self.log(f"[WATCHLIST_NORMALIZE] add_to_watchlist: Input code '{original_code_param}' normalized to '{normalized_code}'", "DEBUG")
+        
+        # 이제 code 변수에는 항상 정규화된 코드가 들어감
+        code = normalized_code 
         
         self.log(f"[WATCHLIST_ADD_START] 관심종목 추가/업데이트 시작: 코드({code}), 이름({stock_name}), 설정된 전일종가({yesterday_close_price})", "DEBUG")
         
         safe_yesterday_cp = self._safe_to_float(yesterday_close_price)
 
-        if code not in self.watchlist:
-            self.watchlist[code] = StockTrackingData(
-                code=code, 
+        if code not in self.watchlist: # 정규화된 코드로 확인
+            self.watchlist[code] = StockTrackingData( # 정규화된 코드를 키로 사용
+                code=code, # StockTrackingData 내부의 code 필드도 정규화된 코드로 저장
                 stock_name=stock_name,
                 yesterday_close_price=safe_yesterday_cp
             )
             self.log(f"관심종목 신규 추가: {stock_name}({code}), 전일종가: {safe_yesterday_cp}, 초기상태: {self.watchlist[code].strategy_state.name}", "INFO")
-        else:
+        else: # 이미 있다면 업데이트 (키는 이미 정규화된 코드)
             self.watchlist[code].stock_name = stock_name
             self.watchlist[code].yesterday_close_price = safe_yesterday_cp
+            # code 필드는 이미 정규화되어 있으므로 업데이트 불필요: self.watchlist[code].code = code
             self.log(f"관심종목 정보 업데이트: {stock_name}({code}), 전일종가: {safe_yesterday_cp}, 현재상태: {self.watchlist[code].strategy_state.name}", "INFO")
         
-        # 전일 종가가 0인 경우 추가 로깅
         if safe_yesterday_cp == 0:
             self.log(f"주의: 관심종목 {stock_name}({code})의 전일종가가 0으로 설정되었습니다. 매매 전략에 영향을 줄 수 있습니다.", "WARNING")
 
         self.log(f"[WATCHLIST_ADD_END] 관심종목 추가/업데이트 완료: 코드({code}) - 현재 self.watchlist에 {len(self.watchlist)}개 항목", "DEBUG")
 
     def remove_from_watchlist(self, code, screen_no=None, unsubscribe_real=True):
+        original_code_param = code # 로깅용
+        normalized_code = self._normalize_stock_code(code)
+        if original_code_param != normalized_code:
+            self.log(f"[WATCHLIST_NORMALIZE] remove_from_watchlist: Input code '{original_code_param}' normalized to '{normalized_code}'", "DEBUG")
+        
+        code = normalized_code # 이후 모든 로직에서 정규화된 코드 사용
+
         self.log(f"Removing {code} from watchlist... Unsubscribe real data: {unsubscribe_real}", "INFO")
-        stock_info = self.watchlist.get(code)
+        stock_info = self.watchlist.get(code) # 정규화된 코드로 조회
 
         if stock_info and unsubscribe_real:
-            # 실시간 데이터 구독 해지
-            # KiwoomAPI에 특정 종목 또는 전체 실시간 데이터 구독 해지 메서드가 필요
-            # 예: self.modules.kiwoom_api.unsubscribe_stock_real_data(code)
-            # 화면번호 기반으로 해지한다면:
-            real_data_screen_no = stock_info.api_data.get('real_screen_no') # 실시간 데이터용 화면번호 필드가 있다고 가정
+            # 실시간 데이터 구독 해지 (종목코드도 정규화된 것 사용)
+            real_data_screen_no = stock_info.api_data.get('real_screen_no')
             if real_data_screen_no:
-                self.modules.kiwoom_api.disconnect_real_data(real_data_screen_no)
-                self.modules.screen_manager.release_screen(real_data_screen_no)
+                self.modules.kiwoom_api.disconnect_real_data(real_data_screen_no) # API 호출
+                self.modules.screen_manager.release_screen(real_data_screen_no, f"real_{code}") # ScreenManager에도 알림
                 self.log(f"Unsubscribed real data for {code} using screen_no: {real_data_screen_no}", "DEBUG")
             else:
-                # 전체 해지 후 재구독 방식 또는 종목별 해지 기능이 없다면 경고 로깅
-                self.log(f"Real data screen number for {code} not found. Cannot unsubscribe specific real data. Consider global unsubscription or check KiwoomAPI.", "WARNING")
+                self.log(f"Real data screen number for {code} not found. Cannot unsubscribe specific real data.", "WARNING")
         
-        # TR 요청 등에 사용된 화면 번호 해제 (opt10081 요청 시 사용된 화면번호)
-        tr_screen_no = stock_info.api_data.get('screen_no') if stock_info else None
-        if tr_screen_no:
-            self.modules.screen_manager.release_screen(tr_screen_no)
-            self.log(f"Released TR screen_no: {tr_screen_no} for {code}.", "DEBUG")
-        elif screen_no: # 인자로 직접 받은 screen_no가 있다면 그것도 해제 시도
-             self.modules.screen_manager.release_screen(screen_no)
-             self.log(f"Released screen_no (from arg): {screen_no} for {code}.", "DEBUG")
+        tr_screen_no_key = f"chart_{code}" # get_available_screen에서 사용한 identifier와 일치시킴
+        tr_screen_no_val = self.modules.screen_manager.get_screen_for_identifier(tr_screen_no_key)
+        if tr_screen_no_val:
+            self.modules.screen_manager.release_screen(tr_screen_no_val, tr_screen_no_key)
+            self.log(f"Released TR screen_no: {tr_screen_no_val} for {code} (Key: {tr_screen_no_key}).", "DEBUG")
+        
+        if screen_no: # 인자로 직접 받은 screen_no가 있다면 그것도 해제 시도 (Identifier를 모를 경우 대비)
+             released_by_direct_screen_no = self.modules.screen_manager.release_screen(screen_no) # Identifier 없이 해제 시도
+             if released_by_direct_screen_no:
+                self.log(f"Released screen_no (from arg): {screen_no} for {code}. Identifier was unknown or already cleared.", "DEBUG")
 
-        if code in self.watchlist:
+        if code in self.watchlist: # 정규화된 코드로 삭제
             del self.watchlist[code]
             self.log(f"{code} removed from watchlist.", "INFO")
         else:
-            self.log(f"{code} not found in watchlist for removal.", "WARNING")
+            self.log(f"{code} not found in watchlist for removal (already removed or never added).", "WARNING")
 
-    # def on_daily_chart_data_ready(self, rq_name, code, chart_data): # REMOVED: Function no longer needed as daily chart data is not fetched from API
-    #     # ... (rest of the function code commented out or removed)
-    #     pass
 
     def subscribe_stock_real_data(self, code):
-        stock_info = self.watchlist.get(code)
+        original_code_param = code # 로깅용
+        normalized_code = self._normalize_stock_code(code)
+        if original_code_param != normalized_code:
+            self.log(f"[REAL_SUB_NORMALIZE] subscribe_stock_real_data: Input code '{original_code_param}' normalized to '{normalized_code}'", "DEBUG")
+        
+        code = normalized_code # 이후 모든 로직에서 정규화된 코드 사용
+
+        stock_info = self.watchlist.get(code) # 정규화된 코드로 조회
         if not stock_info:
             self.log(f"Cannot subscribe real data for {code}: not in watchlist.", "ERROR")
             return
@@ -740,35 +752,28 @@ class TradingStrategy(QObject):
             self.log(f"Real data for {code} is already subscribed.", "DEBUG")
             return
 
-        screen_no = self.modules.screen_manager.get_available_screen(f"real_{code}")
+        screen_identifier = f"real_{code}" # ScreenManager에 사용할 identifier
+        screen_no = self.modules.screen_manager.get_available_screen(screen_identifier)
         if not screen_no:
-            self.log(f"Failed to get a screen number for real data subscription of {code}.", "ERROR")
+            self.log(f"Failed to get a screen number for real data subscription of {code} (Identifier: {screen_identifier}).", "ERROR")
             return
-
-        # KiwoomAPI의 실시간 데이터 구독 메서드 호출 (예시)
-        # SetRealReg 메서드 사용. FID 목록은 설정 파일이나 상수로 관리 가능
-        # 예: fids = "9001;10;13" # 종목코드, 현재가, 누적거래량 등 (실제 필요한 FID로 구성)
-        # 여기서는 KiwoomAPI wrapper가 FID 관리를 내부적으로 한다고 가정하거나, 직접 전달.
-        # kiwoom_api.subscribe_real_stock_data(screen_no, code, fids)
         
-        # 일반적인 FID 리스트 (현재가, 등락률, 거래량 등) - 필요에 따라 설정에서 가져오거나 확장
-        # 실제 키움 API의 SetRealReg 함수는 FID를 ;로 구분된 문자열로 받습니다.
-        # FID_LIST = "10;11;12;13;14;15;16;17;18;20;25;26;27;28;30;293;294;295;296;297;298;299;300;301;302;311;691;791;891"
-        # 위 FID 리스트는 예시이며, 실제 필요한 FID만 선별하여 사용하는 것이 효율적입니다.
-        # 여기서는 KiwoomAPI 모듈에 FID 관리 로직이 있다고 가정하고, 종목코드만 넘깁니다.
+        fids_to_subscribe = self.modules.config_manager.get_setting("API", "RealTimeFID", "10;11;12;13") # 설정에서 FID 목록 가져오기
+        
+        # KiwoomAPI의 set_real_reg는 종목코드를 ; 구분자로 여러 개 받을 수 있음. 여기서는 단일 종목.
+        ret = self.modules.kiwoom_api.set_real_reg(screen_no, code, fids_to_subscribe, "1") # "1"은 최초 등록
 
-        ret = self.modules.kiwoom_api.set_real_reg(screen_no, code, self.modules.config_manager.get_setting("API", "RealTimeFID", "10;11;12;13"), "1") # "1"은 최초 등록, "0"은 추가
-        # set_real_reg의 반환값은 성공 여부가 아닐 수 있음 (API 설계에 따라 다름)
-        # 보통 성공/실패는 이벤트나 다른 방식으로 전달됨.
-        # 여기서는 일단 요청을 보낸 것으로 간주.
-
-        if ret == 0: # 일부 API는 성공시 0을 반환하나, 키움은 아님. 이벤트로 확인.
-            self.log(f"실시간 데이터 구독 요청 성공 (화면: {screen_no}, 종목: {code}) - SetRealReg 호출 자체는 성공으로 간주. 실제 구독 성공은 이벤트로 확인.", "INFO")
+        # SetRealReg의 반환값은 API 호출 성공 여부이지, 실제 구독 성공 여부는 아님.
+        # 키움 API에서는 이벤트(OnReceiveRealData)로 구독 성공/실패를 알리지 않고, 요청 후 바로 데이터가 오기 시작함.
+        # 따라서 요청이 성공적으로 보내졌다면 구독된 것으로 간주.
+        if ret == 0: # 일반적으로 API 호출 자체의 성공을 의미 (키움 API 문서 참조)
+            self.log(f"실시간 데이터 구독 요청 전송 (화면: {screen_no}, 종목: {code}, FID: {fids_to_subscribe}). 실제 구독은 데이터 수신으로 확인.", "INFO")
             stock_info.api_data['real_screen_no'] = screen_no # 실시간 데이터용 화면번호 저장
             stock_info.api_data['real_subscribed'] = True
-        else: # SetRealReg 호출이 실패한 경우 (거의 발생하지 않음, 파라미터 오류 등)
-            self.log(f"실시간 데이터 구독 요청 실패 (화면: {screen_no}, 종목: {code}). SetRealReg 반환값: {ret}", "ERROR")
-            self.modules.screen_manager.release_screen(screen_no)
+            # self.modules.kiwoom_api.subscribed_real_data[code] = {"screen_no": screen_no, "fids": fids_to_subscribe.split(';')} # API 모듈에서 관리
+        else:
+            self.log(f"실시간 데이터 구독 요청 전송 실패 (화면: {screen_no}, 종목: {code}). SetRealReg 반환값: {ret}", "ERROR")
+            self.modules.screen_manager.release_screen(screen_no, screen_identifier) # 실패 시 화면번호 반환
 
     def check_initial_conditions(self, code):
         # stock_info = self.watchlist.get(code)
@@ -1103,34 +1108,30 @@ class TradingStrategy(QObject):
 
     def process_strategy(self, code):
         """코드 전략을 실행합니다."""
-        # 정규화된 코드로 검색 시도 (종목코드 일관성 확보)
+        original_code_param = code # 로깅용
         normalized_code = self._normalize_stock_code(code)
-        stock_info = self.watchlist.get(code)
+        if original_code_param != normalized_code:
+            self.log(f"[PROCESS_STRATEGY_NORMALIZE] process_strategy: Input code '{original_code_param}' normalized to '{normalized_code}'", "DEBUG")
         
-        # 원본 코드로 찾지 못하면 정규화된 코드로 시도
-        if not stock_info and code != normalized_code:
-            stock_info = self.watchlist.get(normalized_code)
-            if stock_info:
-                self.log(f"[CODE_NORMALIZE] {code} -> {normalized_code}로 정규화하여 StockTrackingData 찾음", "WARNING")
+        code = normalized_code # 이후 모든 로직에서 정규화된 코드 사용
+
+        stock_info = self.watchlist.get(code) # 정규화된 코드로 조회
         
         if not stock_info:
-            # 🔧 Step 1: watchlist 자동 복구 시도 (포트폴리오에 있는 경우)
-            recovered_stock_info = self._recover_missing_stock_from_portfolio(code)
+            # watchlist 자동 복구 시도 (내부에서 code 정규화 사용)
+            recovered_stock_info = self._recover_missing_stock_from_portfolio(original_code_param) # 원본 파라미터로 복구 시도
             if recovered_stock_info:
-                # 복구 성공 시 복구된 stock_info로 계속 진행
                 stock_info = recovered_stock_info
-                code = recovered_stock_info.code  # 정규화된 코드로 업데이트될 수 있음
+                code = stock_info.code # 복구된 StockTrackingData의 code 사용 (이미 정규화됨)
+                self.log(f"[PROCESS_STRATEGY] {code} 자동 복구 성공하여 계속 진행.", "INFO")
             else:
-                # 🔧 Step 2: 복구 실패 시 포트폴리오 직접 확인 (중복 매수 방지)
-                for check_code in [code, normalized_code]:
-                    if check_code in self.account_state.portfolio:
-                        holding_quantity = self._safe_to_int(self.account_state.portfolio[check_code].get('보유수량', 0))
-                        if holding_quantity > 0:
-                            self.log(f"[EMERGENCY_STOP] {code}({check_code}): StockTrackingData 없지만 포트폴리오에 {holding_quantity}주 보유. 중복 매수 차단!", "CRITICAL")
-                            return  # 추가 매수 차단
-                
-                # watchlist에 없고 포트폴리오에도 없으면 정상적으로 무시
-                self.log(f"[ProcessStrategy] 관심종목 목록에 없는 종목({code})의 전략 실행 요청이 무시됨", "DEBUG")
+                # 복구 실패 시 포트폴리오 직접 확인 (중복 매수 방지)
+                # _recover_missing_stock_from_portfolio가 이미 original_code_param과 normalized_code 모두 확인하므로,
+                # 여기서 추가적인 포트폴리오 확인은 중복될 수 있음.
+                # 다만, _recover_missing_stock_from_portfolio가 None을 반환했다면,
+                # 포트폴리오에 없거나, 있더라도 watchlist에 이미 있거나, 복구에 실패한 경우임.
+                # 여기서는 최종적으로 stock_info가 여전히 None이면 무시.
+                self.log(f"[ProcessStrategy] 관심종목 목록에 없는 종목({original_code_param} -> {code})의 전략 실행 요청 무시됨 (복구 시도 후).", "DEBUG")
                 return
 
         # 현재가 확인
@@ -1168,23 +1169,175 @@ class TradingStrategy(QObject):
         # 현재 상태 로깅
         self.log(f"[ProcessStrategy] 종목: {code}, 현재상태: {stock_info.strategy_state.name}, 현재가: {current_price}, 전일종가: {stock_info.yesterday_close_price}", "DEBUG")
         
-        # 현재 상태에 따른 전략 실행
-        if stock_info.strategy_state == TradingState.WAITING:
-            self._handle_waiting_state(code, stock_info, current_price)
-        elif stock_info.strategy_state == TradingState.BOUGHT or stock_info.strategy_state == TradingState.PARTIAL_SOLD:
-            self._handle_holding_state(code, stock_info, current_price)
+        # 상태별 핸들러 매핑
+        state_handler_map = {
+            TradingState.IDLE: self._handle_idle_state,
+            TradingState.WAITING: self._handle_waiting_state,
+            TradingState.BOUGHT: self._handle_bought_state, # Renamed from _handle_holding_state
+            TradingState.PARTIAL_SOLD: self._handle_partial_sold_state,
+            TradingState.COMPLETE: self._handle_complete_state,
+            # TradingState.READY 는 현재 WAITING에서 바로 매수 시도로 이어지므로 별도 핸들러 불필요할 수 있음
+        }
+
+        handler = state_handler_map.get(stock_info.strategy_state)
+        if handler:
+            handler(code, stock_info, current_price)
+        else:
+            self.log(f"[{code}] 정의되지 않은 상태({stock_info.strategy_state.name})에 대한 핸들러가 없습니다.", "WARNING")
+
+
+    def _handle_idle_state(self, code, stock_info: StockTrackingData, current_price):
+        """IDLE 상태의 종목을 처리합니다."""
+        # self.log(f"[{code}] IDLE 상태입니다. 현재가: {current_price}. (특별한 동작 없음)", "DEBUG")
+        # 필요시 초기 진입 조건 검사 또는 특정 로직 추가 가능
+        # 예를 들어, 특정 조건 만족 시 WAITING 또는 READY로 변경하는 로직
+        # if stock_info.is_gap_up_today and current_price > stock_info.today_open_price:
+        #     stock_info.strategy_state = TradingState.WAITING
+        #     self.log(f"[{code}] IDLE에서 WAITING으로 변경 (갭상승 및 시가 이상 조건 충족)")
+        pass # 현재는 특별한 동작 없음
+
+    def _handle_bought_state(self, code, stock_info: StockTrackingData, current_price):
+        """BOUGHT 상태 (보유 중)인 종목에 대한 전략을 처리합니다."""
+        portfolio_item = self.account_state.portfolio.get(code, {})
+        avg_buy_price = self._safe_to_float(portfolio_item.get('매입가', stock_info.avg_buy_price))
+        holding_quantity = self._safe_to_int(portfolio_item.get('보유수량', 0))
+
+        if holding_quantity <= 0:
+            self.log(f"[{code}] BOUGHT 상태이지만 포트폴리오 보유량 0. 전략 정보 초기화.", "WARNING")
+            self.reset_stock_strategy_info(code)
+            return
+
+        active_sell_orders = [
+            order for order in self.account_state.active_orders.values()
+            if order.get('code') == code and order.get('order_type') == '매도' and order.get('unfilled_qty', 0) > 0
+        ]
+        if active_sell_orders:
+            self.log(f"[{code}] BOUGHT 상태이나, 활성 매도 주문({len(active_sell_orders)}건) 존재. 추가 매도 조건 검사 건너뜀.", "INFO")
+            return
+
+        # 손절 조건 검사
+        if self._check_and_execute_stop_loss(code, stock_info, current_price, avg_buy_price, holding_quantity):
+            return # 주문 실행됨
+
+        # 매수 후 최고가 갱신
+        if current_price > stock_info.current_high_price_after_buy:
+            old_high = stock_info.current_high_price_after_buy
+            stock_info.current_high_price_after_buy = current_price
+            self.log(f"[{code}] BOUGHT 상태 매수 후 최고가 갱신: {old_high} -> {current_price}", "DEBUG")
+        
+        # 트레일링 스탑 활성화 조건 검사 (다른 매도 조건보다 먼저 실행될 수 있도록 배치)
+        if not stock_info.is_trailing_stop_active:
+            activation_price = avg_buy_price * (1 + self.settings.trailing_stop_activation_profit_rate / 100.0)
+            if current_price >= activation_price:
+                stock_info.is_trailing_stop_active = True
+                stock_info.current_high_price_after_buy = current_price # 활성화 시점 고점 재설정
+                self.log(f"{TradeColors.TRAILING}📈 [{code}] 트레일링 스탑 활성화됨 (BOUGHT). 현재가({current_price:.2f}) >= 활성화가({activation_price:.2f}). 기준 고점: {stock_info.current_high_price_after_buy:.2f}{TradeColors.RESET}", "INFO")
+
+        # 최종 익절 조건 검사
+        if self._check_and_execute_full_take_profit(code, stock_info, current_price, avg_buy_price, holding_quantity):
+            return # 주문 실행됨
+
+        # 부분 익절 조건 검사 (1회만)
+        if not stock_info.partial_take_profit_executed:
+            if self._check_and_execute_partial_take_profit(code, stock_info, current_price, avg_buy_price, holding_quantity):
+                # 부분 익절 후에는 상태가 PARTIAL_SOLD로 변경되어야 함 (on_chejan_data_received에서 처리 예상)
+                # 여기서는 주문 실행 후 추가 로직을 진행하지 않도록 return 할 수 있으나,
+                # 다른 조건 (예: 트레일링 스탑)도 바로 체크하는 것이 유리할 수 있음.
+                # 현재는 부분 익절 주문이 나가면 일단 현재 사이클에서는 추가 동작 안함.
+                return 
+
+        # 트레일링 스탑 조건 검사
+        if self._check_and_execute_trailing_stop(code, stock_info, current_price, avg_buy_price, holding_quantity):
+            return # 주문 실행됨
+        
+        # 보유 시간 기반 자동 청산 조건
+        if self.settings.auto_liquidate_after_minutes_enabled and stock_info.buy_timestamp:
+            hold_minutes = (datetime.now() - stock_info.buy_timestamp).total_seconds() / 60
+            if hold_minutes >= self.settings.auto_liquidate_after_minutes:
+                self.log(f"[{code}] BOUGHT 상태 보유시간({hold_minutes:.1f}분) 기준 자동 청산 조건 충족. 설정: {self.settings.auto_liquidate_after_minutes}분", "IMPORTANT")
+                self.execute_sell(code, reason=f"시간청산({hold_minutes:.0f}분)", quantity_type="전량")
+                return
+
+    def _handle_partial_sold_state(self, code, stock_info: StockTrackingData, current_price):
+        """PARTIAL_SOLD 상태 (일부 매도 후 보유 중)인 종목에 대한 전략을 처리합니다."""
+        portfolio_item = self.account_state.portfolio.get(code, {})
+        avg_buy_price = self._safe_to_float(portfolio_item.get('매입가', stock_info.avg_buy_price)) # 부분매도 후 매입가는 유지될 수도, 업데이트될 수도 있음. DB/포폴 기준.
+        holding_quantity = self._safe_to_int(portfolio_item.get('보유수량', 0))
+
+        if holding_quantity <= 0:
+            self.log(f"[{code}] PARTIAL_SOLD 상태이지만 포트폴리오 보유량 0. 전략 정보 초기화.", "WARNING")
+            self.reset_stock_strategy_info(code)
+            return
+
+        active_sell_orders = [
+            order for order in self.account_state.active_orders.values()
+            if order.get('code') == code and order.get('order_type') == '매도' and order.get('unfilled_qty', 0) > 0
+        ]
+        if active_sell_orders:
+            self.log(f"[{code}] PARTIAL_SOLD 상태이나, 활성 매도 주문({len(active_sell_orders)}건) 존재. 추가 매도 조건 검사 건너뜀.", "INFO")
+            return
+            
+        # 손절 조건 검사 (여전히 유효)
+        if self._check_and_execute_stop_loss(code, stock_info, current_price, avg_buy_price, holding_quantity):
+            return
+
+        # 매수 후 최고가 갱신 (부분 매도 후에도 계속해서 고점 추적)
+        if current_price > stock_info.current_high_price_after_buy:
+            old_high = stock_info.current_high_price_after_buy
+            stock_info.current_high_price_after_buy = current_price
+            self.log(f"[{code}] PARTIAL_SOLD 상태 매수 후 최고가 갱신: {old_high} -> {current_price}", "DEBUG")
+
+        # 트레일링 스탑 활성화 (이미 BOUGHT 상태에서 활성화되었을 가능성 높음, 여기서도 체크)
+        if not stock_info.is_trailing_stop_active:
+            activation_price = avg_buy_price * (1 + self.settings.trailing_stop_activation_profit_rate / 100.0)
+            if current_price >= activation_price:
+                stock_info.is_trailing_stop_active = True
+                stock_info.current_high_price_after_buy = current_price # 활성화 시점 고점 재설정
+                self.log(f"{TradeColors.TRAILING}📈 [{code}] 트레일링 스탑 활성화됨 (PARTIAL_SOLD). 현재가({current_price:.2f}) >= 활성화가({activation_price:.2f}). 기준 고점: {stock_info.current_high_price_after_buy:.2f}{TradeColors.RESET}", "INFO")
+
+        # 최종 익절 조건 검사 (남은 물량에 대해)
+        if self._check_and_execute_full_take_profit(code, stock_info, current_price, avg_buy_price, holding_quantity):
+            return
+
+        # 부분 익절은 이미 실행되었으므로 여기서는 호출하지 않음 (_check_and_execute_partial_take_profit 호출 안함)
+
+        # 트레일링 스탑 조건 검사 (남은 물량에 대해)
+        if self._check_and_execute_trailing_stop(code, stock_info, current_price, avg_buy_price, holding_quantity):
+            return
+            
+        # 보유 시간 기반 자동 청산 조건 (남은 물량에 대해)
+        if self.settings.auto_liquidate_after_minutes_enabled and stock_info.buy_timestamp: # buy_timestamp는 최초 매수 시점
+            hold_minutes = (datetime.now() - stock_info.buy_timestamp).total_seconds() / 60
+            if hold_minutes >= self.settings.auto_liquidate_after_minutes:
+                self.log(f"[{code}] PARTIAL_SOLD 상태 보유시간({hold_minutes:.1f}분) 기준 자동 청산 조건 충족. 설정: {self.settings.auto_liquidate_after_minutes}분", "IMPORTANT")
+                self.execute_sell(code, reason=f"시간청산(잔량,{hold_minutes:.0f}분)", quantity_type="전량")
+                return
+
+    def _handle_complete_state(self, code, stock_info: StockTrackingData, current_price):
+        """COMPLETE 상태의 종목을 처리합니다. (예: 최대 매수 시도 도달)"""
+        self.log(f"[{code}] COMPLETE 상태입니다. 현재가: {current_price}. (추가 거래 작업 없음)", "DEBUG")
+        # 필요시, 이 상태의 종목을 주기적으로 재검토하거나 하는 로직 추가 가능
+        # 예를 들어, 일정 시간 후 다시 WAITING으로 변경하여 재시도할 수 있게 하거나,
+        # 수동 개입 전까지 이 상태를 유지하도록 할 수 있음.
+        # 현재는 아무 동작도 하지 않음.
+        pass
 
     def execute_buy(self, code):
         # 일일 매수 횟수 제한 확인 - 제거됨 (종목별 시도 횟수로 대체)
-        # 현재 날짜와 제한 날짜가 다르면 카운트 초기화 (여전히 필요한 로직)
+        original_code_param = code # 로깅용
+        normalized_code = self._normalize_stock_code(code)
+        if original_code_param != normalized_code:
+            self.log(f"[EXECUTE_BUY_NORMALIZE] execute_buy: Input code '{original_code_param}' normalized to '{normalized_code}'", "DEBUG")
+        
+        code = normalized_code # 이후 모든 로직에서 정규화된 코드 사용
+
         current_date = datetime.now().strftime("%Y-%m-%d")
         if self.today_date_for_buy_limit != current_date:
             self.daily_buy_executed_count = 0
             self.today_date_for_buy_limit = current_date
             self.log(f"일일 매수 제한 카운터를 초기화했습니다. 새 날짜: {current_date}", "INFO")
         
-        # 종목별 시도 횟수 제한 확인
-        stock_info = self.watchlist.get(code)
+        stock_info = self.watchlist.get(code) # 정규화된 코드로 조회
         if not stock_info:
             self.log(f"매수 실행 불가: {code}는 관심종목 목록에 없습니다.", "ERROR")
             return False
@@ -1285,9 +1438,9 @@ class TradingStrategy(QObject):
                     order_time = datetime.now()
                     self.account_state.active_orders[rq_name] = {
                         "order_type": "매수",
-                        "code": code,
+                        "code": code, # 정규화된 코드 사용
                         "stock_name": stock_info.stock_name,
-                        "order_qty": order_quantity, # Original total quantity
+                        "order_qty": order_quantity,
                         "quantity": order_quantity, # For compatibility if other parts use 'quantity'
                         "price": current_price,  # 주문 시점의 현재가 (참고용)
                         "order_price": order_price,  # 실제 주문 가격 (지정가 주문 시 사용)
@@ -1315,17 +1468,26 @@ class TradingStrategy(QObject):
 
 
     def execute_sell(self, code, reason="", quantity_type="전량", quantity_val=0):
-        stock_info = self.watchlist.get(code)
+        original_code_param = code # 로깅용
+        normalized_code = self._normalize_stock_code(code)
+        if original_code_param != normalized_code:
+            self.log(f"[EXECUTE_SELL_NORMALIZE] execute_sell: Input code '{original_code_param}' normalized to '{normalized_code}'", "DEBUG")
+        
+        code = normalized_code # 이후 모든 로직에서 정규화된 코드 사용
+
+        stock_info = self.watchlist.get(code) # 정규화된 코드로 조회
         if not stock_info:
             self.log(f"매도 주문 실패: {code} StockTrackingData 정보를 찾을 수 없습니다.", "ERROR")
             return False
 
         self.log(f"[Strategy_EXECUTE_SELL_DEBUG] execute_sell 호출. 계좌번호: '{self.account_state.account_number}'", "DEBUG")
         
-        pure_code, market_ctx = self.modules.kiwoom_api.get_code_market_info(code)
+        # get_code_market_info는 내부적으로 정규화된 코드를 반환하므로, 여기서는 code (이미 정규화됨) 사용
+        pure_code, market_ctx = self.modules.kiwoom_api.get_code_market_info(code, logger_instance=self.modules.logger if hasattr(self.modules, 'logger') else None)
+
 
         if stock_info.last_order_rq_name:
-            self.log(f"매도 주문 건너뜀: {pure_code}(원본:{code})에 대해 이미 주문({stock_info.last_order_rq_name})이 전송되었거나 처리 중입니다.", "INFO")
+            self.log(f"매도 주문 건너뜀: {pure_code}(정규화:{code})에 대해 이미 주문({stock_info.last_order_rq_name})이 전송되었거나 처리 중입니다.", "INFO")
             return False
 
         order_type_to_send = 2 # 기본 KRX 매도
@@ -1402,7 +1564,7 @@ class TradingStrategy(QObject):
             stock_info.last_order_rq_name = rq_name # StockTrackingData에 RQName 저장
             self.account_state.active_orders[rq_name] = {
                 'order_no': None, 
-                'code': pure_code,
+                'code': pure_code, # 순수 코드 (API 전달용)
                 'stock_name': stock_info.stock_name,
                 'order_type': '매도',
                 'order_qty': sell_quantity, # Original total quantity for this order
@@ -1436,7 +1598,14 @@ class TradingStrategy(QObject):
 
     def reset_stock_strategy_info(self, code):
         """종목의 전략 상태와 관련 정보를 초기화합니다."""
-        stock_info = self.watchlist.get(code)
+        original_code_param = code # 로깅용
+        normalized_code = self._normalize_stock_code(code)
+        if original_code_param != normalized_code:
+            self.log(f"[RESET_STOCK_NORMALIZE] reset_stock_strategy_info: Input code '{original_code_param}' normalized to '{normalized_code}'", "DEBUG")
+        
+        code = normalized_code # 이후 모든 로직에서 정규화된 코드 사용
+
+        stock_info = self.watchlist.get(code) # 정규화된 코드로 조회
         if not stock_info:
             self.log(f"[{code}] reset_stock_strategy_info 실패: 관심종목 목록에 없음", "ERROR")
             return False
@@ -1482,17 +1651,23 @@ class TradingStrategy(QObject):
         주문 체결 시 포트폴리오 정보를 업데이트합니다.
         trade_type: '매수', '매도'
         """
+        original_code_param = code # 로깅용
+        normalized_code = self._normalize_stock_code(code)
+        if original_code_param != normalized_code:
+            self.log(f"[PORTFOLIO_UPDATE_NORMALIZE] update_portfolio_on_execution: Input code '{original_code_param}' normalized to '{normalized_code}'", "DEBUG")
+        
+        code = normalized_code # 이후 모든 로직에서 정규화된 코드 사용
+
         trade_price = self._safe_to_float(trade_price)
         quantity = self._safe_to_int(quantity)
-        portfolio = self.account_state.portfolio # portfolio 참조 수정
+        portfolio = self.account_state.portfolio
         
-        # watchlist에서 StockTrackingData 가져오기
-        stock_data = self.watchlist.get(code)
+        stock_data = self.watchlist.get(code) # 정규화된 코드로 조회
 
         if trade_type == '매수':
-            if code not in portfolio:
+            if code not in portfolio: # 정규화된 코드로 확인 및 추가
                 portfolio[code] = {
-                    'stock_name': stock_name,
+                    'stock_name': stock_name, # stock_name은 파라미터로 받은 것 사용
                     '보유수량': 0,
                     '매입가': 0, 
                     '매입금액': 0, 

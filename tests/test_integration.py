@@ -49,20 +49,35 @@ except BaseException as be:
     traceback.print_exc()
     sys.exit(1)
 
-class MockKiwoomAPIForIntegration(KiwoomAPI):
-    def __init__(self, logger=None, test_case_instance=None):
-        super().__init__(logger=logger)
-        self.send_order_call_history = []
-        self.subscribed_real_data_mock = {}  # {screen_no: {codes: [], fids: [], type: ""}}
-        self._mock_real_data_active_screens = {} # 화면번호별 실시간 데이터 구독 정보 (실제 API 구독과 유사하게 관리)
+# Import BaseMockKiwoomAPI
+from tests.mock_api_base import BaseMockKiwoomAPI
+
+class MockKiwoomAPIForIntegration(QObject, BaseMockKiwoomAPI): # Inherit from QObject and BaseMockKiwoomAPI
+    # Define PyQt signals required by TradingStrategy and MainWindow
+    login_completed = pyqtSignal(str)
+    tr_data_received = pyqtSignal(str, str, object) # rq_name, tr_code, data_dict
+    real_data_received = pyqtSignal(str, str, object) # code, real_type, real_data_dict
+    chejan_data_received = pyqtSignal(str, object)    # gubun, chejan_data_dict
+    message_received = pyqtSignal(str)              # msg
+    error_occurred = pyqtSignal(str, str)           # error_code, error_message
+    # Add any other signals that might be expected by strategy or UI
+
+    def __init__(self, logger: Optional[Logger] = None, test_case_instance=None):
+        QObject.__init__(self) # Initialize QObject first
+        BaseMockKiwoomAPI.__init__(self, logger=logger if logger else Logger(log_level=logging.DEBUG, name="MockKiwoomIntegration"))
+        
+        # Attributes specific to MockKiwoomAPIForIntegration or overriding base
+        # self.send_order_call_history is already in Base
+        self.subscribed_real_data_mock = {}  # Kept for specific logic if any, or could be removed if _mock_real_data_active_screens is enough
+        self._mock_real_data_active_screens = {} 
         self._mock_real_data_timer = None
-        self.mock_tr_data_handler = None # 각 테스트에서 필요에 따라 설정 가능
-        self.current_tr_data = None # comm_rq_data 호출 시 TR 데이터 저장용
-        self.test_case_instance = test_case_instance # 현재 실행 중인 테스트 케이스 인스턴스
-        self.current_test_id = None # 현재 실행 중인 테스트의 ID (예: self.id())
+        self.mock_tr_data_handler = None 
+        self.current_tr_data = None # Potentially useful for inspection
+        self.test_case_instance = test_case_instance 
+        self.current_test_id = None
         if self.test_case_instance:
             self.current_test_id = self.test_case_instance.id()
-        self.logger.info(f"[MockKiwoomInit] MockKiwoomAPIForIntegration initialized for test: {self.current_test_id}")
+        self.log(f"MockKiwoomAPIForIntegration initialized for test: {self.current_test_id}") # Uses Base's log method
 
     def _get_mock_basic_info(self, code):
         self.logger.debug(f"[_get_mock_basic_info] Called for {code}. Current test ID: {self.current_test_id}")
@@ -336,46 +351,48 @@ class MockKiwoomAPIForIntegration(KiwoomAPI):
             self.logger.info("[MockKiwoom] Stopped emitting mock real data.")
 
     def send_order(self, rq_name, screen_no, acc_no, order_type, code, quantity, price, hoga_gb, org_order_no=""):
-        self.logger.info(f"[MockIntegrationKiwoom] ENTERING send_order. Current Test ID: {getattr(self, 'current_test_id', 'N/A')}, Test Case Instance: {self.test_case_instance is not None}") # 로그 추가
-        self.logger.info(f"[MockIntegrationKiwoom] send_order called. RQName: {rq_name}, Code: {code}, Quantity: {quantity}, Price: {price}, Hoga: {hoga_gb}, OrderType: {order_type}")
+    def send_order(self, rq_name: str, screen_no: str, acc_no: str, order_type: int, code: str, quantity: int, price: int, hoga_gb: str, org_order_no: str = "") -> int:
+        # This method overrides the base to ensure specific logging and interaction for integration tests.
+        # The core logic of appending to send_order_call_history and generating mock order_no is in the base.
+        self.log(f"send_order (IntegrationMock) called. RQName: {rq_name}, Code: {code}, Qty: {quantity}, Price: {price}, Type: {order_type}", "INFO")
         
-        call_detail = {
-            "rq_name": rq_name, "screen_no": screen_no, "acc_no": acc_no,
-            "order_type": order_type, "code": code, "quantity": quantity,
-            "price": price, "hoga_gb": hoga_gb, "org_order_no": org_order_no,
-            "timestamp": time.time()
-        }
-        # self.send_order_call_history.append(call_detail) # 여기가 중복될 수 있으므로 아래로 이동
-        # self.logger.debug(f"[MockIntegrationKiwoom] Appended to send_order_call_history: {call_detail}, Current history length: {len(self.send_order_call_history)}")
+        # Call super to get the generated_order_no and append to history
+        # Base send_order already appends to self.send_order_call_history
+        # and adds 'generated_order_no' to the call_detail.
+        # We need to ensure the call_detail from base is accessible or re-create part of it.
         
-        # current_test_id가 초기화되지 않았을 수 있으므로 getattr로 안전하게 접근
+        # Re-implementing part of base's logic to ensure generated_order_no is captured for this mock's context
+        # or rely on base to populate self.send_order_call_history correctly.
+        # For now, let's assume base.send_order correctly populates history.
+        
+        return_code = super().send_order(rq_name, screen_no, acc_no, order_type, code, quantity, price, hoga_gb, org_order_no)
+        
+        # Retrieve the generated_order_no from the last entry in history (made by base)
+        generated_order_no_for_chejan = ""
+        if self.send_order_call_history:
+            generated_order_no_for_chejan = self.send_order_call_history[-1].get('generated_order_no', f"fallback_mock_ord_{int(time.time())}")
+
         current_test_id = getattr(self, 'current_test_id', None)
-        mock_order_no_for_chejan = f"mock_ord_{int(time.time())}_{random.randint(100,999)}" # 체결 데이터에서 사용할 모의 주문번호
-        call_detail['generated_order_no'] = mock_order_no_for_chejan # 생성된 주문번호를 call_detail에 저장
-
-        # 테스트 케이스별 send_order 반환 값 제어
-        if current_test_id: # current_test_id가 None이 아닌지 확인
-            if "test_buy_order_api_error_handling" in current_test_id:
-                self.logger.info(f"[MockIntegrationKiwoom] send_order for test_buy_order_api_error_handling. Returning 0 (success). Chejan will carry error. OrderNo for chejan: {mock_order_no_for_chejan}")
-                self.send_order_call_history.append(call_detail)
-                # self.logger.debug(f"[MockIntegrationKiwoom] API Error Test - Appended to send_order_call_history. Length: {len(self.send_order_call_history)}")
-                return 0 # SendOrder 자체는 성공(0)했다고 가정. 체결 데이터에서 오류 발생.
-            elif "test_another_scenario_expecting_specific_order_no" in current_test_id: # 예시
-                 # 특정 주문번호 반환 시에도 호출 내역 기록
-                self.send_order_call_history.append(call_detail)
-                # self.logger.debug(f"[MockIntegrationKiwoom] Specific OrderNo Test - Appended to send_order_call_history. Length: {len(self.send_order_call_history)}")
-                # 이 경우에도 SendOrder 자체는 성공(0)을 반환하고, 생성된 주문번호는 call_detail['generated_order_no']에 있음
-                return 0 # 성공 반환
+        if current_test_id and "test_buy_order_api_error_handling" in current_test_id:
+            self.log(f"send_order for test_buy_order_api_error_handling. Base returned {return_code}. Chejan will carry error. OrderNo for chejan: {generated_order_no_for_chejan}", "INFO")
+            # SendOrder itself is successful, Chejan will simulate the error.
+            return 0 
         
-        # 기본적으로 성공(0) 모의
-        self.send_order_call_history.append(call_detail) # 모든 경우에 호출 내역 기록
-        self.logger.debug(f"[MockIntegrationKiwoom] Default Case - Appended to send_order_call_history. OrderNo for chejan: {mock_order_no_for_chejan}. Length: {len(self.send_order_call_history)}")
-        # mock_order_no = f"mock_ord_{int(time.time())}_{random.randint(100,999)}" # 주문번호 중복 방지 강화 -> 위로 이동
-        self.logger.info(f"[MockIntegrationKiwoom] send_order default mock. Returning 0 (success). OrderNo for chejan: {mock_order_no_for_chejan}")
-        return 0 # 성공(0) 또는 API 에러코드 반환
+        self.log(f"send_order (IntegrationMock) default behavior. Base returned {return_code}. OrderNo for chejan: {generated_order_no_for_chejan}", "INFO")
+        return return_code
 
-    def comm_rq_data(self, rq_name, tr_code, prev_next, screen_no):
-        self.logger.info(f"[MockIntegrationKiwoom] comm_rq_data: RQName({rq_name}), TRCode({tr_code}), PrevNext({prev_next}), ScreenNo({screen_no})")
+    def comm_rq_data(self, rq_name: str, tr_code: str, prev_next: int, screen_no: str, input_values_override: Optional[Dict[str, str]] = None, market_context: Optional[str] = None):
+        # Override base to use mock_tr_data_handler and emit signals
+        self.log(f"comm_rq_data (IntegrationMock): RQName({rq_name}), TRCode({tr_code}), PrevNext({prev_next}), ScreenNo({screen_no})", "DEBUG")
+        
+        # Process inputs similar to how the actual KiwoomAPI does
+        current_inputs = self.current_input_values.copy()
+        if input_values_override:
+            current_inputs.update(input_values_override)
+        # Note: BaseMockKiwoomAPI's comm_rq_data also clears current_input_values.
+        # If we call super().comm_rq_data(), this will be handled.
+        # If not, we need to clear it here.
+
         # TR 요청 시 mock_tr_data_handler가 설정되어 있으면 해당 핸들러 호출
         if self.mock_tr_data_handler:
             # 핸들러에 모든 관련 정보 전달 (kwargs 활용 가능)
@@ -1505,6 +1522,298 @@ class TestIntegrationScenarios(unittest.TestCase):
         self.strategy.stock_data_updated.disconnect(mock_stock_data_updated_slot)
         # self.test_logger.error.reset_mock() # Mock 사용 시
         self.logger.info("테스트 종료: test_realtime_data_format_error_handling")
+
+    def test_duplicate_buy_prevention_with_ats_code(self):
+        """
+        SCENARIO 1: Buy with 'A'-prefixed code, Chejan data with raw 'A'-prefixed code.
+        Tests if the strategy correctly links Chejan data and prevents duplicate buys.
+        """
+        self.logger.info("테스트 시작: test_duplicate_buy_prevention_with_ats_code")
+        code_with_a_prefix = "A005930"
+        normalized_code = "005930"
+        stock_name = "삼성전자_ATS_Test"
+        
+        # 1. 초기 데이터 설정 (TR 응답 모의)
+        # 이 테스트 케이스의 ID를 MockKiwoomAPIForIntegration에 전달하기 위해
+        # self.mock_kiwoom.current_test_id = self.id() # setUp에서 이미 수행
+        
+        # 테스트 데이터 설정 (TradingStrategy.initialize_stock_data가 사용할 데이터)
+        self.initial_stock_data_ats_test = {
+            normalized_code: { # Mock API가 내부적으로 normalized_code를 사용할 수 있도록
+                "name": stock_name,
+                "yesterday_close": 70000,
+                "market_open_price": 70500, # 갭상승
+                "current_price": 70500, # 초기 현재가
+            }
+        }
+        # MockKiwoomAPIForIntegration._get_mock_basic_info 와 _get_mock_daily_chart_data 에서 이 데이터를 사용하도록 수정 필요
+        # -> 이는 self.mock_kiwoom.current_test_id 와 getattr를 통해 이미 처리됨. 테스트 ID에 "ats" 포함시키도록 수정.
+        self.mock_kiwoom.current_test_id = self.id() # 현재 테스트 ID 설정
+
+        # 2. 관심종목 추가 (TradingStrategy가 "A005930"으로 추가하고, 내부적으로 "005930"으로 관리)
+        # initialize_stock_data는 내부적으로 TR 요청(opt10001, opt10081)을 발생시키고, 이 응답을 모의해야 함.
+        self.strategy.initialize_stock_data(code_with_a_prefix, stock_name_param=stock_name)
+        QTest.qWait(200) # TR 데이터 처리 대기
+        
+        self.assertIn(normalized_code, self.strategy.watchlist)
+        stock_data = self.strategy.watchlist[normalized_code]
+        self.assertEqual(stock_data.strategy_state, TradingState.WAITING) # 갭상승 시 WAITING으로 시작
+        self.assertTrue(stock_data.is_gap_up_today)
+
+        # 3. 매수 조건 충족시키기
+        # 전일 종가 하회
+        price_below_yesterday = self.initial_stock_data_ats_test[normalized_code]["yesterday_close"] - 100
+        stock_data.current_price = price_below_yesterday
+        self.strategy.process_strategy(normalized_code) # WAITING -> is_yesterday_close_broken_today = True
+        self.assertTrue(stock_data.is_yesterday_close_broken_today)
+
+        # 전일 종가 재돌파 (매수 트리거)
+        price_buy_trigger = self.initial_stock_data_ats_test[normalized_code]["yesterday_close"] + 100
+        stock_data.current_price = price_buy_trigger
+        
+        # 이전 send_order 호출 기록 수 저장
+        initial_send_order_call_count = len(self.mock_kiwoom.send_order_call_history)
+
+        self.strategy.process_strategy(normalized_code) # WAITING -> execute_buy()
+        QTest.qWait(100) # 주문 처리 대기
+
+        # 4. 매수 주문 확인
+        self.assertEqual(len(self.mock_kiwoom.send_order_call_history), initial_send_order_call_count + 1, "매수 주문이 1회 발생해야 합니다.")
+        buy_order_call = self.mock_kiwoom.send_order_call_history[-1]
+        self.assertEqual(buy_order_call['code'], normalized_code) # send_order는 정규화된 코드로 호출됨
+        self.assertEqual(buy_order_call['order_type'], 1) # 신규매수
+        
+        buy_rq_name = buy_order_call['rq_name']
+        generated_buy_order_no = buy_order_call['generated_order_no']
+        buy_quantity = buy_order_call['quantity']
+        self.assertIn(buy_rq_name, self.strategy.account_state.active_orders)
+
+        # 5. Chejan 데이터 모의 (주문확인 + 체결) - 여기서 FID '9001'에 'A'가 붙은 코드를 사용
+        # 주문 확인 (선택적)
+        # chejan_confirm_data = {'9203': generated_buy_order_no, '9001': code_with_a_prefix, '913': '접수'}
+        # self.mock_kiwoom.emit_mock_chejan_data('0', chejan_confirm_data)
+        # QTest.qWait(50)
+
+        # 체결
+        chejan_fill_data = {
+            '9203': generated_buy_order_no, # API가 반환한 주문번호
+            '9001': code_with_a_prefix,  #  <-- 중요: 'A'가 붙은 코드로 체결 데이터 발생
+            '302': stock_name,
+            '905': '+매수', # 주문구분
+            '913': '체결',  # 주문상태
+            '910': str(price_buy_trigger),  # 체결가
+            '911': str(buy_quantity),      # 체결량
+            '900': str(buy_quantity),      # 주문수량
+            '902': '0'                     # 미체결수량
+        }
+        self.mock_kiwoom.emit_mock_chejan_data('0', chejan_fill_data)
+        QTest.qWait(200) # 체결 데이터 처리 대기
+
+        # 6. 상태 검증
+        self.assertEqual(stock_data.strategy_state, TradingState.BOUGHT, "상태가 BOUGHT여야 합니다.")
+        self.assertEqual(stock_data.buy_completion_count, 1, "buy_completion_count가 1이어야 합니다.")
+        self.assertIn(normalized_code, self.strategy.account_state.portfolio)
+        self.assertEqual(self.strategy.account_state.portfolio[normalized_code]['보유수량'], buy_quantity)
+
+        # 7. 매수 조건 다시 충족시켜 중복 매수 없는지 확인
+        initial_send_order_call_count_after_buy = len(self.mock_kiwoom.send_order_call_history)
+        stock_data.current_price = price_buy_trigger + 500 # 다시 매수 조건 만족 (가격 상승)
+        self.strategy.process_strategy(normalized_code) # BOUGHT 상태이므로 매수 안나가야 함
+        QTest.qWait(100)
+
+        self.assertEqual(len(self.mock_kiwoom.send_order_call_history), initial_send_order_call_count_after_buy, "추가 매수 주문이 발생하지 않아야 합니다.")
+        self.logger.info("테스트 종료: test_duplicate_buy_prevention_with_ats_code")
+
+    def test_partial_then_full_fill_mixed_codes(self):
+        """
+        SCENARIO 2: Partial fill with 'A'-code Chejan, then full fill with normalized-code Chejan.
+        Tests correct buy_completion_count update and duplicate buy prevention.
+        """
+        self.logger.info("테스트 시작: test_partial_then_full_fill_mixed_codes")
+        code_with_a_prefix = "A000660"
+        normalized_code = "000660"
+        stock_name = "SK하이닉스_PartialFill_Test"
+
+        # 1. 초기 데이터 설정
+        self.initial_stock_data_partial_fill_test = {
+            normalized_code: {
+                "name": stock_name,
+                "yesterday_close": 120000,
+                "market_open_price": 121000, # 갭상승
+                "current_price": 121000,
+            }
+        }
+        self.mock_kiwoom.current_test_id = self.id()
+
+        # 2. 관심종목 추가 및 매수 조건 트리거
+        self.strategy.initialize_stock_data(code_with_a_prefix, stock_name_param=stock_name)
+        QTest.qWait(200)
+        stock_data = self.strategy.watchlist[normalized_code]
+        self.assertEqual(stock_data.strategy_state, TradingState.WAITING)
+        self.assertTrue(stock_data.is_gap_up_today)
+
+        price_below_yesterday = self.initial_stock_data_partial_fill_test[normalized_code]["yesterday_close"] - 100
+        stock_data.current_price = price_below_yesterday
+        self.strategy.process_strategy(normalized_code)
+        self.assertTrue(stock_data.is_yesterday_close_broken_today)
+
+        price_buy_trigger = self.initial_stock_data_partial_fill_test[normalized_code]["yesterday_close"] + 100
+        stock_data.current_price = price_buy_trigger
+        
+        initial_send_order_call_count = len(self.mock_kiwoom.send_order_call_history)
+        self.strategy.process_strategy(normalized_code)
+        QTest.qWait(100)
+
+        # 3. 매수 주문 확인
+        self.assertEqual(len(self.mock_kiwoom.send_order_call_history), initial_send_order_call_count + 1)
+        buy_order_call = self.mock_kiwoom.send_order_call_history[-1]
+        self.assertEqual(buy_order_call['code'], normalized_code)
+        
+        buy_rq_name = buy_order_call['rq_name']
+        generated_buy_order_no = buy_order_call['generated_order_no']
+        ordered_quantity = buy_order_call['quantity']
+        self.assertGreater(ordered_quantity, 1, "주문 수량은 1보다 커야 부분 체결 테스트 가능")
+
+        # 4. Chejan 데이터 모의 - 부분 체결 (Unnormalized Code "A000660")
+        partial_fill_qty = ordered_quantity // 2
+        self.assertGreater(partial_fill_qty, 0, "부분 체결 수량은 0보다 커야 함")
+
+        chejan_partial_fill = {
+            '9203': generated_buy_order_no, '9001': code_with_a_prefix, '302': stock_name,
+            '905': '+매수', '913': '체결', '910': str(price_buy_trigger),
+            '911': str(partial_fill_qty), # 부분 체결 수량
+            '900': str(ordered_quantity),   # 원 주문 수량
+            '902': str(ordered_quantity - partial_fill_qty) # 미체결 수량
+        }
+        self.mock_kiwoom.emit_mock_chejan_data('0', chejan_partial_fill)
+        QTest.qWait(200)
+
+        # 5. 부분 체결 후 상태 검증
+        self.assertEqual(stock_data.strategy_state, TradingState.BOUGHT, "부분 체결 후 BOUGHT 상태여야 합니다.")
+        self.assertEqual(stock_data.buy_completion_count, 0, "부분 체결 후 buy_completion_count는 0이어야 합니다.")
+        self.assertIn(normalized_code, self.strategy.account_state.portfolio)
+        self.assertEqual(self.strategy.account_state.portfolio[normalized_code]['보유수량'], partial_fill_qty)
+        self.assertIn(buy_rq_name, self.strategy.account_state.active_orders, "부분 체결 후에도 주문은 active_orders에 있어야 합니다.")
+        self.assertEqual(self.strategy.account_state.active_orders[buy_rq_name]['unfilled_qty'], ordered_quantity - partial_fill_qty)
+
+        # 6. Chejan 데이터 모의 - 최종 체결 (Normalized Code "000660")
+        remaining_qty = ordered_quantity - partial_fill_qty
+        chejan_final_fill = {
+            '9203': generated_buy_order_no, '9001': normalized_code, '302': stock_name, # 이번엔 정규화된 코드 사용
+            '905': '+매수', '913': '체결', '910': str(price_buy_trigger),
+            '911': str(remaining_qty),    # 나머지 체결 수량
+            '900': str(ordered_quantity), # 원 주문 수량
+            '902': '0'                    # 미체결 수량 0
+        }
+        self.mock_kiwoom.emit_mock_chejan_data('0', chejan_final_fill)
+        QTest.qWait(200)
+
+        # 7. 최종 체결 후 상태 검증
+        self.assertEqual(stock_data.strategy_state, TradingState.BOUGHT)
+        self.assertEqual(stock_data.buy_completion_count, 1, "최종 체결 후 buy_completion_count는 1이어야 합니다.")
+        self.assertEqual(self.strategy.account_state.portfolio[normalized_code]['보유수량'], ordered_quantity)
+        self.assertNotIn(buy_rq_name, self.strategy.account_state.active_orders, "최종 체결 후 주문은 active_orders에서 제거되어야 합니다.")
+        self.assertIsNone(stock_data.last_order_rq_name, "최종 체결 후 stock_data의 last_order_rq_name은 None이어야 합니다.")
+
+        # 8. 중복 매수 방지 확인
+        initial_send_order_call_count_after_full_buy = len(self.mock_kiwoom.send_order_call_history)
+        stock_data.current_price = price_buy_trigger + 1000 # 다시 매수 조건 만족
+        self.strategy.process_strategy(normalized_code)
+        QTest.qWait(100)
+        self.assertEqual(len(self.mock_kiwoom.send_order_call_history), initial_send_order_call_count_after_full_buy, "최종 체결 후 추가 매수 주문이 발생하지 않아야 합니다.")
+        self.logger.info("테스트 종료: test_partial_then_full_fill_mixed_codes")
+
+    def test_rapid_buy_retrigger_prevention(self):
+        """
+        SCENARIO 3: Rapid buy condition re-triggering after a successful buy.
+        Tests that the strategy does not issue a duplicate buy order.
+        """
+        self.logger.info("테스트 시작: test_rapid_buy_retrigger_prevention")
+        code = "000660" # SK 하이닉스
+        stock_name = "SK하이닉스_RapidRetrigger_Test"
+
+        # 1. 초기 데이터 설정
+        self.initial_stock_data_rapid_retrigger_test = {
+            code: {
+                "name": stock_name,
+                "yesterday_close": 130000,
+                "market_open_price": 131000, # 갭상승
+                "current_price": 131000, # TR 요청 시점 현재가
+            }
+        }
+        self.mock_kiwoom.current_test_id = self.id()
+
+        # 2. 관심종목 추가 및 초기 매수 조건 트리거
+        self.strategy.initialize_stock_data(code, stock_name_param=stock_name)
+        QTest.qWait(200)
+        stock_data = self.strategy.watchlist[code]
+        self.assertEqual(stock_data.strategy_state, TradingState.WAITING)
+        self.assertTrue(stock_data.is_gap_up_today)
+
+        # 매수 조건: 전일 종가 하회 후 재돌파
+        price_below_yesterday = self.initial_stock_data_rapid_retrigger_test[code]["yesterday_close"] - 100
+        stock_data.current_price = price_below_yesterday
+        self.strategy.process_strategy(code)
+        self.assertTrue(stock_data.is_yesterday_close_broken_today)
+
+        price_buy_trigger = self.initial_stock_data_rapid_retrigger_test[code]["yesterday_close"] + 100
+        stock_data.current_price = price_buy_trigger
+        
+        initial_send_order_call_count = len(self.mock_kiwoom.send_order_call_history)
+        self.strategy.process_strategy(code) # 매수 주문 발생
+        QTest.qWait(100)
+
+        # 3. 매수 주문 및 체결 확인
+        self.assertEqual(len(self.mock_kiwoom.send_order_call_history), initial_send_order_call_count + 1)
+        buy_order_call = self.mock_kiwoom.send_order_call_history[-1]
+        self.assertEqual(buy_order_call['code'], code)
+        
+        buy_rq_name = buy_order_call['rq_name']
+        generated_buy_order_no = buy_order_call['generated_order_no']
+        ordered_quantity = buy_order_call['quantity']
+
+        chejan_fill_data = {
+            '9203': generated_buy_order_no, '9001': code, '302': stock_name,
+            '905': '+매수', '913': '체결', '910': str(price_buy_trigger),
+            '911': str(ordered_quantity), '900': str(ordered_quantity), '902': '0'
+        }
+        self.mock_kiwoom.emit_mock_chejan_data('0', chejan_fill_data)
+        QTest.qWait(200)
+
+        self.assertEqual(stock_data.strategy_state, TradingState.BOUGHT)
+        self.assertEqual(stock_data.buy_completion_count, 1)
+        self.assertIn(code, self.strategy.account_state.portfolio)
+        self.assertEqual(self.strategy.account_state.portfolio[code]['보유수량'], ordered_quantity)
+        self.logger.info(f"최초 매수 완료. 상태: {stock_data.strategy_state}, 완료횟수: {stock_data.buy_completion_count}")
+
+        # 4. 매수 조건 즉시 재충족 (실시간 데이터 변경)
+        self.logger.info("매수 조건 즉시 재충족 시도...")
+        # is_yesterday_close_broken_today 플래그는 매수 성공 시 execute_buy에서 False로 리셋되어야 함
+        # -> execute_buy에서는 직접 리셋 안하고, _handle_waiting_state에서 매수 성공 후 리셋
+        self.assertFalse(stock_data.is_yesterday_close_broken_today, "매수 성공 후 is_yesterday_close_broken_today는 False여야 함")
+
+        # 다시 전일 종가 하회 -> 재돌파 시뮬레이션
+        # (주의: is_gap_up_today는 계속 True인 상태여야 이 조건이 유효)
+        self.assertTrue(stock_data.is_gap_up_today, "is_gap_up_today는 True여야 함")
+
+        stock_data.current_price = price_below_yesterday # 다시 하회
+        self.strategy.process_strategy(code) # BOUGHT 상태이므로 _handle_bought_state 호출, is_yesterday_close_broken_today 변경 안함
+        # self.assertTrue(stock_data.is_yesterday_close_broken_today, "BOUGHT 상태에서 가격 하회 시 is_yesterday_close_broken_today는 변경되지 않아야 함 (또는 관련 로직 없음)")
+        # -> BOUGHT 상태에서는 is_yesterday_close_broken_today 플래그를 건드리지 않음. 이 플래그는 WAITING 상태에서만 사용.
+
+        # send_order 호출 기록 수 저장 (이 시점까지 1회 호출)
+        send_order_call_count_before_retrigger = len(self.mock_kiwoom.send_order_call_history)
+
+        stock_data.current_price = price_buy_trigger # 다시 재돌파 가격
+        self.strategy.process_strategy(code) # BOUGHT 상태이므로 _handle_bought_state 호출, 매수 주문 안 나가야 함
+        QTest.qWait(100)
+
+        # 5. 중복 매수 없는지 검증
+        self.assertEqual(len(self.mock_kiwoom.send_order_call_history), send_order_call_count_before_retrigger, "재매수 조건 충족 시 추가 매수 주문이 발생하지 않아야 합니다.")
+        self.assertEqual(stock_data.strategy_state, TradingState.BOUGHT, "상태는 여전히 BOUGHT여야 합니다.")
+        self.assertEqual(stock_data.buy_completion_count, 1, "buy_completion_count는 여전히 1이어야 합니다.")
+        self.assertEqual(self.strategy.account_state.portfolio[code]['보유수량'], ordered_quantity, "포트폴리오 수량 변경 없어야 합니다.")
+        self.logger.info("테스트 종료: test_rapid_buy_retrigger_prevention")
 
 
 if __name__ == '__main__':

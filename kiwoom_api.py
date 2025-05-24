@@ -8,128 +8,11 @@ from PyQt5.QtWidgets import QApplication
 from PyQt5.QAxContainer import QAxWidget
 from PyQt5.QtCore import QEventLoop, QTimer, QObject
 from datetime import datetime, timedelta
-from util import ScreenManager # ScreenManager 임포트
+from util import ScreenManager, _safe_to_int as _safe_int, _safe_to_float as _safe_float # ScreenManager 임포트
+import ats_utils # ATS 유틸리티 모듈 임포트
 import traceback # 스택 트레이스 로깅을 위해 추가
 from typing import Dict, Optional
 import logging
-
-# --- ATS 관련 상수 및 매핑 --- #
-# 종목코드 접미사와 시장 컨텍스트 매핑
-ATS_SUFFIX_MARKET_MAP = {
-    '_NX': 'NXT',  # Nextrade
-    '_AL': 'ALL'   # 통합시세 (NXT + KRX)
-}
-
-# TR별 "거래소구분" 파라미터 설정 정보
-# Key: TR Code
-# Value: dict -> {"param_name": "거래소구분", "values": {"KRX": "1", "NXT": "2", "ALL": "3"}}
-# 실제 API 문서("[붙임]대체거래소(ATS) 도입에 따른 키움 Open API + 변경 안내") 기준으로 작성.
-TR_MARKET_PARAM_CONFIG = {
-    # 유형 1: 거래소구분=1:KRX, 2:NXT, 3:통합 (43개 TR)
-    "OPT10016": {"param_name": "거래소구분", "values": {"KRX": "1", "NXT": "2", "ALL": "3"}},
-    "OPT10017": {"param_name": "거래소구분", "values": {"KRX": "1", "NXT": "2", "ALL": "3"}},
-    "OPT10018": {"param_name": "거래소구분", "values": {"KRX": "1", "NXT": "2", "ALL": "3"}},
-    "OPT10019": {"param_name": "거래소구분", "values": {"KRX": "1", "NXT": "2", "ALL": "3"}},
-    "OPT10020": {"param_name": "거래소구분", "values": {"KRX": "1", "NXT": "2", "ALL": "3"}},
-    "OPT10021": {"param_name": "거래소구분", "values": {"KRX": "1", "NXT": "2", "ALL": "3"}},
-    "OPT10022": {"param_name": "거래소구분", "values": {"KRX": "1", "NXT": "2", "ALL": "3"}},
-    "OPT10023": {"param_name": "거래소구분", "values": {"KRX": "1", "NXT": "2", "ALL": "3"}},
-    "OPT10024": {"param_name": "거래소구분", "values": {"KRX": "1", "NXT": "2", "ALL": "3"}},
-    "OPT10025": {"param_name": "거래소구분", "values": {"KRX": "1", "NXT": "2", "ALL": "3"}},
-    "OPT10026": {"param_name": "거래소구분", "values": {"KRX": "1", "NXT": "2", "ALL": "3"}},
-    "OPT10027": {"param_name": "거래소구분", "values": {"KRX": "1", "NXT": "2", "ALL": "3"}},
-    "OPT10028": {"param_name": "거래소구분", "values": {"KRX": "1", "NXT": "2", "ALL": "3"}},
-    "OPT10029": {"param_name": "거래소구분", "values": {"KRX": "1", "NXT": "2", "ALL": "3"}},
-    "OPT10030": {"param_name": "거래소구분", "values": {"KRX": "1", "NXT": "2", "ALL": "3"}},
-    "OPT10031": {"param_name": "거래소구분", "values": {"KRX": "1", "NXT": "2", "ALL": "3"}},
-    "OPT10032": {"param_name": "거래소구분", "values": {"KRX": "1", "NXT": "2", "ALL": "3"}},
-    "OPT10033": {"param_name": "거래소구분", "values": {"KRX": "1", "NXT": "2", "ALL": "3"}},
-    "OPT10034": {"param_name": "거래소구분", "values": {"KRX": "1", "NXT": "2", "ALL": "3"}},
-    "OPT10035": {"param_name": "거래소구분", "values": {"KRX": "1", "NXT": "2", "ALL": "3"}},
-    "OPT10036": {"param_name": "거래소구분", "values": {"KRX": "1", "NXT": "2", "ALL": "3"}},
-    "OPT10037": {"param_name": "거래소구분", "values": {"KRX": "1", "NXT": "2", "ALL": "3"}},
-    "OPT10038": {"param_name": "거래소구분", "values": {"KRX": "1", "NXT": "2", "ALL": "3"}},
-    "OPT10039": {"param_name": "거래소구분", "values": {"KRX": "1", "NXT": "2", "ALL": "3"}},
-    "OPT10042": {"param_name": "거래소구분", "values": {"KRX": "1", "NXT": "2", "ALL": "3"}},
-    "OPT10043": {"param_name": "거래소구분", "values": {"KRX": "1", "NXT": "2", "ALL": "3"}},
-    "OPT10044": {"param_name": "거래소구분", "values": {"KRX": "1", "NXT": "2", "ALL": "3"}},
-    "OPT10048": {"param_name": "거래소구분", "values": {"KRX": "1", "NXT": "2", "ALL": "3"}},
-    "OPT10049": {"param_name": "거래소구분", "values": {"KRX": "1", "NXT": "2", "ALL": "3"}},
-    "OPT10050": {"param_name": "거래소구분", "values": {"KRX": "1", "NXT": "2", "ALL": "3"}},
-    "OPT10051": {"param_name": "거래소구분", "values": {"KRX": "1", "NXT": "2", "ALL": "3"}},
-    "OPT10052": {"param_name": "거래소구분", "values": {"KRX": "1", "NXT": "2", "ALL": "3"}},
-    "OPT10054": {"param_name": "거래소구분", "values": {"KRX": "1", "NXT": "2", "ALL": "3"}},
-    "OPT10058": {"param_name": "거래소구분", "values": {"KRX": "1", "NXT": "2", "ALL": "3"}},
-    "OPT10069": {"param_name": "거래소구분", "values": {"KRX": "1", "NXT": "2", "ALL": "3"}},
-    "OPT10070": {"param_name": "거래소구분", "values": {"KRX": "1", "NXT": "2", "ALL": "3"}},
-    "OPT10071": {"param_name": "거래소구분", "values": {"KRX": "1", "NXT": "2", "ALL": "3"}},
-    "OPT10072": {"param_name": "거래소구분", "values": {"KRX": "1", "NXT": "2", "ALL": "3"}},
-    "OPT10073": {"param_name": "거래소구분", "values": {"KRX": "1", "NXT": "2", "ALL": "3"}},
-    "OPT10131": {"param_name": "거래소구분", "values": {"KRX": "1", "NXT": "2", "ALL": "3"}},
-    "OPT40004": {"param_name": "거래소구분", "values": {"KRX": "1", "NXT": "2", "ALL": "3"}},
-    "OPT90001": {"param_name": "거래소구분", "values": {"KRX": "1", "NXT": "2", "ALL": "3"}}, # ~ OPT90009 까지 동일
-    "OPT90002": {"param_name": "거래소구분", "values": {"KRX": "1", "NXT": "2", "ALL": "3"}},
-    "OPT90003": {"param_name": "거래소구분", "values": {"KRX": "1", "NXT": "2", "ALL": "3"}},
-    "OPT90004": {"param_name": "거래소구분", "values": {"KRX": "1", "NXT": "2", "ALL": "3"}},
-    "OPT90005": {"param_name": "거래소구분", "values": {"KRX": "1", "NXT": "2", "ALL": "3"}},
-    "OPT90006": {"param_name": "거래소구분", "values": {"KRX": "1", "NXT": "2", "ALL": "3"}},
-    "OPT90007": {"param_name": "거래소구분", "values": {"KRX": "1", "NXT": "2", "ALL": "3"}},
-    "OPT90008": {"param_name": "거래소구분", "values": {"KRX": "1", "NXT": "2", "ALL": "3"}},
-    "OPT90009": {"param_name": "거래소구분", "values": {"KRX": "1", "NXT": "2", "ALL": "3"}},
-
-    # 유형 2: 거래소구분=0:통합, 1:KRX, 2:NXT (3개 TR)
-    "OPT10075": {"param_name": "거래소구분", "values": {"ALL": "0", "KRX": "1", "NXT": "2"}},
-    "OPT10076": {"param_name": "거래소구분", "values": {"ALL": "0", "KRX": "1", "NXT": "2"}},
-    "OPT10085": {"param_name": "거래소구분", "values": {"ALL": "0", "KRX": "1", "NXT": "2"}},
-
-    # 유형 3: 거래소구분=KRX:한국거래소, NXT:대체거래소 (3개 TR) - ALL(통합) 미지원으로 해석
-    "OPW00004": {"param_name": "거래소구분", "values": {"KRX": "KRX", "NXT": "NXT"}},
-    "OPW00005": {"param_name": "거래소구분", "values": {"KRX": "KRX", "NXT": "NXT"}},
-    "OPW00018": {"param_name": "거래소구분", "values": {"KRX": "KRX", "NXT": "NXT"}},
-
-    # 유형 4: 거래소구분=%:전체, KRX:한국거래소, NXT:대체거래소, SOR:최선주문집행 (3개 TR)
-    "OPW00007": {"param_name": "거래소구분", "values": {"ALL": "%", "KRX": "KRX", "NXT": "NXT", "SOR": "SOR"}},
-    "OPW00009": {"param_name": "거래소구분", "values": {"ALL": "%", "KRX": "KRX", "NXT": "NXT", "SOR": "SOR"}},
-    "OPW00015": {"param_name": "거래소구분", "values": {"ALL": "%", "KRX": "KRX", "NXT": "NXT", "SOR": "SOR"}},
-}
-
-# 종목코드에 직접 _NX, _AL 접미사를 사용하는 TR 목록 (문서 확인 결과, "종목코드" 입력 TR 중 "거래소구분" 파라미터가 없는 TR들)
-# "OPT10001", "OPT10002", ..., "OPT10087", (OPT4xxxx, OPT5xxxx 시리즈 등) - 문서의 2.1.1 및 2.1.2 항목 참고
-TR_USES_SUFFIX_IN_STOCK_CODE = {
-    "OPT10001", "OPT10002", "OPT10003", "OPT10004", "OPT10005", "OPT10006", "OPT10007", "OPT10008", "OPT10009", "OPT10010",
-    "OPT10011", "OPT10012", "OPT10013", "OPT10014", "OPT10015", "OPT10053", "OPT10055", "OPT10056", "OPT10057",
-    "OPT10074", "OPT10077", "OPT10078", "OPT10079", "OPT10080", "OPT10081", "OPT10082", "OPT10083", "OPT10084", "OPT10086", "OPT10087",
-    # OPT4XXXX, OPT5XXXX 시리즈 등 문서 참고하여 추가 필요. 예: "OPT40001", "OPT50001"
-}
-
-# API 기본 시장 컨텍스트 (KRX를 기본으로 가정)
-DEFAULT_MARKET_CONTEXT = 'KRX'
-
-# Helper function to safely convert to int
-def _safe_int(value_str, default=0):
-    value_str = str(value_str).strip()
-    if not value_str or value_str == '+' or value_str == '-':
-        return default
-    try:
-        cleaned_value = value_str.replace('+', '').replace('-', '')
-        if not cleaned_value:
-            return default
-        return int(cleaned_value)
-    except ValueError:
-        return default
-
-# Helper function to safely convert to float
-def _safe_float(value_str, default=0.0):
-    value_str = str(value_str).strip()
-    if not value_str or value_str == '+' or value_str == '-':
-        return default
-    try:
-        cleaned_value = value_str.replace('%', '').replace('+', '').replace('-', '')
-        if not cleaned_value:
-            return default
-        return float(cleaned_value)
-    except ValueError:
-        return default
 
 def non_blocking_sleep_using_process_events(seconds):
     start_time = time.time()
@@ -194,108 +77,6 @@ class KiwoomAPI(QObject):
         self.shutdown_mode = mode
         status_str = "활성화" if mode else "비활성화"
         self.log(f"종료 모드가 {status_str}되었습니다.", "INFO")
-
-    def _parse_stock_code(self, full_code_str: str):
-        """
-        종목코드 문자열(예: "005930_NX")을 순수 종목코드, ATS 접미사, 시장 컨텍스트로 분리합니다.
-        Returns:
-            tuple: (pure_code, suffix, market_context_from_suffix, original_full_code)
-                   market_context_from_suffix는 ATS_SUFFIX_MARKET_MAP의 value (예: 'NXT', 'ALL')이며, 없으면 None.
-        """
-        full_code = str(full_code_str).strip()
-        pure_code = full_code
-        suffix = None
-        market_context_from_suffix = None
-
-        for s, market_ctx in ATS_SUFFIX_MARKET_MAP.items():
-            if full_code.endswith(s):
-                potential_pure_code = full_code[:-len(s)]
-                if (len(potential_pure_code) == 6 and potential_pure_code.isdigit()) or \
-                   (len(potential_pure_code) > 0 and potential_pure_code[0].isalpha() and len(potential_pure_code[1:]) == 6 and potential_pure_code[1:].isdigit()):
-                    pure_code = potential_pure_code
-                    suffix = s
-                    market_context_from_suffix = market_ctx
-                    self.log(f"_parse_stock_code: ATS 접미사 '{s}' 감지. 입력 '{full_code}', 순수코드 '{pure_code}', 시장컨텍스트 '{market_context_from_suffix}'", "DEBUG")
-                    break
-        
-        if not suffix:
-            if (len(full_code) == 6 and full_code.isdigit()) or \
-               (len(full_code) > 0 and full_code[0].isalpha() and len(full_code[1:]) == 6 and full_code[1:].isdigit()):
-                self.log(f"_parse_stock_code: ATS 접미사 없음. 입력 '{full_code}'를 순수 코드로 간주.", "DEBUG")
-
-        return pure_code, suffix, market_context_from_suffix, full_code
-
-    def get_code_market_info(self, full_code_str: str):
-        """
-        종목코드 문자열을 분석하여 순수 종목코드와 시장 컨텍스트를 반환합니다.
-        _parse_stock_code의 결과를 더 사용하기 쉽게 래핑합니다.
-        Returns:
-            tuple: (pure_code, market_context) 
-                   market_context는 'KRX', 'NXT', 'ALL' 또는 None.
-        """
-        pure_code, suffix, market_context_from_suffix, _ = self._parse_stock_code(full_code_str)
-        if market_context_from_suffix:
-            return pure_code, market_context_from_suffix
-        
-        # 접미사가 없으면 KRX로 간주 (기본 시장)
-        # 단, _parse_stock_code는 순수 코드만 잘 분리해주고 market_context_from_suffix는 None을 반환할 것임.
-        # 따라서 여기서 KRX를 명시적으로 설정.
-        if (len(pure_code) == 6 and pure_code.isdigit()) or \
-           (len(pure_code) > 0 and pure_code[0].isalpha() and len(pure_code[1:]) == 6 and pure_code[1:].isdigit()):
-            return pure_code, DEFAULT_MARKET_CONTEXT # DEFAULT_MARKET_CONTEXT는 'KRX'
-            
-        # 유효하지 않은 코드 형식일 경우
-        self.log(f"get_code_market_info: 유효하지 않은 종목코드 형식으로 시장 컨텍스트를 결정할 수 없음: '{full_code_str}'", "WARNING")
-        return pure_code, None
-
-    def _get_api_market_param_value(self, tr_code: str, market_context: str):
-        """ 
-        주어진 TR 코드와 시장 컨텍스트(KRX, NXT, ALL)에 대해 
-        "거래소구분"과 같은 파라미터에 설정할 실제 API 값을 반환합니다.
-        Args:
-            tr_code (str): 조회하려는 TR 코드
-            market_context (str): KRX, NXT, ALL 등 시장 컨텍스트. None일 경우 DEFAULT_MARKET_CONTEXT 사용.
-        Returns: 
-            tuple: (param_name, param_value) - 설정할 파라미터 이름과 값.
-                   설정할 파라미터가 없거나, 주어진 market_context에 대한 값이 TR_MARKET_PARAM_CONFIG에 없으면 (None, None).
-        """
-        eff_market_context = market_context.upper() if market_context else DEFAULT_MARKET_CONTEXT
-
-        config = TR_MARKET_PARAM_CONFIG.get(tr_code)
-        if config:
-            param_name = config.get("param_name")
-            param_value = config.get("values", {}).get(eff_market_context)
-            
-            if param_name and param_value is not None:
-                self.log(f"TR [{tr_code}]에 대한 시장 파라미터: 컨텍스트='{eff_market_context}', 파라미터명='{param_name}', 설정값='{param_value}'", "DEBUG")
-                return param_name, param_value
-            else:
-                self.log(f"TR [{tr_code}]에 대한 시장 컨텍스트 '{eff_market_context}'의 파라미터 값 정의를 TR_MARKET_PARAM_CONFIG에서 찾을 수 없음 (param_name: {param_name}, value_found: {param_value is not None}).", "WARNING")
-        return None, None
-
-    def _determine_code_for_tr_input(self, tr_code: str, original_full_code: str):
-        """
-        TR 조회 시 "종목코드" SetInputValue에 사용할 최종 코드 문자열을 결정합니다.
-        - TR_USES_SUFFIX_IN_STOCK_CODE 목록에 있으면 접미사 포함 코드를 반환 (단, 접미사가 원래 있었던 경우).
-        - 그렇지 않으면 (즉, "거래소구분" 파라미터를 사용하는 TR이면) 항상 순수 코드를 반환.
-        Args:
-            tr_code (str): 조회하려는 TR 코드
-            original_full_code (str): 사용자가 입력한 원본 종목코드 (예: "005930", "005930_NX")
-        Returns:
-            str: SetInputValue에 사용할 최종 종목코드 문자열
-        """
-        pure_code, suffix, _, _ = self._parse_stock_code(original_full_code)
-
-        if tr_code in TR_USES_SUFFIX_IN_STOCK_CODE:
-            if suffix:
-                self.log(f"TR [{tr_code}]은(는) 종목코드에 ATS 접미사를 직접 사용합니다. 코드: [{original_full_code}] 사용.", "INFO")
-                return original_full_code
-            else:
-                self.log(f"TR [{tr_code}]은(는) 종목코드에 ATS 접미사를 사용할 수 있으나, 입력코드 [{original_full_code}]에 접미사 없음. KRX 조회로 간주하여 [{pure_code}] 사용.", "INFO")
-                return pure_code
-        else:
-            self.log(f"TR [{tr_code}]은(는) '거래소구분' 파라미터를 사용할 가능성이 있으며, 종목코드는 순수 코드 [{pure_code}]를 사용합니다. (원본: {original_full_code})", "INFO")
-            return pure_code
 
     def request_account_info(self, account_number_to_use=None):
         self.log("request_account_info 호출됨", "DEBUG")
@@ -677,12 +458,18 @@ class KiwoomAPI(QObject):
             return -999
 
         original_code_input_for_order = str(code)
-        pure_code_for_order, suffix_in_code, _, _ = self._parse_stock_code(original_code_input_for_order)
+        pure_code_for_order, suffix_in_code, _, _ = ats_utils._parse_stock_code(original_code_input_for_order, logger_instance=self.logger)
 
         if suffix_in_code:
             self.log(f"경고: 주문 시 입력된 종목코드 '{original_code_input_for_order}'에 ATS 접미사 '{suffix_in_code}' 포함. 주문에는 순수 종목코드 '{pure_code_for_order}' 사용.", "WARNING")
         
         final_code_for_api_order = pure_code_for_order
+        # TODO: 주문 시 시장 컨텍스트를 명시적으로 설정할 수 있는 방법 고려 (예: order_type에 _NX, _AL 등 접미사 사용 또는 별도 파라미터)
+        # 현재는 pure_code_for_order를 사용하므로 KRX 주문으로 처리될 가능성이 높음.
+        # KiwoomAPI의 SendOrder는 종목코드에 접미사를 사용하지 않고, 주문유형(nOrderType)으로 시장을 구분함.
+        # (예: 1:신규매수, 11:Nextrade신규매수 등)
+        # 따라서, Strategy 단에서 올바른 order_type을 결정하여 전달해야 함.
+        # 여기서는 final_code_for_api_order가 순수 코드임을 명시하고, order_type이 시장 정보를 포함한다고 가정.
         self.log(f"주문 처리: 최종 API 전달 종목코드='{final_code_for_api_order}' (원본: '{original_code_input_for_order}'), 주문유형='{order_type}' (시장 정보 포함 가정)", "INFO")
 
         order_args = [
@@ -748,9 +535,11 @@ class KiwoomAPI(QObject):
             self.log(f"[KiwoomAPI_CANCEL_ORDER_ERROR] 원주문번호 누락! RQName: {rq_name_cancel}", "ERROR")
             return -997 # 내부 정의 에러 코드
             
-        pure_stock_code, _, _, _ = self._parse_stock_code(stock_code) # 순수 종목코드 사용
+        pure_stock_code, _, _, _ = ats_utils._parse_stock_code(stock_code, logger_instance=self.logger) # 순수 종목코드 사용
 
         # 원주문 유형에 따라 취소 주문 유형 결정
+        # 취소 주문 시에는 원주문의 시장 정보를 알 필요가 없을 수 있음 (API가 주문번호로 판단).
+        # 만약 취소 주문에도 시장 구분이 필요하다면, 원주문 생성 시 시장 정보도 저장해두어야 함.
         cancel_order_type_code = 0
         if original_order_type_str.lower() == "매수":
             cancel_order_type_code = 3  # 매수취소
@@ -865,7 +654,7 @@ class KiwoomAPI(QObject):
 
         # 정상 응답 데이터 파싱
         # _parse_tr_data는 API에서 받은 sTrCode를 사용합니다.
-        parsed_data = self._parse_tr_data(sTrCode, sRQName, sScrNo, sPrevNext) 
+        parsed_data = self._parse_tr_data(sTrCode, sRQName, sScrNo, sPrevNext)
         
         # 파싱된 결과를 캐시에 반영 (single_data, multi_data 등)
         # cached_request_info는 dict임이 보장됨
@@ -905,7 +694,7 @@ class KiwoomAPI(QObject):
                 original_input_values = request_info.get('input_values', {})
                 stock_code_for_next = original_input_values.get('종목코드') # CommRqData에 전달된 종목코드 (접미사 포함 가능)
                 base_date_for_next = original_input_values.get('기준일자') # 수정주가구분 등도 여기서 가져올 수 있음
-                # market_context_for_next = request_info.get('market_context') # opt10081은 market_context 직접 사용 안함
+                # market_context_for_next = request_info.get('market_context') # opt10081은 market_context 직접 사용 안함 (ats_utils._determine_code_for_tr_input이 처리)
 
                 if not stock_code_for_next or not base_date_for_next:
                     self.log(f"opt10081 연속 조회 중단: 다음 요청을 위한 종목코드 또는 기준일자 누락. RQ='{sRQName}', CachedInputs: {original_input_values}", "ERROR")
@@ -938,7 +727,7 @@ class KiwoomAPI(QObject):
                 cached_item = self.tr_data_cache[sRQName]
                 original_params = cached_item.get('params', {})
                 code_for_signal_raw = original_params.get('input_values', {}).get('종목코드')
-                pure_code_for_signal, _, _, _ = self._parse_stock_code(str(code_for_signal_raw))
+                pure_code_for_signal, _, _, _ = ats_utils._parse_stock_code(str(code_for_signal_raw), logger_instance=self.logger)
                 
                 all_accumulated_data = cached_item.get('data', []) # 누적된 전체 데이터
                 self.log(f"opt10081 (PrevNext='2' 처리): RQ='{sRQName}', Code='{pure_code_for_signal}'. 총 {len(all_accumulated_data)}건. Strategy로 전달.", "INFO")
@@ -960,7 +749,7 @@ class KiwoomAPI(QObject):
                 cached_item = self.tr_data_cache[sRQName]
                 original_params = cached_item.get('params', {})
                 code_for_signal_raw = original_params.get('input_values', {}).get('종목코드')
-                pure_code_for_signal, _, _, _ = self._parse_stock_code(str(code_for_signal_raw))
+                pure_code_for_signal, _, _, _ = ats_utils._parse_stock_code(str(code_for_signal_raw), logger_instance=self.logger)
 
                 all_accumulated_data = cached_item.get('data', [])
                 self.log(f"opt10081 모든 데이터 수신 완료 (RQ='{sRQName}', CodeForSignal='{pure_code_for_signal}'). 총 {len(all_accumulated_data)}건. Strategy로 전달.", "INFO")
@@ -1124,6 +913,196 @@ class KiwoomAPI(QObject):
         self.log(f"_parse_tr_data 완료: TR({sTrCode}), RQName({sRQName}), SingleDataKeys({len(parsed_data['single_data'])}), MultiDataCount({len(parsed_data['multi_data'])})", "DEBUG")
         return parsed_data
 
+    def _parse_opt10001_data(self, sTrCode, sRQName, sScrNo, sPrevNext, fields_to_parse):
+        """opt10001 (주식기본정보) TR의 데이터를 파싱합니다."""
+        # 싱글 데이터로 간주
+        single_item_data = {}
+        for field_name in fields_to_parse:
+            single_item_data[field_name] = self.get_comm_data(sTrCode, sRQName, 0, field_name).strip()
+        
+        return {
+            'single_data': self._ensure_numeric_fields_for_api_data(single_item_data),
+            'multi_data': [], # opt10001은 멀티 데이터 없음
+            'tr_code': sTrCode,
+            'rq_name': sRQName,
+            'screen_no': sScrNo,
+            'prev_next': sPrevNext
+        }
+
+    def _parse_opt10081_data(self, sTrCode, sRQName, sScrNo, sPrevNext, fields_to_parse):
+        """opt10081 (일봉/주봉/월봉) TR의 데이터를 파싱합니다."""
+        multi_data_list = []
+        count = self.get_repeat_cnt(sTrCode, sRQName)
+        for i in range(count):
+            item_data = {}
+            current_date_for_log = "N/A"
+            if "일자" in fields_to_parse:
+                 current_date_for_log = self.get_comm_data(sTrCode, sRQName, i, "일자").strip()
+                 item_data["일자"] = current_date_for_log
+
+            for field_name in fields_to_parse:
+                if field_name == "일자" and "일자" in item_data:
+                    continue
+                raw_value = self.get_comm_data(sTrCode, sRQName, i, field_name).strip()
+                try:
+                    if field_name in ["시가", "고가", "저가", "현재가", "전일비", "수정비율"]:
+                        item_data[field_name] = _safe_float(raw_value, 0.0)
+                    elif field_name == "거래량":
+                        item_data[field_name] = _safe_int(raw_value, 0)
+                    else:
+                        item_data[field_name] = raw_value
+                except ValueError as ve:
+                    stock_code_for_log = "N/A"
+                    if sRQName in self.tr_data_cache and 'params' in self.tr_data_cache[sRQName] and \
+                       'input_values' in self.tr_data_cache[sRQName]['params']:
+                        stock_code_for_log = self.tr_data_cache[sRQName]['params']['input_values'].get('종목코드', 'N/A')
+                    self.log(f"opt10081 데이터 변환 오류: RQName({sRQName}), Code({stock_code_for_log}), Date({current_date_for_log}), Field({field_name}), Value('{raw_value}'), Error: {ve}", "ERROR")
+                    if field_name in ["시가", "고가", "저가", "현재가", "전일비", "수정비율"]:
+                        item_data[field_name] = 0.0
+                    elif field_name == "거래량":
+                        item_data[field_name] = 0
+                    else:
+                        item_data[field_name] = raw_value
+            multi_data_list.append(item_data)
+        
+        return {
+            'single_data': {}, # opt10081은 싱글 데이터 없음
+            'multi_data': multi_data_list,
+            'tr_code': sTrCode,
+            'rq_name': sRQName,
+            'screen_no': sScrNo,
+            'prev_next': sPrevNext
+        }
+
+    def _parse_opw00001_data(self, sTrCode, sRQName, sScrNo, sPrevNext, fields_to_parse):
+        """opw00001 (예수금상세현황) TR의 데이터를 파싱합니다."""
+        single_item_data = {}
+        for field_name in fields_to_parse['single']: # opw00001은 fields_to_parse가 dict 형태
+            single_item_data[field_name] = self.get_comm_data(sTrCode, sRQName, 0, field_name).strip()
+        
+        return {
+            'single_data': self._ensure_numeric_fields_for_api_data(single_item_data),
+            'multi_data': [], # opw00001은 멀티 데이터 없음
+            'tr_code': sTrCode,
+            'rq_name': sRQName,
+            'screen_no': sScrNo,
+            'prev_next': sPrevNext
+        }
+
+    def _parse_opw00018_data(self, sTrCode, sRQName, sScrNo, sPrevNext, fields_to_parse):
+        """opw00018 (계좌평가잔고내역) TR의 데이터를 파싱합니다."""
+        single_item_data = {}
+        if 'single' in fields_to_parse:
+            for field_name in fields_to_parse['single']:
+                single_item_data[field_name] = self.get_comm_data(sTrCode, sRQName, 0, field_name).strip()
+        
+        multi_data_list = []
+        if 'multi' in fields_to_parse:
+            count = self.get_repeat_cnt(sTrCode, sRQName)
+            for i in range(count):
+                item_data = {}
+                for field_name in fields_to_parse['multi']:
+                    item_data[field_name] = self.get_comm_data(sTrCode, sRQName, i, field_name).strip()
+                multi_data_list.append(self._ensure_numeric_fields_for_api_data(item_data))
+        
+        return {
+            'single_data': self._ensure_numeric_fields_for_api_data(single_item_data),
+            'multi_data': multi_data_list,
+            'tr_code': sTrCode,
+            'rq_name': sRQName,
+            'screen_no': sScrNo,
+            'prev_next': sPrevNext
+        }
+
+    def _parse_tr_data(self, sTrCode, sRQName, sScrNo, sPrevNext):
+        """TR 응답 데이터를 파싱하여 싱글/멀티 데이터로 구조화합니다. (Dispatcher 역할)"""
+        self.log(f"_parse_tr_data (Dispatcher): TR Code '{sTrCode}', RQName '{sRQName}'", "DEBUG")
+
+        # TR 코드별 Output 필드 정의
+        tr_output_fields = {
+            "opt10001": [
+                "종목코드", "종목명", "결산월", "액면가", "자본금", "상장주식", "신용비율", "연중최고", "연중최저",
+                "시가총액", "시가총액비중", "외인소진률", "대용가", "PER", "EPS", "ROE", "PBR", "EV", "BPS",
+                "매출액", "영업이익", "당기순이익", "250최고", "250최저", "시가", "고가", "저가", "상한가", "하한가",
+                "기준가", "예상체결가", "예상체결수량", "250최고가일", "250최고가대비율", "250최저가일",
+                "250최저가대비율", "현재가", "전일대비기호", "전일대비", "등락율", "거래량", "거래대금", "체결량",
+                "체결강도", "전일거래량", "매도호가", "매수호가", "매도1차호가", "매도2차호가", "매도3차호가",
+                "매도4차호가", "매도5차호가", "매수1차호가", "매수2차호가", "매수3차호가", "매수4차호가",
+                "매수5차호가", "상장일", "유통주식", "유통비율"
+            ],
+            "opt10081": [
+                "일자", "시가", "고가", "저가", "현재가", "거래량", "거래대금", "수정주가구분", "수정비율", "대업종구분", "소업종구분", "종목정보", "수정주가이벤트", "전일종가"
+            ],
+            "opw00001": {
+                'single': ["예수금", "d+1추정예수금", "d+2추정예수금", "출금가능금액", "미수금", "대용금", "권리대용금", "주문가능금액", "예탁자산평가액", "총매입금액", "총평가금액", "총손익금액", "총손익률", "총재사용금액"]
+            },
+            "opw00018": {
+                'single': ["총매입금액", "총평가금액", "총평가손익금액", "총수익률(%)", "추정예탁자산", "총대출금", "총융자금액", "총대주금액", "조회건수"],
+                'multi': ["종목번호", "종목명", "평가손익", "수익률(%)", "매입가", "보유수량", "매매가능수량", "현재가", "전일종가", "매입금액", "평가금액", "대출일자", "만기일자", "신용구분", "신용금액", "신용이자", "담보대출수량"]
+            }
+        }
+
+        fields_to_parse = tr_output_fields.get(sTrCode)
+        if not fields_to_parse:
+            self.log(f"TR 코드 '{sTrCode}'에 대한 Output 필드 정의가 없어 GetCommData 직접 호출 시도 (싱글 데이터만).", "WARNING")
+            # Generic parsing for undefined TRs
+            single_data = {}
+            try:
+                # This is a fallback, actual field names might differ.
+                single_data['Data'] = self.get_comm_data(sTrCode, sRQName, 0, "Data") 
+            except Exception as e:
+                self.log(f"정의되지 않은 TR '{sTrCode}'의 'Data' 필드 GetCommData 실패: {e}", "ERROR")
+            return {
+                'single_data': single_data, 'multi_data': [], 'tr_code': sTrCode,
+                'rq_name': sRQName, 'screen_no': sScrNo, 'prev_next': sPrevNext
+            }
+
+        # Delegate to specific parsing methods
+        if sTrCode == "opt10001":
+            return self._parse_opt10001_data(sTrCode, sRQName, sScrNo, sPrevNext, fields_to_parse)
+        elif sTrCode == "opt10081":
+            return self._parse_opt10081_data(sTrCode, sRQName, sScrNo, sPrevNext, fields_to_parse)
+        elif sTrCode == "opw00001":
+            return self._parse_opw00001_data(sTrCode, sRQName, sScrNo, sPrevNext, fields_to_parse)
+        elif sTrCode == "opw00018":
+            return self._parse_opw00018_data(sTrCode, sRQName, sScrNo, sPrevNext, fields_to_parse)
+        else:
+            # Fallback for TRs defined in tr_output_fields but not having a dedicated parser method
+            # This part should ideally not be reached if all defined TRs have parsers.
+            # Reusing the old generic logic for this case.
+            self.log(f"TR 코드 '{sTrCode}'에 대한 전용 파서가 없습니다. 일반 파싱 로직 사용.", "WARNING")
+            parsed_data_generic = {
+                'single_data': {}, 'multi_data': [], 'tr_code': sTrCode,
+                'rq_name': sRQName, 'screen_no': sScrNo, 'prev_next': sPrevNext
+            }
+            if isinstance(fields_to_parse, list):
+                if self.get_repeat_cnt(sTrCode, sRQName) > 0: # Multi data
+                    count = self.get_repeat_cnt(sTrCode, sRQName)
+                    for i in range(count):
+                        item_data = {}
+                        for field_name in fields_to_parse:
+                            item_data[field_name] = self.get_comm_data(sTrCode, sRQName, i, field_name).strip()
+                        parsed_data_generic['multi_data'].append(self._ensure_numeric_fields_for_api_data(item_data))
+                else: # Single data
+                    single_item_data = {}
+                    for field_name in fields_to_parse:
+                        single_item_data[field_name] = self.get_comm_data(sTrCode, sRQName, 0, field_name).strip()
+                    parsed_data_generic['single_data'] = self._ensure_numeric_fields_for_api_data(single_item_data)
+            elif isinstance(fields_to_parse, dict): # Single/multi fields defined
+                if 'single' in fields_to_parse:
+                    single_item_data = {}
+                    for field_name in fields_to_parse['single']:
+                        single_item_data[field_name] = self.get_comm_data(sTrCode, sRQName, 0, field_name).strip()
+                    parsed_data_generic['single_data'] = self._ensure_numeric_fields_for_api_data(single_item_data)
+                if 'multi' in fields_to_parse:
+                    count = self.get_repeat_cnt(sTrCode, sRQName)
+                    for i in range(count):
+                        item_data = {}
+                        for field_name in fields_to_parse['multi']:
+                            item_data[field_name] = self.get_comm_data(sTrCode, sRQName, i, field_name).strip()
+                        parsed_data_generic['multi_data'].append(self._ensure_numeric_fields_for_api_data(item_data))
+            return parsed_data_generic
+
     def _ensure_numeric_fields_for_api_data(self, data_dict):
         """API에서 받은 데이터 딕셔너리의 특정 필드를 숫자형으로 변환합니다."""
         # 이 함수는 Strategy의 _ensure_numeric_fields와 유사하나, API 직접 응답 처리에 특화될 수 있음
@@ -1149,11 +1128,11 @@ class KiwoomAPI(QObject):
         item = parsed_data.get('single_data', {})
 
         requested_code_info = self.tr_data_cache.get(sRQName, {})
-        requested_pure_code = requested_code_info.get('code') # 캐시 생성 시 저장된 순수 코드 (comm_rq_data에서 설정)
-        requested_market_ctx = requested_code_info.get('market_context') # 캐시 생성 시 저장된 시장 컨텍스트
+        requested_pure_code = requested_code_info.get('code') if requested_code_info else None
+        requested_market_ctx = requested_code_info.get('market_context') if requested_code_info else None
         
         received_code_with_suffix = str(item.get("종목코드", "")).strip()
-        received_pure_code, _, _, _ = self._parse_stock_code(received_code_with_suffix)
+        received_pure_code, _, _, _ = ats_utils._parse_stock_code(received_code_with_suffix, logger_instance=self.logger)
         stock_name = str(item.get("종목명", "")).strip()
 
         self.log(f"_handle_opt10001: Validation for RQ('{sRQName}'): ReqPure='{requested_pure_code}', ReqCtx='{requested_market_ctx}', RcvFull='{received_code_with_suffix}', RcvPure='{received_pure_code}', Name='{stock_name}'", "DEBUG")
@@ -1227,7 +1206,7 @@ class KiwoomAPI(QObject):
             original_params = cached_item.get('params', {})
             code_for_signal = original_params.get('input_values', {}).get('종목코드')
             # _parse_stock_code를 통해 순수 코드를 추출하여 시그널에 전달하는 것이 더 좋을 수 있음
-            pure_code_for_signal, _, _, _ = self._parse_stock_code(str(code_for_signal))
+            pure_code_for_signal, _, _, _ = ats_utils._parse_stock_code(str(code_for_signal), logger_instance=self.logger)
 
             all_accumulated_data = cached_item.get('data', [])
             self.log(f"opt10081 모든 데이터 수신 완료 ({sRQName}, CodeForSignal: {pure_code_for_signal}). 총 {len(all_accumulated_data)}건. Strategy로 전달.", "INFO")
@@ -1523,8 +1502,8 @@ class KiwoomAPI(QObject):
         """
         self.log(f"일봉 데이터 요청 시작: 종목코드({code}), 기준일자({date_to}), 명시적 MarketContext({market_context})", "INFO")
         
-        _pure_code, _suffix, market_ctx_from_suffix, original_full_code = self._parse_stock_code(code)
-        effective_market_context_for_rq_name = market_context if market_context else (market_ctx_from_suffix if market_ctx_from_suffix else DEFAULT_MARKET_CONTEXT)
+        _pure_code, _suffix, market_ctx_from_suffix, original_full_code = ats_utils._parse_stock_code(code, logger_instance=self.logger)
+        effective_market_context_for_rq_name = market_context if market_context else (market_ctx_from_suffix if market_ctx_from_suffix else ats_utils.DEFAULT_MARKET_CONTEXT)
 
         effective_date_to = date_to if date_to else datetime.now().strftime("%Y%m%d")
         rq_name = f"opt10081_chart_{_pure_code}_{effective_market_context_for_rq_name}_{effective_date_to.replace('-', '')}"
@@ -1575,8 +1554,8 @@ class KiwoomAPI(QObject):
         """
         self.log(f"종목 기본 정보 요청 시작: 종목코드({code}), 명시적 MarketContext({market_context})", "INFO") 
         
-        _pure_code, _suffix, market_ctx_from_suffix, original_full_code = self._parse_stock_code(code)
-        effective_market_context_for_rq_name = market_context if market_context else (market_ctx_from_suffix if market_ctx_from_suffix else DEFAULT_MARKET_CONTEXT)
+        _pure_code, _suffix, market_ctx_from_suffix, original_full_code = ats_utils._parse_stock_code(code, logger_instance=self.logger)
+        effective_market_context_for_rq_name = market_context if market_context else (market_ctx_from_suffix if market_ctx_from_suffix else ats_utils.DEFAULT_MARKET_CONTEXT)
 
         rq_name = f"opt10001_{_pure_code}_{effective_market_context_for_rq_name}" 
         screen_no = self.screen_manager.get_available_screen(rq_name)
@@ -1617,8 +1596,8 @@ class KiwoomAPI(QObject):
         """
         self.log(f"전일 종가 요청 시작: 종목코드({code}), 기준일({base_date_str}), 명시적 MarketContext({market_context})", "INFO") 
 
-        _pure_code, _suffix, market_ctx_from_suffix, original_full_code = self._parse_stock_code(code)
-        effective_market_context_for_rq_name = market_context if market_context else (market_ctx_from_suffix if market_ctx_from_suffix else DEFAULT_MARKET_CONTEXT)
+        _pure_code, _suffix, market_ctx_from_suffix, original_full_code = ats_utils._parse_stock_code(code, logger_instance=self.logger)
+        effective_market_context_for_rq_name = market_context if market_context else (market_ctx_from_suffix if market_ctx_from_suffix else ats_utils.DEFAULT_MARKET_CONTEXT)
 
         if base_date_str is None:
             base_date_str = (datetime.now() - timedelta(days=1)).strftime("%Y%m%d")

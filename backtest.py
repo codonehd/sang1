@@ -15,65 +15,50 @@ from database import Database # 백테스트 결과 저장을 위해 필요할 �
 from strategy import TradingStrategy, TradingState, AccountState, StrategySettings, StockTrackingData, ExternalModules
 from kiwoom_api import KiwoomAPI, _safe_int, _safe_float # KiwoomAPI의 일부 유틸리티 함수 사용 가능성
 from util import ScreenManager # ScreenManager도 필요
+# BaseMockKiwoomAPI 임포트 (경로 문제 해결 필요 가정)
+# 예를 들어, `tests` 폴더가 PYTHONPATH에 있거나, mock_api_base.py가 접근 가능한 위치에 있어야 함.
+# 여기서는 tests 폴더가 PYTHONPATH에 추가되었다고 가정합니다.
+from tests.mock_api_base import BaseMockKiwoomAPI
+
 
 # --- 백테스트용 가상 API (MockKiwoomAPI) ---
-class MockKiwoomAPI:
+class MockKiwoomAPI(BaseMockKiwoomAPI):
     def __init__(self, logger, config_manager, strategy_instance, historical_data_path, initial_balance=10000000):
-        self.logger = logger
+        super().__init__(logger=logger if logger else Logger(log_level=logging.DEBUG, name="MockKiwoomBacktest"))
         self.config_manager = config_manager
-        self.strategy_instance = strategy_instance # strategy_instance 설정
+        self.strategy_instance = strategy_instance # Base에도 있지만, 여기서 다시 할당 (명시적)
         self.historical_data_path = historical_data_path
         self.initial_balance = initial_balance
         self.current_balance = initial_balance
-        self.portfolio = {}  # 종목코드: {\'code\': str, \'name\': str, \'quantity\': int, \'avg_buy_price\': float, \'current_price\': float, \'eval_amount\': float, \'profit_loss\': float, \'profit_loss_rate\': float}
-        self.orders = [] # 주문 내역: {\'order_no\': str, \'code\': str, \'type\': str (\'buy\'/\'sell\'), \'quantity\': int, \'price\': float, \'status\': str (\'filled\'/\'open\'), \'timestamp\': datetime}
-        self.current_time_index = 0
-        self.market_data = {} # 종목코드별 historical data (DataFrame)
-        self.trade_log = [] # 실제 거래 기록: {\'timestamp\': datetime, \'code\': str, \'name\': str, \'type\': str(\'buy\'/\'sell\'), \'quantity\': int, \'price\': float, \'fee\': float, \'total_amount\': float}
-        self.daily_snapshot = [] # 일별 계좌 스냅샷: {\'date\': datetime, \'total_assets\': float, \'cash\': float, \'stock_value\': float}
+        self.portfolio: Dict[str, Dict[str, Any]] = {} 
+        self.orders: List[Dict[str, Any]] = [] 
+        self.current_time_index = 0 # 백테스팅 시 시간 진행 상태
+        self.market_data: Dict[str, pd.DataFrame] = {}
+        self.trade_log: List[Dict[str, Any]] = []
+        self.daily_snapshot: List[Dict[str, Any]] = []
 
-        self.connected = False
-        self.account_number = "MOCK_ACCOUNT_001"
-        self.request_interval = 0.01 # 백테스트에서는 API 호출 간격 무시
-        self.last_order_id = 0
+        # self.connected = False # Base에서 처리
+        self.account_number = "MOCK_BACKTEST_ACC" # Base에서 설정한 것을 오버라이드하거나, Base에서 기본값 사용
+        # self.request_interval = 0.01 # Base에 없으므로 유지
+        self.last_order_id = 0 # Base에 없음 (주문번호 생성용)
 
-        # Strategy에 ExternalModules 주입을 위한 더미 screen_manager
-        # 실제 KiwoomAPI의 screen_manager와 동일한 인터페이스를 제공할 필요는 없음.
-        # Strategy 내부에서 ExternalModules.screen_manager를 직접 사용하는 부분을 확인하고,
-        # 해당 부분에 필요한 최소한의 모의 기능을 제공하거나, None으로 처리 가능.
-        # 여기서는 간단히 ScreenManager 인스턴스를 생성하여 전달.
-        # 실제 API OCX가 필요 없으므로 kiwoom_ocx=None으로 전달.
-        self.screen_manager = ScreenManager(logger=self.logger, kiwoom_ocx=None)
+        self.screen_manager = ScreenManager(logger=self.logger, kiwoom_ocx=None) # 유지
+        self.log(f"MockKiwoomAPI for Backtest initialized. Initial Balance: {self.initial_balance}", "INFO")
 
+    # log, get_connect_state, get_login_info는 BaseMockKiwoomAPI의 것을 사용
 
-    def log(self, message, level="INFO"):
-        if self.logger:
-            log_func = getattr(self.logger, level.lower(), self.logger.info)
-            log_func(f"[MockAPI] {message}")
-        else:
-            print(f"[{level}][MockAPI] {message}")
-
-    def login(self):
-        self.log("가상 로그인 시도...", "INFO")
-        self.connected = True
-        self.log(f"가상 로그인 성공. 계좌번호: {self.account_number}", "IMPORTANT")
-        # 실제 KiwoomAPI처럼 Strategy의 _on_login_completed 호출
-        if self.strategy_instance and hasattr(self.strategy_instance, \'_on_login_completed\'):
-            # QTimer 대신 직접 호출 또는 간단한 지연 후 호출
-            # 여기서는 즉시 호출
-            self.strategy_instance._on_login_completed(self.account_number)
-            self.log("Strategy의 _on_login_completed 호출됨.", "DEBUG")
+    def login(self): # Base의 CommConnect와 유사한 역할
+        super().CommConnect() # Base의 CommConnect 호출하여 self.connected=True 및 콜백 시뮬레이션
+        # self.log("가상 로그인 시도...", "INFO") # Base에서 로깅
+        # self.connected = True # Base에서 처리
+        # self.log(f"가상 로그인 성공. 계좌번호: {self.account_number}", "IMPORTANT") # Base에서 로깅
+        # if self.strategy_instance and hasattr(self.strategy_instance, \'_on_login_completed\'):
+        #     self.strategy_instance._on_login_completed(self.account_number) # Base CommConnect가 처리
+        #     self.log("Strategy의 _on_login_completed 호출됨.", "DEBUG") # Base에서 처리
         return True
 
-    def get_connect_state(self):
-        return self.connected
-
-    def get_login_info(self, tag):
-        if tag == "ACCNO":
-            return f"{self.account_number};"
-        return ""
-
     def request_account_info(self, account_number_to_use=None):
+        # This method needs to simulate the TR data that Strategy expects
         self.log(f"계좌 정보 요청 (가상): {self.account_number}", "INFO")
         # 가상 계좌 정보 생성
         account_data = {

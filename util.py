@@ -249,6 +249,27 @@ def parse_message(message):
     
     return result 
 
+
+# Helper function to safely convert to int
+def _safe_to_int(value, default=0):
+    try:
+        cleaned_value = str(value).strip().replace('+', '').replace('-', '')
+        if not cleaned_value:
+            return default
+        return int(cleaned_value)
+    except (ValueError, TypeError):
+        return default
+
+# Helper function to safely convert to float
+def _safe_to_float(value, default=0.0):
+    try:
+        cleaned_value = str(value).strip().replace('+', '').replace('-', '')
+        if not cleaned_value:
+            return default
+        return float(cleaned_value)
+    except (ValueError, TypeError):
+        return default
+
 # ScreenManager 클래스 정의 추가
 class ScreenManager:
     def __init__(self, logger=None, start_screen_no=2000, num_screens=100, kiwoom_ocx=None): # 화면번호 범위 지정, kiwoom_ocx 추가
