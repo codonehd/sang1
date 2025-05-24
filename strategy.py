@@ -892,7 +892,7 @@ class TradingStrategy(QObject):
         self.log(f"[{code}] 부분 익절 조건 검토: 현재가({current_price:.2f}) vs 부분익절가({target_price:.2f}) (매입가: {avg_buy_price:.2f}, 부분익절률: {self.settings.partial_take_profit_rate}%) - 보유량({holding_quantity})", "DEBUG")
 
         if current_price >= target_price:
-            sell_qty = int(holding_quantity * (self.settings.partial_sell_ratio / 100.0))
+            sell_qty = int(holding_quantity * self.settings.partial_sell_ratio)
             if sell_qty <= 0 and holding_quantity > 0:
                 sell_qty = holding_quantity
                 self.log(f"[{code}] 부분 익절: 계산된 매도 수량 0이나 보유량 있어 전량({sell_qty}) 매도 시도.", "WARNING")
