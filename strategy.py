@@ -2138,7 +2138,23 @@ class TradingStrategy(QObject):
                         stock_info.temp_order_quantity = new_stock_temp_qty
                         self.log(f"[{code}] 매수 부분 체결로 StockTrackingData 임시 주문 수량 감소: {old_stock_temp_qty} -> {new_stock_temp_qty} (체결량: {last_filled_qty})", "INFO")
                     
-                                        # 첫 번째 매수 체결인 경우에만 buy_completion_count 증가                    if stock_info.strategy_state != TradingState.BOUGHT:                        stock_info.buy_completion_count += 1                        self.log(f"[{code}] 첫 매수 체결 시 buy_completion_count 증가: {stock_info.buy_completion_count}", "INFO")                                                # 🔧 중요: 매수 체결 시 상태를 BOUGHT로 변경 (누락된 핵심 코드)                        stock_info.strategy_state = TradingState.BOUGHT                        stock_info.buy_timestamp = datetime.now()                        self.log(f"[{code}] 매수 체결 완료 - 상태 변경: WAITING → BOUGHT", "IMPORTANT")                                                # trading_status에도 상태 저장                        self.account_state.trading_status[code] = {                            'status': TradingState.BOUGHT,                            'bought_price': stock_info.avg_buy_price if stock_info.avg_buy_price > 0 else last_filled_price,                            'bought_quantity': stock_info.total_buy_quantity if stock_info.total_buy_quantity > 0 else last_filled_qty,                            'bought_time': stock_info.buy_timestamp                        }                                            # 매수 체결 시 현재가를 기준으로 고점 초기화
+                    # 첫 번째 매수 체결인 경우 상태를 BOUGHT로 변경하고, buy_timestamp 설정 (buy_completion_count는 완전 체결 시 증가)
+                    if stock_info.strategy_state != TradingState.BOUGHT:
+                        # stock_info.buy_completion_count += 1 # 제거됨: 완전 체결 시로 이동
+                        # self.log(f"[{code}] 첫 매수 체결 시 buy_completion_count 증가: {stock_info.buy_completion_count}", "INFO") # 제거됨
+                        stock_info.strategy_state = TradingState.BOUGHT
+                        stock_info.buy_timestamp = datetime.now()
+                        self.log(f"[{code}] 첫 매수 체결로 상태 변경: {stock_info.strategy_state.name}", "IMPORTANT")
+                        
+                        # trading_status에도 상태 저장
+                        self.account_state.trading_status[code] = {
+                            'status': TradingState.BOUGHT,
+                            'bought_price': stock_info.avg_buy_price if stock_info.avg_buy_price > 0 else last_filled_price,
+                            'bought_quantity': stock_info.total_buy_quantity if stock_info.total_buy_quantity > 0 else last_filled_qty,
+                            'bought_time': stock_info.buy_timestamp
+                        }
+                    
+                    # 매수 체결 시 현재가를 기준으로 고점 초기화
                     if stock_info.current_high_price_after_buy < stock_info.current_price:
                         stock_info.current_high_price_after_buy = stock_info.current_price
                         self.log(f"[{code}] 매수 체결 후 고점 업데이트: {stock_info.current_high_price_after_buy}", "DEBUG")
@@ -2169,6 +2185,10 @@ class TradingStrategy(QObject):
                 # active_orders에서 제거는 아래에서 수행
             else: # stock_info가 있는 경우에만 상태 업데이트
                 if active_order_entry_ref['order_type'] == '매수':
+                    # 매수 주문 완전 체결 시 buy_completion_count 증가
+                    stock_info.buy_completion_count += 1
+                    self.log(f"[{code}] 매수 주문 완전 체결 - buy_completion_count 증가: {stock_info.buy_completion_count}/{self.settings.max_buy_attempts_per_stock}", "INFO")
+                    
                     # 이 로그가 사용자님이 찾으시는 로그!
                     self.log(f"{TradeColors.FILLED}💰 [BUY_COMPLETED] 매수 체결 완료: {code} ({stock_name}), 상태: {stock_info.strategy_state.name}{TradeColors.RESET}", "IMPORTANT") 
                     
@@ -2983,6 +3003,12 @@ class TradingStrategy(QObject):
                         # 포트폴리오에 없고 상태가 WAITING이 아니면 상태 초기화
                         if stock_info.strategy_state != TradingState.WAITING:
                             self.log(f"[자동 정리] [{code}] 포트폴리오에 존재하지 않고 상태가 {stock_info.strategy_state.name}입니다. WAITING으로 초기화합니다.", "WARNING")
+                            # 주문 타임아웃 및 조건 불일치로 상태 초기화 시 buy_completion_count 리셋 경고 로그
+                            if stock_info.buy_completion_count > 0:
+                                self.log(f"[{code}] 주문 타임아웃 및 조건 불일치로 상태 초기화 예정. 현재 buy_completion_count({stock_info.buy_completion_count})가 0으로 리셋됩니다.", "WARNING")
+                            # WARNING: 이 로직은 타임아웃된 주문 처리 시 StockTrackingData를 초기화하며, 이 과정에서 buy_completion_count도 0으로 리셋됩니다.
+                            # 이는 이전에 성공했던 완전 체결 매수 횟수 기록을 지우고, 종목당 최대 매수 시도 횟수 제한을 약화시킬 수 있습니다.
+                            # 추후 이 부분에 대한 정교한 상태 관리 또는 buy_completion_count 보존 로직 검토가 필요할 수 있습니다.
                             self.reset_stock_strategy_info(code)
                     
                     # last_order_rq_name 초기화
