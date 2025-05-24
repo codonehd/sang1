@@ -1055,6 +1055,15 @@ class TradingStrategy(QObject):
         if available_quantity <= 0:
             self.log(f"{code} 가용 수량이 0 이하입니다. 보유량: {holding_quantity}, 임시주문량: {max(temp_order_quantity, portfolio_temp_order_quantity)}. 전략 처리 건너뜀.", "INFO")
             return
+
+        # 트레일링 스탑 활성화 조건 검사 (다른 매도 조건보다 먼저 실행될 수 있도록 배치)
+        if holding_quantity > 0 and not stock_info.is_trailing_stop_active:
+            activation_price = avg_buy_price * (1 + self.settings.trailing_stop_activation_profit_rate / 100.0)
+            if current_price >= activation_price:
+                stock_info.is_trailing_stop_active = True
+                # 활성화 시점의 현재가를 매수 후 최고가로 설정하여 즉시 트레일링 스탑 감시 시작
+                stock_info.current_high_price_after_buy = current_price 
+                self.log(f"{TradeColors.TRAILING}📈 [{code}] 트레일링 스탑 활성화됨. 현재가({current_price:.2f}) >= 활성화가({activation_price:.2f}). 활성화 후 기준 고점: {stock_info.current_high_price_after_buy:.2f}{TradeColors.RESET}", "INFO")
             
         # 손절 조건 검사 (priority 1) - 실제 가용 수량 전달
         if self._check_and_execute_stop_loss(code, stock_info, current_price, avg_buy_price, available_quantity):
@@ -1278,13 +1287,15 @@ class TradingStrategy(QObject):
                         "order_type": "매수",
                         "code": code,
                         "stock_name": stock_info.stock_name,
-                        "quantity": order_quantity,
+                        "order_qty": order_quantity, # Original total quantity
+                        "quantity": order_quantity, # For compatibility if other parts use 'quantity'
                         "price": current_price,  # 주문 시점의 현재가 (참고용)
                         "order_price": order_price,  # 실제 주문 가격 (지정가 주문 시 사용)
                         "order_time": order_time,
                         "status": "접수",
-                        "filled_quantity": 0,
-                        "remaining_quantity": order_quantity,
+                        "filled_quantity": 0, # This might be redundant if using last_known_unfilled_qty logic fully
+                        "remaining_quantity": order_quantity, # This will be updated by chejan
+                        "last_known_unfilled_qty": order_quantity, # Initialize here
                         "filled_price": 0,
                         "order_no": "",  # 접수 후 체결 데이터에서 업데이트
                         "api_order_type": order_type,
@@ -1394,8 +1405,9 @@ class TradingStrategy(QObject):
                 'code': pure_code,
                 'stock_name': stock_info.stock_name,
                 'order_type': '매도',
-                'order_qty': sell_quantity,
-                'unfilled_qty': sell_quantity, 
+                'order_qty': sell_quantity, # Original total quantity for this order
+                'unfilled_qty': sell_quantity, # Initial unfilled quantity
+                'last_known_unfilled_qty': sell_quantity, # Initialize here
                 'order_price': price_to_order,
                 'order_status': '접수요청', 
                 'timestamp': get_current_time_str(),
@@ -2092,10 +2104,22 @@ class TradingStrategy(QObject):
 
         if total_filled_qty > 0: # 누적 체결량이 0보다 크면 (부분 또는 전체 체결)
             last_filled_price = self._safe_to_float(chejan_data.get("10")) # 체결가 FID
-            # 🔧 핵심 수정: 미체결량 기반으로 실제 이번 체결량 계산 (FID 911 사용 중단)
-            previous_unfilled_qty = active_order_entry_ref.get('unfilled_qty', original_order_qty)  # 이전 미체결량
-            current_unfilled_qty = unfilled_qty  # 현재 미체결량 (FID 902)
-            last_filled_qty = previous_unfilled_qty - current_unfilled_qty  # 실제 이번 체결량
+            
+            # 🔧 핵심 수정: last_filled_qty 계산 로직 변경
+            current_unfilled_qty_from_chejan = self._safe_to_int(chejan_data.get("902")) # FID 902
+            
+            # Get the original order quantity for fallback if 'last_known_unfilled_qty' is somehow missing
+            original_order_qty_from_ref = active_order_entry_ref.get('order_qty', 0) 
+            
+            previous_unfilled_qty_for_calc = active_order_entry_ref.get('last_known_unfilled_qty', original_order_qty_from_ref)
+            
+            last_filled_qty = previous_unfilled_qty_for_calc - current_unfilled_qty_from_chejan
+            
+            # Update last_known_unfilled_qty for the next event
+            active_order_entry_ref['last_known_unfilled_qty'] = current_unfilled_qty_from_chejan
+            
+            # The line active_order_entry_ref['unfilled_qty'] = unfilled_qty can remain for general info
+            # active_order_entry_ref['unfilled_qty'] = current_unfilled_qty_from_chejan # This is fine, already done a few lines above: active_order_entry_ref['unfilled_qty'] = unfilled_qty
 
             if last_filled_qty > 0: # 이번 체결 이벤트에서 실제 체결된 수량이 있을 경우
                 trade_type = active_order_entry_ref['order_type'] # '매수' 또는 '매도'
