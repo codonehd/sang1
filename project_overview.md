@@ -222,6 +222,33 @@
     * 첫 번째 매수 체결 시에만 `buy_completion_count` 증가하도록 로직 수정
     * 매수 체결 후 고점 업데이트 로직 추가
 
+### 7.3. 키움증권 API FID 사용 시 주의사항 ⚠️
+
+**🚨 중요: 체결량 관련 FID 사용 시 주의사항**
+
+*   **FID 901 (체결누계수량) - 존재하지 않음:**
+    * 키움증권 공식 문서에서 FID 901은 존재하지 않는 것으로 확인됨
+    * 일부 예제나 비공식 문서에서 언급되지만 실제로는 사용 불가
+
+*   **FID 911 (금일체결수량) - 치명적 버그 존재:**
+    * **문제 상황**: 부분체결의 마지막 체결 시 이번 체결량이 아닌 전체 주문량을 반환
+    * **예시**: 1000주 주문에서 300 + 300 + 400으로 체결될 때
+      - 1차 체결: FID 911 = 300 (정상)
+      - 2차 체결: FID 911 = 300 (정상)  
+      - 3차 체결: FID 911 = 1000 (버그! 400이어야 하나 전체 주문량 반환)
+    * **결과**: 포트폴리오 보유량이 300 + 300 + 1000 = 1600주로 중복 집계됨
+    * **해결책**: FID 902(미체결수량) 기반 차분 계산 방식 사용
+
+*   **권장 방식 - 미체결수량 기반 차분 계산:**
+    ```python
+    # 현재 사용 중인 안전한 방식
+    previous_unfilled_qty = active_order_entry_ref.get('unfilled_qty', original_order_qty)
+    current_unfilled_qty = unfilled_qty  # FID 902
+    last_filled_qty = previous_unfilled_qty - current_unfilled_qty
+    ```
+
+**⚠️ 주의**: FID 911 사용 시 부분체결 환경에서 포트폴리오 중복 집계 문제가 발생할 수 있으므로 사용을 금지하고 있음. 차후 키움증권에서 해당 버그가 수정될 때까지는 미체결수량 기반 차분 계산 방식을 유지할 것.
+
 ## 8. 향후 개선 방향 (제안)
 
 *   **GUI 구현:** 현재 콘솔 기반 프로그램에 PyQt5 등을 활용한 GUI를 추가하여 사용자 편의성 증대.
@@ -317,5 +344,153 @@
 
 **결론**: 사용자 추정이 정확함. 상태 플래그만으로는 중복 매수 방지 불충분하며, 포트폴리오 확인이 주 방어선이나 `buy_completion_count` 로직 결함으로 인해 다중 방어 시스템에 취약점 존재.
 
+### 9.3. 중복 매수 문제 해결 진행사항 (2024년 12월)
+
+#### 9.3.1. StockTrackingData 접근 실패 근본 원인 발견
+
+**🔍 핵심 발견**: 사용자가 관찰한 "StockTrackingData가 작동에 실패했다"는 로그가 중복 매수의 **직접적 원인**임을 확인
+
+**문제 위치**: `process_strategy` 메서드 (라인 1037-1046)
+```python
+def process_strategy(self, code):
+    stock_info = self.watchlist.get(code)
+    if not stock_info:
+        # ⚠️ 여기서 early return되면 모든 매수 방지 로직이 우회됨!
+        self.log(f"[ProcessStrategy] 관심종목 목록에 없는 종목({code})의 전략 실행 요청이 무시됨", "DEBUG")
+        return
+    # ... 실제 매수 방지 로직들 (1차, 2차, 3차 방어선 모두 위치)
+```
+
+**치명적 결과**: 
+- StockTrackingData 접근 실패 시 **모든 매수 방지 로직(1차, 2차, 3차 방어선) 우회**
+- 이미 매수 완료된 종목도 매수 조건 충족 시마다 계속 매수 실행
+- 044490 종목 4회 중복 매수 사례 등의 직접적 원인
+
+#### 9.3.2. StockTrackingData 실패 근본 원인 분석
+
+**🔧 종목코드 정규화 불일치 문제 발견**:
+
+1. **체결 데이터 처리** (`on_chejan_data_received`, 라인 1934):
+   ```python
+   # ❌ 이전: 단순 'A' 제거
+   code = code_raw
+   if code.startswith('A') and len(code) > 1:
+       code = code[1:]  # A 제거
+   ```
+
+2. **전략 처리** (`process_strategy`, 라인 1042):
+   ```python
+   # ✅ _normalize_stock_code 함수 사용
+   normalized_code = self._normalize_stock_code(code)
+   stock_info = self.watchlist.get(code)
+   if not stock_info and code != normalized_code:
+       stock_info = self.watchlist.get(normalized_code)
+   ```
+
+**결과**: 동일 종목이지만 정규화 방식 차이로 매칭 실패 → StockTrackingData 접근 불가
+
+#### 9.3.3. 적용된 근본 해결책
+
+**🛠️ 1단계: 종목코드 정규화 로직 통일**
+- `on_chejan_data_received`에서 `_normalize_stock_code()` 함수 사용으로 변경
+- `add_to_watchlist`에서도 입력 코드 정규화 후 저장
+- 모든 곳에서 동일한 정규화 로직 적용으로 일관성 확보
+
+**🛡️ 2단계: 추가 안전장치 구현**
+- StockTrackingData 검색 실패 시 상세 로깅 추가
+- 백업 검색: 정규화 실패 시 원본 코드로도 검색 시도
+- 자동 복구: 불일치 발견 시 적절한 코드로 자동 전환
+
+**📊 3단계: 상세 추적 시스템 구현**
+```python
+# 새로 추가된 로깅 시스템
+if not stock_info and code:
+    self.log(f"[STOCKDATA_SEARCH_FAIL] 체결 데이터 처리 중 StockTrackingData 검색 실패", "WARNING")
+    self.log(f"  - 원본 코드: '{code_raw}', 정규화된 코드: '{code}'", "WARNING") 
+    self.log(f"  - 현재 watchlist 종목들: {list(self.watchlist.keys())}", "WARNING")
+    
+    # 백업 검색 및 자동 복구
+    if code_raw != code:
+        stock_info = self.watchlist.get(code_raw)
+        if stock_info:
+            self.log(f"  - 원본 코드('{code_raw}')로 StockTrackingData 발견! 정규화 불일치 문제 확인됨", "CRITICAL")
+            code = code_raw  # 발견된 코드로 업데이트
+```
+
+#### 9.3.4. 기존 Fallback 로직의 위치와 역할
+
+**🚨 중요**: 이전에 추가된 Fallback 로직은 **안전장치**로 유지하되, 근본 원인 해결이 우선
+
+```python
+# process_strategy 내 추가된 Fallback 로직 (안전장치)
+if not stock_info:
+    # 🔧 Step 1: watchlist 자동 복구 시도
+    recovered_stock_info = self._recover_missing_stock_from_portfolio(code)
+    if recovered_stock_info:
+        stock_info = recovered_stock_info
+    else:
+        # 🔧 Step 2: 포트폴리오 직접 확인 (중복 매수 방지)
+        for check_code in [code, normalized_code]:
+            if check_code in self.account_state.portfolio:
+                holding_quantity = self._safe_to_int(self.account_state.portfolio[check_code].get('보유수량', 0))
+                if holding_quantity > 0:
+                    self.log(f"[EMERGENCY_STOP] {code}({check_code}): StockTrackingData 없지만 포트폴리오에 {holding_quantity}주 보유. 중복 매수 차단!", "CRITICAL")
+                    return  # 추가 매수 차단
+```
+
+#### 9.3.5. 해결 효과 및 검증 방법
+
+**✅ 예상 효과**:
+1. **StockTrackingData 실패 자체가 발생하지 않음** (근본 원인 해결)
+2. 만약 예외적으로 실패하더라도 Fallback 로직으로 중복 매수 차단
+3. 상세 로깅으로 향후 유사 문제 즉시 추적 가능
+
+**🔍 검증 방법**:
+- 로그에서 `[STOCKDATA_SEARCH_FAIL]` 메시지 모니터링
+- `[EMERGENCY_STOP]` 메시지로 Fallback 작동 여부 확인
+- `[STOCKDATA_FOUND]` vs `[STOCKDATA_NOT_FOUND]` 비율 추적
+
+#### 9.3.6. Mock 환경 테스트 진행사항
+
+**🧪 Mock 환경 개선 작업**:
+- MockKiwoomAPI에서 실제 매수 주문 실행 가능하도록 수정
+- 계좌 정보 및 파라미터 설정 보완 
+- 여러 코드 오류 및 파라미터 불일치 문제 해결
+- 중복 매수 문제 재현을 위한 포괄적 테스트 시나리오 생성
+
+**✅ 테스트 결과**:
+- 개선된 Mock 환경에서 매수 주문 실행 성공
+- 체결 시뮬레이션 처리 확인
+- 포트폴리오 정보 업데이트 정상 작동
+- **중복 매수 방지 시스템이 테스트에서는 정상 작동 확인**
+- 2차 방어선(buy_completion_count 확인)이 올바르게 작동
+
+#### 9.3.7. 매수 체결 완료 횟수 로직 검증
+
+**✅ 사용자 지적사항 검증 완료**:
+- **종목별로 매수가 체결되었을 때 (완전체결시에만) 매매 횟수가 1회 카운팅**되는 것이 정확히 구현되어 있음을 확인
+- `buy_completion_count`는 체결 완료 시에만 증가하며, 이 카운트가 최대치 도달 시 더 이상 매수 시도하지 않도록 정확히 구현됨
+
+**📍 코드 위치 확인**:
+```python
+# _handle_order_execution_report에서 첫 번째 매수 체결시에만 증가
+if stock_info.strategy_state != TradingState.BOUGHT:
+    stock_info.buy_completion_count += 1
+    
+# execute_buy에서 최대 횟수 확인
+if stock_info.buy_completion_count >= self.settings.max_buy_attempts_per_stock:
+    stock_info.strategy_state = TradingState.COMPLETE
+    return False
+```
+
+#### 9.3.8. 최종 접근 방식 전환
+
+**🔄 접근 방식 변경**:
+- **이전**: 증상 위주 수정 (Fallback 로직 위주)
+- **현재**: 근본 원인 해결 (종목코드 정규화 통일) + 안전장치 병행
+- **결과**: StockTrackingData 실패 자체를 방지하여 모든 매수 방지 로직이 정상 작동하도록 보장
+
+**⚠️ 중요**: Fallback 로직은 예외 상황 대비 안전장치로 유지하되, **실패하지 않도록 수정하는 것이 올바른 접근**임을 확인
+
 ---
-*이 섹션은 2024년 12월 현재 AI 어시스턴트의 프로그램 파악 수준을 기록한 것으로, 향후 협업 효율성 향상을 위해 지속적으로 업데이트될 예정입니다.*
+*이 섹션은 2024년 12월 현재 AI 어시스턴트의 프로그램 파악 수준과 중복 매수 문제 해결 진행사항을 기록한 것으로, 향후 협업 효율성 향상을 위해 지속적으로 업데이트될 예정입니다.*

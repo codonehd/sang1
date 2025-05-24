@@ -1,12 +1,12 @@
 {
-  "daily_buy_executed_count": 3,
-  "today_date_for_buy_limit": "2025-05-23",
+  "daily_buy_executed_count": 0,
+  "today_date_for_buy_limit": "2025-05-24",
   "trading_status": {},
   "watchlist": {
     "384470": {
       "code": "384470",
       "stock_name": "코어라인소프트",
-      "current_price": 7580.0,
+      "current_price": 0.0,
       "yesterday_close_price": 7550.0,
       "strategy_state": "WAITING",
       "avg_buy_price": 0.0,
@@ -20,7 +20,7 @@
     "330350": {
       "code": "330350",
       "stock_name": "위더스제약",
-      "current_price": 9530.0,
+      "current_price": 0.0,
       "yesterday_close_price": 8300.0,
       "strategy_state": "WAITING",
       "avg_buy_price": 0.0,
@@ -34,12 +34,12 @@
     "464080": {
       "code": "464080",
       "stock_name": "에스오에스랩",
-      "current_price": 14020.0,
+      "current_price": 0.0,
       "yesterday_close_price": 13850.0,
       "strategy_state": "BOUGHT",
       "avg_buy_price": 0.0,
       "total_buy_quantity": 0,
-      "current_high_price_after_buy": 14040.0,
+      "current_high_price_after_buy": 0.0,
       "is_trailing_stop_active": false,
       "trailing_stop_partially_sold": false,
       "partial_take_profit_executed": false,
@@ -48,7 +48,7 @@
     "481070": {
       "code": "481070",
       "stock_name": "에이유브랜즈",
-      "current_price": 15820.0,
+      "current_price": 0.0,
       "yesterday_close_price": 16000.0,
       "strategy_state": "WAITING",
       "avg_buy_price": 0.0,
@@ -72,5 +72,5 @@
     "손실금액": 0
   },
   "last_snapshot_date": "2025-05-22",
-  "saved_datetime": "2025-05-23 12:39:57"
+  "saved_datetime": "2025-05-24 11:02:44"
 }

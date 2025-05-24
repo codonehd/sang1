@@ -16,35 +16,40 @@
         ]
       },
       "sequential-thinking": {
-        "command": "npx",
+        "command": "cmd",
         "args": [
+          "/c",
+          "npx",
           "-y",
           "@modelcontextprotocol/server-sequential-thinking"
         ]
       },
       "terminal": {
-        "command": "npx",
+        "command": "cmd",
         "args": [
+          "/c",
+          "npx",
           "-y",
           "@dillip285/mcp-terminal"
         ]
       },
       "mcp-youtube": {
-        "command": "npx",
+        "command": "cmd",
         "args": [
+          "/c",
+          "npx",
+          "-y",
           "@anaisbetts/mcp-youtube"
         ]
       },
       "filesystem": {
-          "command": "npx",
+          "command": "cmd",
           "args": [
+            "/c",
+            "npx",
             "-y",
             "@modelcontextprotocol/server-filesystem",
-            "C:\\python",
-            "C:\\python\\sang1",
-            "C:\\python\\sang1\\tests",
-            "C:\\python\\sang1\\logs",
-            "C:\\Users\\suko\\AppData\\Local\\Programs\\cursor"
+            "C:\\python"
           ]
       },
       "context7": {

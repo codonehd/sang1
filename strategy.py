@@ -133,6 +133,47 @@ class TradingStrategy(QObject):
             return float(cleaned_value)
         except (ValueError, TypeError):
             return default
+    
+    def _normalize_stock_code(self, code):
+        """종목코드를 일관된 형태로 정규화"""
+        if not code:
+            return ""
+        normalized = str(code).strip()
+        if normalized.startswith('A') and len(normalized) > 1:
+            normalized = normalized[1:]
+        return normalized
+    
+    def _recover_missing_stock_from_portfolio(self, code):
+        """포트폴리오에 있지만 watchlist에 없는 종목을 자동 복구"""
+        normalized_code = self._normalize_stock_code(code)
+        
+        # 원본 코드와 정규화된 코드 모두 확인
+        for check_code in [code, normalized_code]:
+            if check_code in self.account_state.portfolio and check_code not in self.watchlist:
+                portfolio_item = self.account_state.portfolio[check_code]
+                stock_name = portfolio_item.get('stock_name', check_code)
+                
+                # watchlist에 다시 추가
+                self.add_to_watchlist(check_code, stock_name, yesterday_close_price=0.0)
+                
+                # 보유 상태로 복구
+                stock_info = self.watchlist[check_code]
+                stock_info.strategy_state = TradingState.BOUGHT
+                stock_info.avg_buy_price = self._safe_to_float(portfolio_item.get('매입가'))
+                stock_info.total_buy_quantity = self._safe_to_int(portfolio_item.get('보유수량'))
+                stock_info.buy_timestamp = datetime.now()  # 정확한 시간은 알 수 없으므로 현재 시간으로 설정
+                
+                # trading_status에도 상태 저장
+                self.account_state.trading_status[check_code] = {
+                    'status': TradingState.BOUGHT,
+                    'bought_price': stock_info.avg_buy_price,
+                    'bought_quantity': stock_info.total_buy_quantity,
+                    'bought_time': stock_info.buy_timestamp
+                }
+                
+                self.log(f"[AUTO_RECOVERY] {check_code} ({stock_name}) watchlist 자동 복구 완료", "WARNING")
+                return stock_info
+        return None
 
     def __init__(self, kiwoom_api, config_manager, logger, db_manager, screen_manager=None):
         super().__init__()
@@ -624,6 +665,12 @@ class TradingStrategy(QObject):
     #     pass
 
     def add_to_watchlist(self, code, stock_name, yesterday_close_price=0.0): # yesterday_close_price 추가
+        # 🔧 핵심 수정: 입력된 코드 정규화 후 저장
+        normalized_code = self._normalize_stock_code(code)
+        if normalized_code != code:
+            self.log(f"[WATCHLIST_NORMALIZE] 종목코드 정규화: '{code}' -> '{normalized_code}'", "INFO")
+            code = normalized_code
+        
         self.log(f"[WATCHLIST_ADD_START] 관심종목 추가/업데이트 시작: 코드({code}), 이름({stock_name}), 설정된 전일종가({yesterday_close_price})", "DEBUG")
         
         safe_yesterday_cp = self._safe_to_float(yesterday_close_price)
@@ -1047,11 +1094,35 @@ class TradingStrategy(QObject):
 
     def process_strategy(self, code):
         """코드 전략을 실행합니다."""
-        # watchlist에 없는 종목 처리
+        # 정규화된 코드로 검색 시도 (종목코드 일관성 확보)
+        normalized_code = self._normalize_stock_code(code)
         stock_info = self.watchlist.get(code)
+        
+        # 원본 코드로 찾지 못하면 정규화된 코드로 시도
+        if not stock_info and code != normalized_code:
+            stock_info = self.watchlist.get(normalized_code)
+            if stock_info:
+                self.log(f"[CODE_NORMALIZE] {code} -> {normalized_code}로 정규화하여 StockTrackingData 찾음", "WARNING")
+        
         if not stock_info:
-            # self.log(f"[ProcessStrategy] 관심종목 목록에 없는 종목({code})의 전략 실행 요청이 무시됨", "DEBUG")
-            return
+            # 🔧 Step 1: watchlist 자동 복구 시도 (포트폴리오에 있는 경우)
+            recovered_stock_info = self._recover_missing_stock_from_portfolio(code)
+            if recovered_stock_info:
+                # 복구 성공 시 복구된 stock_info로 계속 진행
+                stock_info = recovered_stock_info
+                code = recovered_stock_info.code  # 정규화된 코드로 업데이트될 수 있음
+            else:
+                # 🔧 Step 2: 복구 실패 시 포트폴리오 직접 확인 (중복 매수 방지)
+                for check_code in [code, normalized_code]:
+                    if check_code in self.account_state.portfolio:
+                        holding_quantity = self._safe_to_int(self.account_state.portfolio[check_code].get('보유수량', 0))
+                        if holding_quantity > 0:
+                            self.log(f"[EMERGENCY_STOP] {code}({check_code}): StockTrackingData 없지만 포트폴리오에 {holding_quantity}주 보유. 중복 매수 차단!", "CRITICAL")
+                            return  # 추가 매수 차단
+                
+                # watchlist에 없고 포트폴리오에도 없으면 정상적으로 무시
+                self.log(f"[ProcessStrategy] 관심종목 목록에 없는 종목({code})의 전략 실행 요청이 무시됨", "DEBUG")
+                return
 
         # 현재가 확인
         current_price = stock_info.current_price
@@ -1868,20 +1939,38 @@ class TradingStrategy(QObject):
         # 처리 전 중요 필드 로깅
         self.log(f"체결 처리 시작 - 종목코드: {code_raw}, 주문번호: {api_order_no}, 상태: {order_status}, 체결량: {filled_qty}, 체결가: {filled_price}, 주문구분: {order_type_fid}", "INFO")
         
-        code = code_raw
-        if code.startswith('A') and len(code) > 1: # 'A' 접두사 제거 ('A'만 있는 경우 제외)
-            code = code[1:]
-        elif not code: # 종목코드가 비어있는 경우
-            self.log(f"체결 데이터에서 종목코드(FID 9001)를 얻지 못했습니다. Gubun: {gubun}, ChejanData: {chejan_data}", "ERROR")
+        # 🔧 핵심 수정: 모든 곳에서 동일한 정규화 로직 사용
+        code = self._normalize_stock_code(code_raw)
+        if not code: # 종목코드가 비어있는 경우
+            self.log(f"체결 데이터에서 종목코드(FID 9001)를 얻지 못했습니다. 원본: '{code_raw}', 정규화: '{code}', Gubun: {gubun}", "ERROR")
             # 다른 로직에서 이 code를 사용할 경우 문제가 될 수 있으므로, 여기서 처리를 중단하거나 기본값 설정 필요.
             # 여기서는 일단 진행하되, _find_active_order_rq_name_key 등에서 code가 비어있으면 실패할 것임.
             pass # code는 빈 문자열로 유지
 
-        stock_info = self.watchlist.get(code) if code else None # code가 비어있으면 stock_info도 None
+        stock_info = self.watchlist.get(code) if code else None
+        
+        # 🔧 추가: StockTrackingData 검색 실패 시 상세 로깅
+        if not stock_info and code:
+            self.log(f"[STOCKDATA_SEARCH_FAIL] 체결 데이터 처리 중 StockTrackingData 검색 실패", "WARNING")
+            self.log(f"  - 원본 코드: '{code_raw}', 정규화된 코드: '{code}'", "WARNING") 
+            self.log(f"  - 현재 watchlist 종목들: {list(self.watchlist.keys())}", "WARNING")
+            
+            # 백업 검색: 원본 코드로도 시도
+            if code_raw != code:
+                stock_info = self.watchlist.get(code_raw)
+                if stock_info:
+                    self.log(f"  - 원본 코드('{code_raw}')로 StockTrackingData 발견! 정규화 불일치 문제 확인됨", "CRITICAL")
+                    code = code_raw  # 발견된 코드로 업데이트 # code가 비어있으면 stock_info도 None
         
         # 종목명 우선순위: 1. watchlist의 stock_name, 2. FID 302의 종목명, 3. 그냥 code (비어있을수도)
         stock_name = stock_info.stock_name if stock_info and stock_info.stock_name else \
                      (stock_name_fid if stock_name_fid else (code if code else "종목코드없음"))
+        
+        # 🔧 StockTrackingData 발견 여부 로깅
+        if stock_info:
+            self.log(f"[STOCKDATA_FOUND] '{stock_name}'({code}) StockTrackingData 정상 접근 (상태: {stock_info.strategy_state.name})", "DEBUG")
+        else:
+            self.log(f"[STOCKDATA_NOT_FOUND] '{stock_name}'({code}) StockTrackingData 접근 실패 - 백업 처리 또는 무시", "WARNING")
 
         # _find_active_order_entry 대신 _find_active_order_rq_name_key 사용
         # 이 함수는 self.account_state.active_orders의 '키' (즉, rq_name)를 반환함.
@@ -2049,12 +2138,7 @@ class TradingStrategy(QObject):
                         stock_info.temp_order_quantity = new_stock_temp_qty
                         self.log(f"[{code}] 매수 부분 체결로 StockTrackingData 임시 주문 수량 감소: {old_stock_temp_qty} -> {new_stock_temp_qty} (체결량: {last_filled_qty})", "INFO")
                     
-                    # 첫 번째 매수 체결인 경우에만 buy_completion_count 증가
-                    if stock_info.strategy_state != TradingState.BOUGHT:
-                        stock_info.buy_completion_count += 1
-                        self.log(f"[{code}] 첫 매수 체결 시 buy_completion_count 증가: {stock_info.buy_completion_count}", "INFO")
-                    
-                    # 매수 체결 시 현재가를 기준으로 고점 초기화
+                                        # 첫 번째 매수 체결인 경우에만 buy_completion_count 증가                    if stock_info.strategy_state != TradingState.BOUGHT:                        stock_info.buy_completion_count += 1                        self.log(f"[{code}] 첫 매수 체결 시 buy_completion_count 증가: {stock_info.buy_completion_count}", "INFO")                                                # 🔧 중요: 매수 체결 시 상태를 BOUGHT로 변경 (누락된 핵심 코드)                        stock_info.strategy_state = TradingState.BOUGHT                        stock_info.buy_timestamp = datetime.now()                        self.log(f"[{code}] 매수 체결 완료 - 상태 변경: WAITING → BOUGHT", "IMPORTANT")                                                # trading_status에도 상태 저장                        self.account_state.trading_status[code] = {                            'status': TradingState.BOUGHT,                            'bought_price': stock_info.avg_buy_price if stock_info.avg_buy_price > 0 else last_filled_price,                            'bought_quantity': stock_info.total_buy_quantity if stock_info.total_buy_quantity > 0 else last_filled_qty,                            'bought_time': stock_info.buy_timestamp                        }                                            # 매수 체결 시 현재가를 기준으로 고점 초기화
                     if stock_info.current_high_price_after_buy < stock_info.current_price:
                         stock_info.current_high_price_after_buy = stock_info.current_price
                         self.log(f"[{code}] 매수 체결 후 고점 업데이트: {stock_info.current_high_price_after_buy}", "DEBUG")
@@ -2573,7 +2657,7 @@ class TradingStrategy(QObject):
         initial_portfolio = test_params.get("initial_portfolio")
         if initial_portfolio:
             self.account_state.portfolio[code] = copy.deepcopy(initial_portfolio)
-            stock_info.strategy_state = TradingState.BOUGHT 
+            stock_info.strategy_state = TradingState.BOUGHT
             stock_info.avg_buy_price = self._safe_to_float(initial_portfolio.get('매입가'))
             stock_info.total_buy_quantity = self._safe_to_int(initial_portfolio.get('보유수량'))
             stock_info.current_high_price_after_buy = stock_info.avg_buy_price 
@@ -2604,7 +2688,7 @@ class TradingStrategy(QObject):
                             stock_info.buy_timestamp = datetime.now() - timedelta(hours=hours_ago)
                         else: # "now-"만 있는 경우 또는 잘못된 형식
                             self.log(f"buy_timestamp_str 형식 오류 ('now-'): {ts_str}. 현재 시간으로 설정.", "ERROR")
-                            stock_info.buy_timestamp = datetime.now()
+                        stock_info.buy_timestamp = datetime.now()
                     else:
                          stock_info.buy_timestamp = datetime.strptime(ts_str, "%Y-%m-%d %H:%M:%S")
                 except Exception as e:
@@ -2887,10 +2971,10 @@ class TradingStrategy(QObject):
                             stock_info.strategy_state = TradingState.BOUGHT
                             stock_info.avg_buy_price = self._safe_to_float(self.account_state.portfolio[code].get('매입가', 0))
                             stock_info.total_buy_quantity = self._safe_to_int(self.account_state.portfolio[code].get('보유수량', 0))
-                            
-                            # trading_status에도 상태 저장
-                            self.account_state.trading_status[code] = {
-                                'status': TradingState.BOUGHT,
+                        
+                        # trading_status에도 상태 저장
+                        self.account_state.trading_status[code] = {
+                            'status': TradingState.BOUGHT,
                                 'bought_price': stock_info.avg_buy_price,
                                 'bought_quantity': stock_info.total_buy_quantity,
                                 'bought_time': stock_info.buy_timestamp or current_time
