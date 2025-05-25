@@ -676,7 +676,7 @@ class TradingStrategy(QObject):
         
         self.log(f"[WATCHLIST_ADD_START] 관심종목 추가/업데이트 시작: 코드({code}), 이름({stock_name}), 설정된 전일종가({yesterday_close_price})", "DEBUG")
         
-        safe_yesterday_cp = self._safe_to_float(yesterday_close_price)
+        safe_yesterday_cp = _safe_to_float(yesterday_close_price)
 
         if code not in self.watchlist: # 정규화된 코드로 확인
             self.watchlist[code] = StockTrackingData( # 정규화된 코드를 키로 사용

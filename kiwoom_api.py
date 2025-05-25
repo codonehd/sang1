@@ -341,7 +341,7 @@ class KiwoomAPI(QObject):
                     current_inputs["종목코드"] = final_stock_code
                     self.log(f"[KiwoomAPI] ATS 종목코드 자동 조정: TR='{tr_code}', 원본코드='{original_stock_code_from_inputs}', 조정코드='{final_stock_code}', 최종 사용 컨텍스트 추정='{market_for_code if market_for_code else DEFAULT_MARKET_CONTEXT}'", "DEBUG")
 
-            if tr_code in TR_MARKET_PARAM_CONFIG:
+            if tr_code in ats_utils.TR_MARKET_PARAM_CONFIG:
                 param_name, param_value = self._get_api_market_param_value(tr_code, market_context if market_context else (market_for_code if market_for_code else DEFAULT_MARKET_CONTEXT))
                 if param_name and param_value is not None:
                     current_inputs[param_name] = param_value
