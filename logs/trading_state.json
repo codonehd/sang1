@@ -1,27 +1,34 @@
 {
-  "daily_buy_executed_count": 1,
+  "daily_buy_executed_count": 2,
   "today_date_for_buy_limit": "2025-05-27",
-  "trading_status": {},
+  "trading_status": {
+    "226950": {
+      "status": "BOUGHT",
+      "bought_price": 51100.0,
+      "bought_quantity": 19,
+      "bought_time": "2025-05-27 12:58:27"
+    }
+  },
   "watchlist": {
-    "376180": {
-      "code": "376180",
-      "stock_name": "피코그램",
-      "current_price": 3190.0,
-      "yesterday_close_price": 3310.0,
-      "strategy_state": "WAITING",
+    "226950": {
+      "code": "226950",
+      "stock_name": "올릭스",
+      "current_price": 51400.0,
+      "yesterday_close_price": 51200.0,
+      "strategy_state": "BOUGHT",
       "avg_buy_price": 0.0,
       "total_buy_quantity": 0,
-      "current_high_price_after_buy": 0.0,
+      "current_high_price_after_buy": 51600.0,
       "is_trailing_stop_active": false,
       "trailing_stop_partially_sold": false,
       "partial_take_profit_executed": false,
-      "buy_completion_count": 0
+      "buy_completion_count": 1
     },
-    "126730": {
-      "code": "126730",
-      "stock_name": "코칩",
-      "current_price": 12580.0,
-      "yesterday_close_price": 13000.0,
+    "017510": {
+      "code": "017510",
+      "stock_name": "세명전기",
+      "current_price": 8050.0,
+      "yesterday_close_price": 7230.0,
       "strategy_state": "WAITING",
       "avg_buy_price": 0.0,
       "total_buy_quantity": 0,
@@ -44,5 +51,5 @@
     "손실금액": 0
   },
   "last_snapshot_date": "2025-05-22",
-  "saved_datetime": "2025-05-27 12:53:37"
+  "saved_datetime": "2025-05-27 14:07:59"
 }

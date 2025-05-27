@@ -2414,33 +2414,38 @@ class TradingStrategy(QObject):
                     # 손익 계산 및 로깅
                     if code in self.account_state.trading_status:
                         ts = self.account_state.trading_status[code]
-                        bought_price = ts.get('bought_price', 0)
-                        executed_price = _safe_to_float(chejan_data.get("10")) # 체결가 추가
-                        # 🔧 수정: 전량 체결이므로 원 주문 수량 사용 (FID 911 사용 중단)
-                        executed_qty = original_order_qty  # 전량 체결 시 전체 주문 수량
-                        profit_amount = (executed_price - bought_price) * executed_qty
-                        profit_rate = round((executed_price / bought_price - 1) * 100, 2) if bought_price > 0 else 0
-                        
-                        # 수익/손실에 따른 색상 구분
-                        profit_color = TradeColors.PROFIT if profit_amount > 0 else TradeColors.LOSS
-                        profit_emoji = "💰" if profit_amount > 0 else "📉"
-                        self.log(f"{profit_color}{profit_emoji} [매도 상세] 매도가: {executed_price}, 매수가: {bought_price}, 수익금: {profit_amount}원, 수익률: {profit_rate}%{TradeColors.RESET}")
-                        
-                        # 통계 업데이트
-                        self.account_state.trading_records['매도건수'] += 1
-                        self.account_state.trading_records['매도금액'] += executed_qty * executed_price
-                        self.account_state.trading_records['총손익금'] += profit_amount
-                        
-                        if profit_amount > 0:
-                            self.account_state.trading_records['이익건수'] += 1
-                            self.account_state.trading_records['이익금액'] += profit_amount
+                        if isinstance(ts, dict): # ts가 딕셔너리인지 확인
+                            bought_price = ts.get('bought_price', 0)
+                            executed_price = _safe_to_float(chejan_data.get("10")) # 체결가 추가
+                            # 🔧 수정: 전량 체결이므로 원 주문 수량 사용 (FID 911 사용 중단)
+                            executed_qty = original_order_qty  # 전량 체결 시 전체 주문 수량
+                            profit_amount = (executed_price - bought_price) * executed_qty
+                            profit_rate = round((executed_price / bought_price - 1) * 100, 2) if bought_price > 0 else 0
+                            
+                            # 수익/손실에 따른 색상 구분
+                            profit_color = TradeColors.PROFIT if profit_amount > 0 else TradeColors.LOSS
+                            profit_emoji = "💰" if profit_amount > 0 else "📉"
+                            self.log(f"{profit_color}{profit_emoji} [매도 상세] 매도가: {executed_price}, 매수가: {bought_price}, 수익금: {profit_amount}원, 수익률: {profit_rate}%{TradeColors.RESET}")
+                            
+                            # 통계 업데이트
+                            self.account_state.trading_records['매도건수'] += 1
+                            self.account_state.trading_records['매도금액'] += executed_qty * executed_price
+                            self.account_state.trading_records['총손익금'] += profit_amount
+                            
+                            if profit_amount > 0:
+                                self.account_state.trading_records['이익건수'] += 1
+                                self.account_state.trading_records['이익금액'] += profit_amount
+                            else:
+                                self.account_state.trading_records['손실건수'] += 1
+                                self.account_state.trading_records['손실금액'] += abs(profit_amount)
+                            
+                            # 매도된 종목의 상태를 SOLD로 변경 (Enum의 이름(문자열)을 사용)
+                            ts['status'] = TradingState.SOLD.name 
+                            self.log(f"[상태 업데이트] {code} ({stock_name}) 트레이딩 상태를 {TradingState.SOLD.name}으로 변경", "INFO")
                         else:
-                            self.account_state.trading_records['손실건수'] += 1
-                            self.account_state.trading_records['손실금액'] += abs(profit_amount)
-                        
-                        # 매도된 종목의 상태를 SOLD로 변경
-                        ts['status'] = TradingState.SOLD
-                        self.log(f"[상태 업데이트] {code} ({stock_name}) 트레이딩 상태를 SOLD로 변경", "INFO")
+                            self.log(f"[{code}] trading_status의 항목이 예상된 딕셔너리 형태가 아닙니다. 타입: {type(ts)}", "ERROR")
+                    else:
+                        self.log(f"[{code}] trading_status에 해당 종목 정보가 없어 상태를 SOLD로 변경할 수 없습니다.", "WARNING")
                     
                     # 포트폴리오 임시 주문 수량 초기화
                     portfolio_item = self.account_state.portfolio.get(code)
@@ -3119,6 +3124,34 @@ class TradingStrategy(QObject):
                         except (KeyError, ValueError):
                             pass
             
+            # trading_status 복원 (상태 문자열을 Enum으로 변환)
+            if hasattr(self, 'saved_trading_status') and self.saved_trading_status:
+                for code, saved_status_dict in self.saved_trading_status.items():
+                    if code in self.account_state.trading_status: # 이미 항목이 있다면 업데이트
+                        current_status_entry = self.account_state.trading_status[code]
+                    else: # 없다면 새로 생성
+                        current_status_entry = {}
+                        self.account_state.trading_status[code] = current_status_entry
+                    
+                    # 모든 키-값 쌍 복사
+                    for key, value in saved_status_dict.items():
+                        if key == 'status' and isinstance(value, str):
+                            try:
+                                current_status_entry[key] = TradingState[value]
+                                self.log(f"[{code}] trading_status의 'status'를 Enum으로 복원: {value} -> {current_status_entry[key]}", "DEBUG")
+                            except KeyError:
+                                self.log(f"[{code}] trading_status 복원 중 알 수 없는 상태 값({value})입니다. 문자열로 유지합니다.", "WARNING")
+                                current_status_entry[key] = value # 변환 실패 시 원본 문자열 유지
+                        elif key == 'bought_time' and isinstance(value, str):
+                            try:
+                                current_status_entry[key] = datetime.strptime(value, '%Y-%m-%d %H:%M:%S')
+                            except ValueError:
+                                self.log(f"[{code}] trading_status의 'bought_time'({value}) 복원 중 날짜 형식 오류. 문자열로 유지.", "WARNING")
+                                current_status_entry[key] = value
+                        else:
+                            current_status_entry[key] = value
+                    self.log(f"[{code}] trading_status 항목 복원/업데이트 완료: {current_status_entry}", "DEBUG")
+
             self.log("저장된 추가 상태 정보를 성공적으로 복원했습니다.", "INFO")
         except Exception as e:
             self.log(f"추가 상태 정보 복원 중 오류 발생: {e}", "ERROR")

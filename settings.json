@@ -32,8 +32,9 @@
     "watchlist": [
         
         
-        { "code": "376180", "name": "피코그램", "yesterday_close_price": 3310 },
-        { "code": "126730", "name": "코칩", "yesterday_close_price": 13000 }
+        { "code": "226950", "name": "올릭스", "yesterday_close_price": 51200 },
+        { "code": "017510", "name": "세명전기", "yesterday_close_price": 7230 }
+        
     ],
     "PeriodicStatusReport": {
         "enabled": true,
