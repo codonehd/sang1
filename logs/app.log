@@ -6706,3 +6706,222 @@
 2025-05-27 14:07:59,600 - AppLogger - INFO - logger:84 - [SIG_HANDLER] QApplication.quit() 호출 완료.
 2025-05-27 14:07:59,600 - AppLogger - INFO - logger:84 - [SIG_HANDLER] enhanced_signal_handler 실행 완료. 프로그램이 정상적으로 종료됩니다.
 2025-05-27 14:07:59,600 - AppLogger - INFO - logger:84 - [SIG_HANDLER] 프로세스 강제 종료 진행...
+2025-05-27 20:26:17,360 - AppLogger - INFO - logger:84 - 로깅 시스템 초기화 완료 (콘솔 및 파일 핸들러)
+2025-05-27 20:26:17,362 - AppLogger - INFO - logger:84 - Using settings file: settings.json
+2025-05-27 20:26:17,363 - AppLogger - INFO - logger:84 - 프로그램 시작 (콘솔 모드)
+2025-05-27 20:26:17,363 - AppLogger - DEBUG - logger:81 - ScreenManager 초기화 완료. 사용 가능 화면: 100개 (2000~2099)
+2025-05-27 20:26:17,364 - AppLogger - INFO - logger:84 - ScreenManager 단일 인스턴스 생성 완료
+2025-05-27 20:26:17,823 - AppLogger - INFO - logger:84 - Using settings file: settings.json
+2025-05-27 20:26:17,837 - AppLogger - INFO - logger:84 - 데이터베이스 (logs/trading_data.test.db) 초기화 성공
+2025-05-27 20:26:17,838 - AppLogger - INFO - logger:84 - 데이터베이스 초기화 완료
+2025-05-27 20:26:17,839 - AppLogger - INFO - logger:84 - [Strategy][2025-05-27 20:26:17] 계좌 유형 설정 로드: 실거래
+2025-05-27 20:26:17,839 - AppLogger - INFO - logger:84 - [Strategy][2025-05-27 20:26:17] 상태 파일 경로: logs\trading_state.json
+2025-05-27 20:26:17,840 - AppLogger - WARNING - logger:87 - [Strategy][2025-05-27 20:26:17] 전략 설정 로드 실패. 기본값으로 진행될 수 있습니다.
+2025-05-27 20:26:17,845 - AppLogger - INFO - logger:84 - [Strategy][2025-05-27 20:26:17] 장운영시간 초기화: 09:00:00 - 15:30:00
+2025-05-27 20:26:17,845 - AppLogger - INFO - logger:84 - [Strategy][2025-05-27 20:26:17] TradingStrategy 객체 생성 완료. 추가 초기화가 필요합니다.
+2025-05-27 20:26:17,845 - AppLogger - INFO - logger:84 - [Strategy][2025-05-27 20:26:17] 현재 계좌 유형(실거래)에 따른 수수료/세금율 로드: {'buy_fee_rate': 0.00015, 'sell_fee_rate': 0.00015, 'sell_tax_rate': 0.0025}
+2025-05-27 20:26:17,846 - AppLogger - INFO - logger:84 - 매매 전략 초기화 (KiwoomAPI 주입 전, ScreenManager 주입 완료)
+2025-05-27 20:26:17,846 - AppLogger - DEBUG - logger:81 - [KiwoomAPI] 키움 API 초기화 시작
+2025-05-27 20:26:17,877 - AppLogger - DEBUG - logger:81 - [KiwoomAPI] ScreenManager 초기화 완료 (외부 제공: True, OCX 전달됨)
+2025-05-27 20:26:17,877 - AppLogger - DEBUG - logger:81 - [KiwoomAPI] TR 요청 간격 설정됨: 기본 0.21초, 연속 1.0초
+2025-05-27 20:26:17,878 - AppLogger - DEBUG - logger:81 - [KiwoomAPI] 설정에서 계좌 비밀번호 로드: 비밀번호 없음
+2025-05-27 20:26:17,879 - AppLogger - INFO - logger:84 - KiwoomAPI 초기화 및 Strategy에 주입 완료
+2025-05-27 20:26:17,879 - AppLogger - INFO - logger:84 - 키움 API 로그인 시도
+2025-05-27 20:26:17,879 - AppLogger - INFO - logger:84 - [KiwoomAPI] 로그인 시도
+2025-05-27 20:26:27,289 - AppLogger - INFO - logger:84 - [KiwoomAPI] 로그인 성공 (이벤트 수신) - 연결 상태만 변경
+2025-05-27 20:26:27,292 - AppLogger - DEBUG - logger:81 - [KiwoomAPI] [LOGIN_DEBUG] Account list from API (raw): '8101891811;', Parsed list: ['8101891811']
+2025-05-27 20:26:27,293 - AppLogger - DEBUG - logger:81 - [KiwoomAPI] [LOGIN_DEBUG] Preferred account from config: '8101891811'
+2025-05-27 20:26:27,293 - AppLogger - DEBUG - logger:81 - [KiwoomAPI] [LOGIN_DEBUG] Using preferred account from settings: '8101891811'
+2025-05-27 20:26:27,294 - AppLogger - INFO - logger:84 - [KiwoomAPI] 로그인 성공. 계좌번호: 8101891811
+2025-05-27 20:26:27,294 - AppLogger - DEBUG - logger:81 - [Strategy][2025-05-27 20:26:27] [STRATEGY_LOGIN_DEBUG] _on_login_completed 호출됨. account_number_from_signal: '8101891811'
+2025-05-27 20:26:27,295 - AppLogger - INFO - logger:84 - [Strategy][2025-05-27 20:26:27] API로부터 계좌번호 수신: '8101891811'
+2025-05-27 20:26:27,295 - AppLogger - INFO - logger:84 - [Strategy][2025-05-27 20:26:27] 최종 계좌번호 설정(TradingStrategy & KiwoomAPI): '8101891811'. 계좌 정보 요청 시작.
+2025-05-27 20:26:27,298 - AppLogger - INFO - logger:84 - [Strategy][2025-05-27 20:26:27] 'logs\trading_state.json'에서 상태 정보를 로드했습니다. 저장 시간: 2025-05-27 14:07:59
+2025-05-27 20:26:27,299 - AppLogger - INFO - logger:84 - [Strategy][2025-05-27 20:26:27] 예수금 상세정보 요청 시작 (opw00001). 계좌번호: 8101891811
+2025-05-27 20:26:27,299 - AppLogger - INFO - logger:84 - [ScreenManager_GET] 새 화면 할당: Identifier='account_info' -> ScreenNo='2000'. 사용중: 1, 사용가능: 99
+2025-05-27 20:26:27,300 - AppLogger - DEBUG - logger:81 - [KiwoomAPI] [KiwoomAPI] comm_rq_data PARAMS CHECK: rq_name='예수금상세현황요청', tr_code='opw00001', input_values_override IS NOT None, market_context='None'
+2025-05-27 20:26:27,300 - AppLogger - DEBUG - logger:81 - [KiwoomAPI] [KiwoomAPI] comm_rq_data PARAMS CHECK: input_values_override CONTENT: {'계좌번호': '8101891811', '비밀번호': '', '비밀번호입력매체구분': '00', '조회구분': '2'}
+2025-05-27 20:26:27,301 - AppLogger - CRITICAL - logger:93 - [KiwoomAPI] [KiwoomAPI] comm_rq_data 호출 시작: RQName=예수금상세현황요청, TRCode=opw00001, PrevNext=0, ScreenNo=2000, OverrideInputs=True, MarketCtx=None
+2025-05-27 20:26:27,301 - AppLogger - DEBUG - logger:81 - [KiwoomAPI] [KiwoomAPI] CommRqData TR요청 시작: 예수금상세현황요청, opw00001, scr:2000
+2025-05-27 20:26:27,302 - AppLogger - DEBUG - logger:81 - [KiwoomAPI] [KiwoomAPI][CACHE_SETUP] RQName '예수금상세현황요청' 캐시 초기화/재초기화.
+2025-05-27 20:26:27,302 - AppLogger - DEBUG - logger:81 - [KiwoomAPI] [KiwoomAPI][CACHE_SETUP_SUCCESS] RQName: '예수금상세현황요청' 캐시 업데이트 완료 (status: pending_api_call).
+2025-05-27 20:26:27,303 - AppLogger - DEBUG - logger:81 - [KiwoomAPI] [KiwoomAPI] [CommRqData_INPUT_PREP] 최종 입력값 설정 전: {'계좌번호': '8101891811', '비밀번호': '', '비밀번호입력매체구분': '00', '조회구분': '2'}
+2025-05-27 20:26:27,303 - AppLogger - DEBUG - logger:81 - [KiwoomAPI] [KiwoomAPI] [CommRqData_INPUT_FINAL] 최종 입력값 API 전달: {'계좌번호': '8101891811', '비밀번호': '', '비밀번호입력매체구분': '00', '조회구분': '2'}
+2025-05-27 20:26:27,303 - AppLogger - DEBUG - logger:81 - [KiwoomAPI] [KiwoomAPI] SetInputValue: Key='계좌번호', Value='8101891811'
+2025-05-27 20:26:27,305 - AppLogger - DEBUG - logger:81 - [KiwoomAPI] [KiwoomAPI] SetInputValue: Key='비밀번호', Value=''
+2025-05-27 20:26:27,306 - AppLogger - DEBUG - logger:81 - [KiwoomAPI] [KiwoomAPI] SetInputValue: Key='비밀번호입력매체구분', Value='00'
+2025-05-27 20:26:27,306 - AppLogger - DEBUG - logger:81 - [KiwoomAPI] [KiwoomAPI] SetInputValue: Key='조회구분', Value='2'
+2025-05-27 20:26:27,307 - AppLogger - CRITICAL - logger:93 - [KiwoomAPI] [KiwoomAPI] [CommRqData_CALL] CommRqData 호출: RQName='예수금상세현황요청', TRCode='opw00001', PrevNext=0, ScreenNo='2000', ReturnCode=0
+2025-05-27 20:26:27,308 - AppLogger - DEBUG - logger:81 - [KiwoomAPI] [KiwoomAPI] CommRqData 요청 성공: RQName='예수금상세현황요청', TRCode='opw00001'. 데이터 수신 대기 중...
+2025-05-27 20:26:27,308 - AppLogger - DEBUG - logger:81 - [Strategy][2025-05-27 20:26:27] opw00001 TR 요청 전송 완료. 요청명: 예수금상세현황요청, 화면번호: 2000
+2025-05-27 20:26:27,308 - AppLogger - INFO - logger:84 - [Strategy][2025-05-27 20:26:27] 계좌 포트폴리오 정보 요청 시작 (opw00018). 계좌번호: 8101891811
+2025-05-27 20:26:27,309 - AppLogger - INFO - logger:84 - [ScreenManager_GET] 새 화면 할당: Identifier='portfolio_info' -> ScreenNo='2001'. 사용중: 2, 사용가능: 98
+2025-05-27 20:26:27,309 - AppLogger - DEBUG - logger:81 - [KiwoomAPI] [KiwoomAPI] comm_rq_data PARAMS CHECK: rq_name='계좌잔고조회_8101891811', tr_code='opw00018', input_values_override IS NOT None, market_context='None'
+2025-05-27 20:26:27,309 - AppLogger - DEBUG - logger:81 - [KiwoomAPI] [KiwoomAPI] comm_rq_data PARAMS CHECK: input_values_override CONTENT: {'계좌번호': '8101891811', '비밀번호': '', '비밀번호입력매체구분': '00', '조회구분': '1'}
+2025-05-27 20:26:27,310 - AppLogger - CRITICAL - logger:93 - [KiwoomAPI] [KiwoomAPI] comm_rq_data 호출 시작: RQName=계좌잔고조회_8101891811, TRCode=opw00018, PrevNext=0, ScreenNo=2001, OverrideInputs=True, MarketCtx=None
+2025-05-27 20:26:27,310 - AppLogger - DEBUG - logger:81 - [KiwoomAPI] [KiwoomAPI] TR 요청 간격 조절: 0.208초 대기 (이전 요청 후 0.002초 경과, 필요 간격 0.21초)
+2025-05-27 20:26:27,337 - AppLogger - DEBUG - logger:81 - [KiwoomAPI] TR 관련 성공 메시지 수신 (예수금상세현황요청, opw00001): [100000] 모의투자 조회완료
+2025-05-27 20:26:27,338 - AppLogger - INFO - logger:84 - [KiwoomAPI] TR 처리 성공 메시지: 화면: 2000, RQ: 예수금상세현황요청, TR: opw00001, 메시지: [100000] 모의투자 조회완료
+2025-05-27 20:26:27,340 - AppLogger - CRITICAL - logger:93 - [KiwoomAPI] [EVENT_HANDLER_ENTRY] on_receive_tr_data: Scr='2000', RQ='예수금상세현황요청', TR='opw00001', PrevNext='', ErrCode='', Msg=''
+2025-05-27 20:26:27,342 - AppLogger - DEBUG - logger:81 - [KiwoomAPI] _parse_tr_data (Dispatcher): TR Code 'opw00001', RQName '예수금상세현황요청'
+2025-05-27 20:26:27,345 - AppLogger - INFO - logger:84 - [KiwoomAPI] opw00001 (계좌정보) 수신 및 저장: 예수금(305605359) - RQ: 예수금상세현황요청
+2025-05-27 20:26:27,346 - AppLogger - DEBUG - logger:81 - [Strategy][2025-05-27 20:26:27] TR 데이터 수신 시작 - rq_name: 예수금상세현황요청, tr_code: opw00001, 연속조회: 0
+2025-05-27 20:26:27,347 - AppLogger - INFO - logger:84 - [Strategy][2025-05-27 20:26:27] TR 수신 (opw00001) - 예수금 데이터 (요약 로깅)
+2025-05-27 20:26:27,349 - AppLogger - INFO - logger:84 - [Strategy][2025-05-27 20:26:27] [97m💳 [BALANCE] 예수금 정보 업데이트: 주문가능금액=293,666,979원[0m
+2025-05-27 20:26:27,353 - AppLogger - DEBUG - logger:81 - [Strategy][2025-05-27 20:26:27] opw00001 핸들러 완료. deposit_info_loaded: True
+2025-05-27 20:26:27,354 - AppLogger - DEBUG - logger:81 - [Strategy][2025-05-27 20:26:27] [STRATEGY_INTERNAL] _check_all_data_loaded_and_start_strategy 호출됨. is_running: False
+2025-05-27 20:26:27,354 - AppLogger - WARNING - logger:87 - [Strategy][2025-05-27 20:26:27] 계좌, 예수금 또는 포트폴리오 정보가 아직 모두 로드되지 않아 전략을 시작할 수 없습니다.
+2025-05-27 20:26:27,355 - AppLogger - DEBUG - logger:81 - [Strategy][2025-05-27 20:26:27] 누락된 초기 정보: 포트폴리오
+2025-05-27 20:26:27,355 - AppLogger - INFO - logger:84 - [Strategy][2025-05-27 20:26:27] 예수금 정보 로드 완료.
+2025-05-27 20:26:27,356 - AppLogger - INFO - logger:84 - [Strategy][2025-05-27 20:26:27] 예수금 로드 완료. 포트폴리오 정보 로딩 대기 중...
+2025-05-27 20:26:27,357 - AppLogger - DEBUG - logger:81 - [Strategy][2025-05-27 20:26:27] [STRATEGY_INTERNAL] _check_all_data_loaded_and_start_strategy 호출됨. is_running: False
+2025-05-27 20:26:27,357 - AppLogger - WARNING - logger:87 - [Strategy][2025-05-27 20:26:27] 계좌, 예수금 또는 포트폴리오 정보가 아직 모두 로드되지 않아 전략을 시작할 수 없습니다.
+2025-05-27 20:26:27,358 - AppLogger - DEBUG - logger:81 - [Strategy][2025-05-27 20:26:27] 누락된 초기 정보: 포트폴리오
+2025-05-27 20:26:27,359 - AppLogger - DEBUG - logger:81 - [KiwoomAPI] TR(opw00001, RQ='예수금상세현황요청') 단일/최종 응답. 화면번호(2000) 반환 예정.
+2025-05-27 20:26:27,359 - AppLogger - INFO - logger:84 - [ScreenManager_RELEASE] 화면 반환 완료: ScreenNo='2000', Identifier='예수금상세현황요청'. 사용중: 1, 사용가능: 99
+2025-05-27 20:26:27,528 - AppLogger - DEBUG - logger:81 - [KiwoomAPI] [KiwoomAPI] CommRqData TR요청 시작: 계좌잔고조회_8101891811, opw00018, scr:2001
+2025-05-27 20:26:27,529 - AppLogger - DEBUG - logger:81 - [KiwoomAPI] [KiwoomAPI][CACHE_SETUP] RQName '계좌잔고조회_8101891811' 캐시 초기화/재초기화.
+2025-05-27 20:26:27,529 - AppLogger - DEBUG - logger:81 - [KiwoomAPI] [KiwoomAPI][CACHE_SETUP_SUCCESS] RQName: '계좌잔고조회_8101891811' 캐시 업데이트 완료 (status: pending_api_call).
+2025-05-27 20:26:27,530 - AppLogger - DEBUG - logger:81 - [KiwoomAPI] [KiwoomAPI] [CommRqData_INPUT_PREP] 최종 입력값 설정 전: {'계좌번호': '8101891811', '비밀번호': '', '비밀번호입력매체구분': '00', '조회구분': '1'}
+2025-05-27 20:26:27,530 - AppLogger - DEBUG - logger:81 - [KiwoomAPI] [KiwoomAPI] [CommRqData_INPUT_FINAL] 최종 입력값 API 전달: {'계좌번호': '8101891811', '비밀번호': '', '비밀번호입력매체구분': '00', '조회구분': '1'}
+2025-05-27 20:26:27,530 - AppLogger - DEBUG - logger:81 - [KiwoomAPI] [KiwoomAPI] SetInputValue: Key='계좌번호', Value='8101891811'
+2025-05-27 20:26:27,531 - AppLogger - DEBUG - logger:81 - [KiwoomAPI] [KiwoomAPI] SetInputValue: Key='비밀번호', Value=''
+2025-05-27 20:26:27,532 - AppLogger - DEBUG - logger:81 - [KiwoomAPI] [KiwoomAPI] SetInputValue: Key='비밀번호입력매체구분', Value='00'
+2025-05-27 20:26:27,532 - AppLogger - DEBUG - logger:81 - [KiwoomAPI] [KiwoomAPI] SetInputValue: Key='조회구분', Value='1'
+2025-05-27 20:26:27,534 - AppLogger - CRITICAL - logger:93 - [KiwoomAPI] [KiwoomAPI] [CommRqData_CALL] CommRqData 호출: RQName='계좌잔고조회_8101891811', TRCode='opw00018', PrevNext=0, ScreenNo='2001', ReturnCode=0
+2025-05-27 20:26:27,534 - AppLogger - DEBUG - logger:81 - [KiwoomAPI] [KiwoomAPI] CommRqData 요청 성공: RQName='계좌잔고조회_8101891811', TRCode='opw00018'. 데이터 수신 대기 중...
+2025-05-27 20:26:27,535 - AppLogger - DEBUG - logger:81 - [Strategy][2025-05-27 20:26:27] opw00018 TR 요청 전송 완료. 요청명: 계좌잔고조회_8101891811, 화면번호: 2001
+2025-05-27 20:26:27,535 - AppLogger - INFO - logger:84 - 키움 API 로그인 성공
+2025-05-27 20:26:27,535 - AppLogger - INFO - logger:84 - 매매 전략 최종 초기화 완료
+2025-05-27 20:26:27,643 - AppLogger - INFO - logger:84 - 설정 파일에서 2개의 관심종목 로드 및 전략에 추가 시작...
+2025-05-27 20:26:27,645 - AppLogger - DEBUG - logger:81 - [MAIN_WATCHLIST_ADD] 항목 1: 코드(226950), 이름(올릭스), 전일종가(51200.0)
+2025-05-27 20:26:27,646 - AppLogger - DEBUG - logger:81 - [Strategy][2025-05-27 20:26:27] [WATCHLIST_ADD_START] 관심종목 추가/업데이트 시작: 코드(226950), 이름(올릭스), 설정된 전일종가(51200.0)
+2025-05-27 20:26:27,646 - AppLogger - INFO - logger:84 - [Strategy][2025-05-27 20:26:27] 관심종목 신규 추가: 올릭스(226950), 전일종가: 51200.0, 초기상태: WAITING
+2025-05-27 20:26:27,646 - AppLogger - DEBUG - logger:81 - [Strategy][2025-05-27 20:26:27] [WATCHLIST_ADD_END] 관심종목 추가/업데이트 완료: 코드(226950) - 현재 self.watchlist에 1개 항목
+2025-05-27 20:26:27,647 - AppLogger - DEBUG - logger:81 - [MAIN_WATCHLIST_ADD] 항목 2: 코드(017510), 이름(세명전기), 전일종가(7230.0)
+2025-05-27 20:26:27,647 - AppLogger - DEBUG - logger:81 - [Strategy][2025-05-27 20:26:27] [WATCHLIST_ADD_START] 관심종목 추가/업데이트 시작: 코드(017510), 이름(세명전기), 설정된 전일종가(7230.0)
+2025-05-27 20:26:27,648 - AppLogger - INFO - logger:84 - [Strategy][2025-05-27 20:26:27] 관심종목 신규 추가: 세명전기(017510), 전일종가: 7230.0, 초기상태: WAITING
+2025-05-27 20:26:27,649 - AppLogger - DEBUG - logger:81 - [Strategy][2025-05-27 20:26:27] [WATCHLIST_ADD_END] 관심종목 추가/업데이트 완료: 코드(017510) - 현재 self.watchlist에 2개 항목
+2025-05-27 20:26:27,650 - AppLogger - INFO - logger:84 - 2개의 관심종목이 전략에 추가되었습니다.
+2025-05-27 20:26:27,650 - AppLogger - INFO - logger:84 - [Strategy][2025-05-27 20:26:27] TradingStrategy 시작 요청 접수...
+2025-05-27 20:26:27,650 - AppLogger - DEBUG - logger:81 - [Strategy][2025-05-27 20:26:27] [STRATEGY_DEBUG] ENTERING start() method. is_running=False, init_status={'account_info_loaded': True, 'deposit_info_loaded': True, 'portfolio_loaded': False, 'settings_loaded': False, 'market_hours_initialized': True}, watchlist_items=2
+2025-05-27 20:26:27,651 - AppLogger - WARNING - logger:87 - [Strategy][2025-05-27 20:26:27] [93m⚠️ [WARNING] 시작 보류: 예수금 또는 포트폴리오 정보가 아직 로드되지 않았습니다.[0m
+2025-05-27 20:26:27,651 - AppLogger - INFO - logger:84 - 매매 전략 시작됨. Ctrl+C로 종료하세요.
+2025-05-27 20:26:27,652 - AppLogger - INFO - logger:84 - Ctrl+C (SIGINT) 핸들러 최종 설정 완료. 이벤트 루프 시작 직전.
+2025-05-27 20:26:27,655 - AppLogger - DEBUG - logger:81 - [KiwoomAPI] TR 관련 성공 메시지 수신 (계좌잔고조회_8101891811, opw00018): [100000] 모의투자 조회완료
+2025-05-27 20:26:27,656 - AppLogger - INFO - logger:84 - [KiwoomAPI] TR 처리 성공 메시지: 화면: 2001, RQ: 계좌잔고조회_8101891811, TR: opw00018, 메시지: [100000] 모의투자 조회완료
+2025-05-27 20:26:27,658 - AppLogger - CRITICAL - logger:93 - [KiwoomAPI] [EVENT_HANDLER_ENTRY] on_receive_tr_data: Scr='2001', RQ='계좌잔고조회_8101891811', TR='opw00018', PrevNext='', ErrCode='', Msg=''
+2025-05-27 20:26:27,658 - AppLogger - DEBUG - logger:81 - [KiwoomAPI] _parse_tr_data (Dispatcher): TR Code 'opw00018', RQName '계좌잔고조회_8101891811'
+2025-05-27 20:26:27,669 - AppLogger - DEBUG - logger:81 - [KiwoomAPI] opw00018 데이터 캐시 저장: 계좌잔고조회_8101891811 - 보유종목 11건, 총매입 225585108
+2025-05-27 20:26:27,669 - AppLogger - DEBUG - logger:81 - [Strategy][2025-05-27 20:26:27] TR 데이터 수신 시작 - rq_name: 계좌잔고조회_8101891811, tr_code: opw00018, 연속조회: 0
+2025-05-27 20:26:27,670 - AppLogger - INFO - logger:84 - [Strategy][2025-05-27 20:26:27] TR 수신 (opw00018) - 계좌잔고 데이터 (요약 로깅)
+2025-05-27 20:26:27,670 - AppLogger - INFO - logger:84 - [Strategy][2025-05-27 20:26:27] [94m📊 [PORTFOLIO] 계좌 평가 요약 정보 업데이트[0m
+2025-05-27 20:26:27,671 - AppLogger - INFO - logger:84 - [Strategy][2025-05-27 20:26:27] [94m📊 [PORTFOLIO] 계좌 잔고 업데이트: 11 종목[0m
+2025-05-27 20:26:27,672 - AppLogger - DEBUG - logger:81 - [Strategy][2025-05-27 20:26:27]   - 원익(032940): 263주 @ 3795.0 (현:4000.0)
+2025-05-27 20:26:27,672 - AppLogger - DEBUG - logger:81 - [Strategy][2025-05-27 20:26:27]   - 에코플라스틱(038110): 872주 @ 3076.0 (현:2755.0)
+2025-05-27 20:26:27,672 - AppLogger - DEBUG - logger:81 - [Strategy][2025-05-27 20:26:27]   - 웹케시(053580): 9670주 @ 14242.0 (현:14440.0)
+2025-05-27 20:26:27,673 - AppLogger - DEBUG - logger:81 - [Strategy][2025-05-27 20:26:27]   - 그린케미칼(083420): 278주 @ 8883.0 (현:7790.0)
+2025-05-27 20:26:27,673 - AppLogger - DEBUG - logger:81 - [Strategy][2025-05-27 20:26:27]   - 에어레인(163280): 1892주 @ 20260.0 (현:19930.0)
+2025-05-27 20:26:27,673 - AppLogger - DEBUG - logger:81 - [Strategy][2025-05-27 20:26:27]   - 토니모리(214420): 3460주 @ 8954.0 (현:8760.0)
+2025-05-27 20:26:27,674 - AppLogger - DEBUG - logger:81 - [Strategy][2025-05-27 20:26:27]   - 올릭스(226950): 19주 @ 51100.0 (현:51700.0)
+2025-05-27 20:26:27,674 - AppLogger - DEBUG - logger:81 - [Strategy][2025-05-27 20:26:27]   - 수젠텍(253840): 58주 @ 8650.0 (현:8700.0)
+2025-05-27 20:26:27,675 - AppLogger - DEBUG - logger:81 - [Strategy][2025-05-27 20:26:27]   - 그리드위즈(453450): 398주 @ 20015.0 (현:18110.0)
+2025-05-27 20:26:27,675 - AppLogger - DEBUG - logger:81 - [Strategy][2025-05-27 20:26:27]   - 시프트업(462870): 16주 @ 60500.0 (현:48100.0)
+2025-05-27 20:26:27,676 - AppLogger - DEBUG - logger:81 - [Strategy][2025-05-27 20:26:27]   - 엑세스바이오(950130): 326주 @ 6122.0 (현:6510.0)
+2025-05-27 20:26:27,676 - AppLogger - DEBUG - logger:81 - [Strategy][2025-05-27 20:26:27] opw00018 핸들러 완료. portfolio_loaded: True
+2025-05-27 20:26:27,677 - AppLogger - INFO - logger:84 - [Strategy][2025-05-27 20:26:27] 포트폴리오 및 예수금 로드 완료. DB 및 저장된 상태에서 매매 상태 복원 시도...
+2025-05-27 20:26:27,677 - AppLogger - INFO - logger:84 - [Strategy][2025-05-27 20:26:27] DB에서 거래 이력을 로드하여 거래 상태 복원 시작...
+2025-05-27 20:26:27,691 - AppLogger - INFO - logger:84 - 2025-05-27 날짜의 거래 43건을 DB에서 로드했습니다.
+2025-05-27 20:26:27,692 - AppLogger - INFO - logger:84 - [Strategy][2025-05-27 20:26:27] DB에서 오늘(2025-05-27)의 매수 거래 24건을 확인했습니다. (통계용)
+2025-05-27 20:26:27,692 - AppLogger - INFO - logger:84 - [Strategy][2025-05-27 20:26:27] [226950] 상태를 저장된 값(BOUGHT)으로 복원했습니다.
+2025-05-27 20:26:27,693 - AppLogger - INFO - logger:84 - [Strategy][2025-05-27 20:26:27] [017510] 상태를 저장된 값(WAITING)으로 복원했습니다.
+2025-05-27 20:26:27,693 - AppLogger - DEBUG - logger:81 - [Strategy][2025-05-27 20:26:27] [226950] trading_status의 'status'를 Enum으로 복원: BOUGHT -> BOUGHT
+2025-05-27 20:26:27,697 - AppLogger - DEBUG - logger:81 - [Strategy][2025-05-27 20:26:27] [226950] trading_status 항목 복원/업데이트 완료: {'status': <TradingState.BOUGHT: 4>, 'bought_price': 51100.0, 'bought_quantity': 19, 'bought_time': datetime.datetime(2025, 5, 27, 12, 58, 27)}
+2025-05-27 20:26:27,698 - AppLogger - INFO - logger:84 - [Strategy][2025-05-27 20:26:27] 저장된 추가 상태 정보를 성공적으로 복원했습니다.
+2025-05-27 20:26:27,698 - AppLogger - DEBUG - logger:81 - [Strategy][2025-05-27 20:26:27] [STRATEGY_INTERNAL] _check_all_data_loaded_and_start_strategy 호출됨. is_running: False
+2025-05-27 20:26:27,699 - AppLogger - DEBUG - logger:81 - [Strategy][2025-05-27 20:26:27] 현재 관심종목 2개 로드됨. 목록:
+2025-05-27 20:26:27,701 - AppLogger - DEBUG - logger:81 - [Strategy][2025-05-27 20:26:27]   - 올릭스(226950): 전일종가(51200.0), 상태(BOUGHT)
+2025-05-27 20:26:27,704 - AppLogger - DEBUG - logger:81 - [Strategy][2025-05-27 20:26:27]   - 세명전기(017510): 전일종가(7230.0), 상태(WAITING)
+2025-05-27 20:26:27,707 - AppLogger - INFO - logger:84 - [Strategy][2025-05-27 20:26:27] 모든 계좌/포트폴리오/관심종목(설정) 데이터 준비 완료. 실제 전략 시작 로직 수행.
+2025-05-27 20:26:27,708 - AppLogger - INFO - logger:84 - [ScreenManager_GET] 새 화면 할당: Identifier='real_226950' -> ScreenNo='2002'. 사용중: 2, 사용가능: 98
+2025-05-27 20:26:27,708 - AppLogger - INFO - logger:84 - [KiwoomAPI] 실시간 데이터 등록 요청: 화면(2002), 종목(226950), FID(10;11;12;13), 타입(1)
+2025-05-27 20:26:27,713 - AppLogger - INFO - logger:84 - [KiwoomAPI] 실시간 데이터 등록 성공: 화면(2002)
+2025-05-27 20:26:27,714 - AppLogger - INFO - logger:84 - [Strategy][2025-05-27 20:26:27] 실시간 데이터 구독 요청 전송 (화면: 2002, 종목: 226950, FID: 10;11;12;13). 실제 구독은 데이터 수신으로 확인.
+2025-05-27 20:26:27,714 - AppLogger - INFO - logger:84 - [ScreenManager_GET] 새 화면 할당: Identifier='real_017510' -> ScreenNo='2003'. 사용중: 3, 사용가능: 97
+2025-05-27 20:26:27,714 - AppLogger - INFO - logger:84 - [KiwoomAPI] 실시간 데이터 등록 요청: 화면(2003), 종목(017510), FID(10;11;12;13), 타입(1)
+2025-05-27 20:26:27,717 - AppLogger - INFO - logger:84 - [KiwoomAPI] 실시간 데이터 등록 성공: 화면(2003)
+2025-05-27 20:26:27,719 - AppLogger - INFO - logger:84 - [Strategy][2025-05-27 20:26:27] 실시간 데이터 구독 요청 전송 (화면: 2003, 종목: 017510, FID: 10;11;12;13). 실제 구독은 데이터 수신으로 확인.
+2025-05-27 20:26:27,719 - AppLogger - INFO - logger:84 - [Strategy][2025-05-27 20:26:27] 2개 관심종목에 대한 실시간 시세 구독 요청 완료.
+2025-05-27 20:26:27,721 - AppLogger - INFO - logger:84 - [Strategy][2025-05-27 20:26:27] 조건 확인 타이머 시작 (주기: 2.0초).
+2025-05-27 20:26:27,723 - AppLogger - INFO - logger:84 - [Strategy][2025-05-27 20:26:27] 주기적 상태 보고 타이머 시작 (주기: 60초).
+2025-05-27 20:26:27,723 - AppLogger - INFO - logger:84 - [Strategy][2025-05-27 20:26:27] 일일 스냅샷 타이머 시작 (주기: 1.0시간).
+2025-05-27 20:26:27,724 - AppLogger - INFO - logger:84 - [Strategy][2025-05-27 20:26:27] [STRATEGY_INTERNAL] _check_all_data_loaded_and_start_strategy: Timers started. is_running=True, is_initialized_successfully=True
+2025-05-27 20:26:27,724 - AppLogger - INFO - logger:84 - [Strategy][2025-05-27 20:26:27] 장 종료 확인, 일별 계좌 스냅샷 기록 시도: 2025-05-27
+2025-05-27 20:26:27,724 - AppLogger - DEBUG - logger:81 - [Strategy][2025-05-27 20:26:27] 계좌 요약 정보: {'총매입금액': 225585108.0, '총평가금액': 224858480.0, '총평가손익금액': 2640344.0, '총수익률': 1.17, '추정예탁자산': 517401233.0, '예수금': 305605359.0}
+2025-05-27 20:26:27,733 - AppLogger - INFO - logger:84 - 일별 계좌 스냅샷 추가 성공: 2025-05-27, 예수금(305605359.0), 총매입(225585108.0), 총평가(224858480.0), 손익(2640344.0), 수익률(1.17%), 자산(517401233.0)
+2025-05-27 20:26:27,734 - AppLogger - INFO - logger:84 - [Strategy][2025-05-27 20:26:27] 일별 계좌 스냅샷 DB 저장 완료: 2025-05-27
+2025-05-27 20:26:27,735 - AppLogger - INFO - logger:84 - [Strategy][2025-05-27 20:26:27] === 전략이 성공적으로 시작되었습니다. is_running: True ===
+2025-05-27 20:26:27,735 - AppLogger - INFO - logger:84 - [Strategy][2025-05-27 20:26:27] ===========================================
+2025-05-27 20:26:27,737 - AppLogger - INFO - logger:84 - [Strategy][2025-05-27 20:26:27] 운영 시간: 0시간 0분 9초 (시작: 2025-05-27 20:26:17)
+2025-05-27 20:26:27,738 - AppLogger - INFO - logger:84 - [Strategy][2025-05-27 20:26:27] 초기화 완료된 전략 실행 중. 자세한 상태는 주기적 보고에서 확인하세요.
+2025-05-27 20:26:27,738 - AppLogger - INFO - logger:84 - [Strategy][2025-05-27 20:26:27] ===========================================
+2025-05-27 20:26:27,739 - AppLogger - INFO - logger:84 - [Strategy][2025-05-27 20:26:27] 일일 매수 실행 횟수: 2 (통계용)
+2025-05-27 20:26:27,739 - AppLogger - INFO - logger:84 - [Strategy][2025-05-27 20:26:27] 종목별 매수 시도 현황 (최대 3회):
+2025-05-27 20:26:27,739 - AppLogger - INFO - logger:84 - [Strategy][2025-05-27 20:26:27]   - [226950] 올릭스: 1/3회, 상태: BOUGHT
+2025-05-27 20:26:27,740 - AppLogger - INFO - logger:84 - [Strategy][2025-05-27 20:26:27] ===========================================
+2025-05-27 20:26:27,740 - AppLogger - INFO - logger:84 - [Strategy][2025-05-27 20:26:27] 계좌 포트폴리오 정보 로드 완료 (최종).
+2025-05-27 20:26:27,740 - AppLogger - INFO - logger:84 - [Strategy][2025-05-27 20:26:27] 포트폴리오 로드 완료, 예수금도 이미 로드됨. 설정에서 관심종목 로드 시도.
+2025-05-27 20:26:27,740 - AppLogger - DEBUG - logger:81 - [Strategy][2025-05-27 20:26:27] [STRATEGY_INTERNAL] _check_all_data_loaded_and_start_strategy 호출됨. is_running: True
+2025-05-27 20:26:27,741 - AppLogger - DEBUG - logger:81 - [Strategy][2025-05-27 20:26:27] 전략이 이미 실행 중입니다. _check_all_data_loaded_and_start_strategy 중복 호출 방지.
+2025-05-27 20:26:27,741 - AppLogger - DEBUG - logger:81 - [KiwoomAPI] TR(opw00018, RQ='계좌잔고조회_8101891811') 단일/최종 응답. 화면번호(2001) 반환 예정.
+2025-05-27 20:26:27,741 - AppLogger - INFO - logger:84 - [ScreenManager_RELEASE] 화면 반환 완료: ScreenNo='2001', Identifier='계좌잔고조회_8101891811'. 사용중: 2, 사용가능: 98
+2025-05-27 20:27:05,749 - AppLogger - INFO - logger:84 - [SIG_HANDLER] 시그널 2 수신. 정상 종료 시퀀스 시작.
+2025-05-27 20:27:05,750 - AppLogger - INFO - logger:84 - [SIG_HANDLER] 매매 전략 중지 시작...
+2025-05-27 20:27:05,750 - AppLogger - INFO - logger:84 - [Strategy][2025-05-27 20:27:05] TradingStrategy.stop() 메소드 시작됨.
+2025-05-27 20:27:05,751 - AppLogger - INFO - logger:84 - [Strategy][2025-05-27 20:27:05] 전략 실행 플래그 (is_running)를 False로 설정했습니다.
+2025-05-27 20:27:05,754 - AppLogger - INFO - logger:84 - [Strategy][2025-05-27 20:27:05] 현재 상태를 'logs\trading_state.json'에 저장했습니다.
+2025-05-27 20:27:05,754 - AppLogger - INFO - logger:84 - [Strategy][2025-05-27 20:27:05] 현재 상태를 파일에 저장했습니다.
+2025-05-27 20:27:05,755 - AppLogger - INFO - logger:84 - [Strategy][2025-05-27 20:27:05] 미체결 주문 취소 시도...
+2025-05-27 20:27:05,755 - AppLogger - INFO - logger:84 - [Strategy][2025-05-27 20:27:05] 미체결 주문 취소 시작...
+2025-05-27 20:27:05,755 - AppLogger - INFO - logger:84 - [Strategy][2025-05-27 20:27:05] 취소할 미체결 주문이 없습니다.
+2025-05-27 20:27:05,756 - AppLogger - INFO - logger:84 - [Strategy][2025-05-27 20:27:05] 타이머 중지 시도...
+2025-05-27 20:27:05,756 - AppLogger - DEBUG - logger:81 - [Strategy][2025-05-27 20:27:05] 조건 확인 타이머 중지됨.
+2025-05-27 20:27:05,756 - AppLogger - DEBUG - logger:81 - [Strategy][2025-05-27 20:27:05] 주기적 상태 보고 타이머 중지됨.
+2025-05-27 20:27:05,757 - AppLogger - DEBUG - logger:81 - [Strategy][2025-05-27 20:27:05] 일일 스냅샷 타이머 중지됨.
+2025-05-27 20:27:05,757 - AppLogger - INFO - logger:84 - [Strategy][2025-05-27 20:27:05] 관심 종목 실시간 데이터 구독 해제 시도...
+2025-05-27 20:27:05,757 - AppLogger - INFO - logger:84 - [Strategy][2025-05-27 20:27:05] Removing 226950 from watchlist... Unsubscribe real data: True
+2025-05-27 20:27:05,760 - AppLogger - INFO - logger:84 - [ScreenManager_RELEASE] 화면 반환 완료: ScreenNo='2002', Identifier='real_226950'. 사용중: 1, 사용가능: 99
+2025-05-27 20:27:05,761 - AppLogger - DEBUG - logger:81 - [Strategy][2025-05-27 20:27:05] Unsubscribed real data for 226950 using screen_no: 2002
+2025-05-27 20:27:05,761 - AppLogger - INFO - logger:84 - [Strategy][2025-05-27 20:27:05] 226950 removed from watchlist.
+2025-05-27 20:27:05,761 - AppLogger - INFO - logger:84 - [Strategy][2025-05-27 20:27:05] Removing 017510 from watchlist... Unsubscribe real data: True
+2025-05-27 20:27:05,762 - AppLogger - INFO - logger:84 - [ScreenManager_RELEASE] 화면 반환 완료: ScreenNo='2003', Identifier='real_017510'. 사용중: 0, 사용가능: 100
+2025-05-27 20:27:05,762 - AppLogger - DEBUG - logger:81 - [Strategy][2025-05-27 20:27:05] Unsubscribed real data for 017510 using screen_no: 2003
+2025-05-27 20:27:05,763 - AppLogger - INFO - logger:84 - [Strategy][2025-05-27 20:27:05] 017510 removed from watchlist.
+2025-05-27 20:27:05,763 - AppLogger - INFO - logger:84 - [Strategy][2025-05-27 20:27:05] ScreenManager 화면 정리 시도...
+2025-05-27 20:27:05,763 - AppLogger - INFO - logger:84 - [ScreenManager_CLEANUP] 모든 사용 중인 화면 정리 시작. 현재 사용중: 0개
+2025-05-27 20:27:05,764 - AppLogger - INFO - logger:84 - [ScreenManager_CLEANUP] 모든 화면 정리 완료. 사용중: 0, 사용가능: 100
+2025-05-27 20:27:05,764 - AppLogger - INFO - logger:84 - [Strategy][2025-05-27 20:27:05] 모든 화면 사용 해제 완료.
+2025-05-27 20:27:05,764 - AppLogger - INFO - logger:84 - [Strategy][2025-05-27 20:27:05] DB Manager 관련 리소스 정리 시도 (필요시 close 구현)
+2025-05-27 20:27:05,764 - AppLogger - INFO - logger:84 - [Strategy][2025-05-27 20:27:05] TradingStrategy.stop() 메소드 완료됨.
+2025-05-27 20:27:05,765 - AppLogger - INFO - logger:84 - [SIG_HANDLER] 매매 전략 중지 완료.
+2025-05-27 20:27:05,765 - AppLogger - INFO - logger:84 - [SIG_HANDLER] KiwoomAPI 리소스 해제 및 연결 종료 시작...
+2025-05-27 20:27:05,765 - AppLogger - INFO - logger:84 - [KiwoomAPI] Kiwoom API 연결 종료 절차 시작...
+2025-05-27 20:27:05,765 - AppLogger - INFO - logger:84 - [KiwoomAPI] 종료 모드가 활성화되었습니다.
+2025-05-27 20:27:05,766 - AppLogger - INFO - logger:84 - [KiwoomAPI] 모든 실시간 데이터 구독 해제 시도...
+2025-05-27 20:27:05,768 - AppLogger - INFO - logger:84 - [KiwoomAPI] 모든 실시간 데이터 구독 해제 요청됨 (SetRealRemove ALL, ALL).
+2025-05-27 20:27:05,769 - AppLogger - DEBUG - logger:81 - [KiwoomAPI] 내부 실시간 데이터 구독 상태 (FID 목록) 초기화 완료.
+2025-05-27 20:27:05,770 - AppLogger - INFO - logger:84 - [KiwoomAPI] 모든 실시간 데이터 구독 해제 요청 완료.
+2025-05-27 20:27:05,770 - AppLogger - INFO - logger:84 - [KiwoomAPI] ScreenManager를 통해 모든 화면 리소스 해제 시도...
+2025-05-27 20:27:05,770 - AppLogger - INFO - logger:84 - [ScreenManager_RELEASE_ALL] 관리 중인 모든 화면 해제 시작. 현재 사용중: 0개
+2025-05-27 20:27:05,770 - AppLogger - WARNING - logger:87 - [ScreenManager_RELEASE_ALL] Kiwoom OCX 인스턴스가 없어 API 호출(DisconnectRealData)을 스킵합니다. 내부 상태만 초기화합니다.
+2025-05-27 20:27:05,771 - AppLogger - INFO - logger:84 - [ScreenManager_RELEASE_ALL] 모든 화면 해제 및 내부 상태 초기화 완료. 사용 가능 화면: 100개
+2025-05-27 20:27:05,771 - AppLogger - INFO - logger:84 - [KiwoomAPI] ScreenManager를 통한 화면 리소스 해제 완료.
+2025-05-27 20:27:05,771 - AppLogger - INFO - logger:84 - [KiwoomAPI] Kiwoom OpenAPI CommTerminate 호출 시도...
+2025-05-27 20:27:05,772 - AppLogger - INFO - logger:84 - [KiwoomAPI] CommTerminate 호출 완료. API 연결이 종료되었을 것입니다.
+2025-05-27 20:27:05,772 - AppLogger - INFO - logger:84 - [KiwoomAPI] Kiwoom API 연결 종료 절차 완료됨.
+2025-05-27 20:27:05,772 - AppLogger - INFO - logger:84 - [SIG_HANDLER] KiwoomAPI disconnect_api 호출 완료 (실제 종료는 비동기적일 수 있음).
+2025-05-27 20:27:05,773 - AppLogger - INFO - logger:84 - [SIG_HANDLER] DB 연결 종료 완료.
+2025-05-27 20:27:05,774 - AppLogger - INFO - logger:84 - [SIG_HANDLER] QApplication.quit() 호출...
+2025-05-27 20:27:05,775 - AppLogger - INFO - logger:84 - [SIG_HANDLER] QApplication.quit() 호출 완료.
+2025-05-27 20:27:05,775 - AppLogger - INFO - logger:84 - [SIG_HANDLER] enhanced_signal_handler 실행 완료. 프로그램이 정상적으로 종료됩니다.
+2025-05-27 20:27:05,776 - AppLogger - INFO - logger:84 - [SIG_HANDLER] 프로세스 강제 종료 진행...

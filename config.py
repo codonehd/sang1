@@ -33,6 +33,18 @@ DEFAULT_SETTINGS = {
     },
     "API_Limit": {
         "tr_request_interval_ms": 210 
+    }, # 기존 API_Limit 섹션 쉼표 확인
+    "fee_tax_rates": {
+        "실거래": {
+            "buy_fee_rate": 0.00015,  # 0.015%
+            "sell_fee_rate": 0.00015, # 0.015%
+            "sell_tax_rate": 0.0025   # 0.25% (코스피/코스닥 통합으로 가정)
+        },
+        "모의투자": {
+            "buy_fee_rate": 0.0035,   # 0.35%
+            "sell_fee_rate": 0.0035,  # 0.35%
+            "sell_tax_rate": 0.0020   # 0.20%
+        }
     },
     "AutoTrading": {
         "start_automatically": False
@@ -220,6 +232,29 @@ class ConfigManager:
                         current_settings[key][sub_key] = sub_default_value
         
         self.settings = current_settings # 최종적으로 유효성 검사가 완료된 설정을 self.settings에 반영
+        
+        # 9. 수수료 및 세금 비율 (fee_tax_rates) - 선택적 유효성 검사
+        fee_tax_settings = current_settings.get("fee_tax_rates", DEFAULT_SETTINGS["fee_tax_rates"].copy())
+        default_fees = DEFAULT_SETTINGS["fee_tax_rates"]
+
+        for account_type_key in ["실거래", "모의투자"]:
+            if account_type_key not in fee_tax_settings:
+                self._log_message(f"설정 오류: 'fee_tax_rates.{account_type_key}' 섹션이 없습니다. 기본값으로 대체합니다.", "WARNING")
+                fee_tax_settings[account_type_key] = default_fees[account_type_key].copy()
+                continue
+
+            current_rates = fee_tax_settings[account_type_key]
+            default_rates_for_type = default_fees[account_type_key]
+
+            for rate_key, default_rate_val in default_rates_for_type.items():
+                rate_val = current_rates.get(rate_key, default_rate_val)
+                if not isinstance(rate_val, float) or rate_val < 0:
+                    self._log_message(f"설정 오류: 'fee_tax_rates.{account_type_key}.{rate_key}'가 유효하지 않습니다 (값: {rate_val}). 기본값 {default_rate_val}으로 대체합니다.", "WARNING")
+                    rate_val = default_rate_val
+                current_rates[rate_key] = rate_val
+            fee_tax_settings[account_type_key] = current_rates
+        
+        current_settings["fee_tax_rates"] = fee_tax_settings
         self._log_message("설정값 유효성 검사 완료.", "DEBUG")
 
     def save_settings(self):

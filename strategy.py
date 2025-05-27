@@ -295,6 +295,24 @@ class TradingStrategy(QObject):
         self.watchlist_data_requested = False # 관심종목 데이터 요청 시작 여부 플래그
         self.current_status_message = "TradingStrategy 객체 생성됨. API 연결 및 데이터 로딩 대기 중."
 
+        # 수수료/세금율 로드
+        if self.modules.config_manager:
+            all_fee_tax_rates = self.modules.config_manager.get_setting("fee_tax_rates", default_val={})
+            self.current_fee_tax_rates = all_fee_tax_rates.get(
+                self.account_type,  # "실거래" 또는 "모의투자"
+                { # 기본값: 해당 계좌 유형 설정이 없을 경우
+                    "buy_fee_rate": 0.0,
+                    "sell_fee_rate": 0.0,
+                    "sell_tax_rate": 0.0
+                }
+            )
+            self.log(f"현재 계좌 유형({self.account_type})에 따른 수수료/세금율 로드: {self.current_fee_tax_rates}", "INFO")
+        else:
+            self.log("ConfigManager가 없어 수수료/세금율을 로드할 수 없습니다. 기본값(0)을 사용합니다.", "WARNING")
+            self.current_fee_tax_rates = {
+                "buy_fee_rate": 0.0, "sell_fee_rate": 0.0, "sell_tax_rate": 0.0
+            }
+
     def _load_strategy_settings(self):
         """매매 전략 설정을 로드합니다."""
         if not self.modules.config_manager:
@@ -885,11 +903,11 @@ class TradingStrategy(QObject):
         if holding_quantity <= 0:
             return False
 
-        target_price = avg_buy_price * (1 + self.settings.full_take_profit_target_rate / 100.0)
-        self.log(f"[{code}] 최종 익절 조건 검토: 현재가({current_price:.2f}) vs 최종목표가({target_price:.2f}) (매입가: {avg_buy_price:.2f}, 최종익절률: {self.settings.full_take_profit_target_rate}%) - 보유량({holding_quantity})", "DEBUG")
+        profit_info = self._calculate_expected_net_profit_info(current_price, avg_buy_price, holding_quantity, 'sell')
+        self.log(f"[{code}] 최종 익절 조건 검토 (순수익률 기준): 현재 순수익률({profit_info['net_profit_rate']*100:.2f}%) vs 최종목표 순수익률({self.settings.full_take_profit_target_rate}%) (매입가: {avg_buy_price:.2f}, 보유량: {holding_quantity}, 현재가: {current_price})", "DEBUG")
 
-        if current_price >= target_price:
-            self.log(f"{TradeColors.TAKE_PROFIT}🎯 [TAKE_PROFIT] 최종 익절 조건 충족: {code} ({stock_info.stock_name}), 현재가({current_price:.2f}) >= 최종목표가({target_price:.2f}){TradeColors.RESET}", "INFO")
+        if profit_info['net_profit_rate'] >= self.settings.full_take_profit_target_rate / 100.0:
+            self.log(f"{TradeColors.TAKE_PROFIT}🎯 [TAKE_PROFIT] 최종 익절 조건 충족 (순수익률 기준): {code} ({stock_info.stock_name}), 현재 순수익률({profit_info['net_profit_rate']*100:.2f}%) >= 최종목표 순수익률({self.settings.full_take_profit_target_rate}%){TradeColors.RESET}", "INFO")
             if self.execute_sell(code, reason="최종익절(전량)", quantity_type="전량"):
                 return True
             else:
@@ -901,19 +919,19 @@ class TradingStrategy(QObject):
         if holding_quantity <= 0 or stock_info.partial_take_profit_executed:
             return False
 
-        target_price = avg_buy_price * (1 + self.settings.partial_take_profit_rate / 100.0)
-        self.log(f"[{code}] 부분 익절 조건 검토: 현재가({current_price:.2f}) vs 부분익절가({target_price:.2f}) (매입가: {avg_buy_price:.2f}, 부분익절률: {self.settings.partial_take_profit_rate}%) - 보유량({holding_quantity})", "DEBUG")
+        profit_info = self._calculate_expected_net_profit_info(current_price, avg_buy_price, holding_quantity, 'sell')
+        self.log(f"[{code}] 부분 익절 조건 검토 (순수익률 기준): 현재 순수익률({profit_info['net_profit_rate']*100:.2f}%) vs 부분익절 순수익률({self.settings.partial_take_profit_rate}%) (매입가: {avg_buy_price:.2f}, 보유량: {holding_quantity}, 현재가: {current_price})", "DEBUG")
 
-        if current_price >= target_price:
+        if profit_info['net_profit_rate'] >= self.settings.partial_take_profit_rate / 100.0:
             sell_qty = int(holding_quantity * self.settings.partial_sell_ratio)
             if sell_qty <= 0 and holding_quantity > 0:
-                sell_qty = holding_quantity
+                sell_qty = holding_quantity # 부분 매도 비율 적용 시 0주면 전량 매도
                 self.log(f"[{code}] 부분 익절: 계산된 매도 수량 0이나 보유량 있어 전량({sell_qty}) 매도 시도.", "WARNING")
             elif sell_qty <= 0:
                  self.log(f"[{code}] 부분 익절: 계산된 매도 수량 0. 진행 안함.", "DEBUG")
                  return False
 
-            self.log(f"{TradeColors.TAKE_PROFIT}💰 [PARTIAL_PROFIT] 부분 익절 조건 충족: {code} ({stock_info.stock_name}), 현재가({current_price:.2f}) >= 부분익절가({target_price:.2f}), 매도수량({sell_qty}){TradeColors.RESET}", "INFO")
+            self.log(f"{TradeColors.TAKE_PROFIT}💰 [PARTIAL_PROFIT] 부분 익절 조건 충족 (순수익률 기준): {code} ({stock_info.stock_name}), 현재 순수익률({profit_info['net_profit_rate']*100:.2f}%) >= 부분익절 순수익률({self.settings.partial_take_profit_rate}%), 매도수량({sell_qty}){TradeColors.RESET}", "INFO")
             
             if self.execute_sell(code, reason="부분익절(5%)", quantity_type="수량", quantity_val=sell_qty):
                 stock_info.partial_take_profit_executed = True
@@ -1235,11 +1253,12 @@ class TradingStrategy(QObject):
         
         # 트레일링 스탑 활성화 조건 검사 (다른 매도 조건보다 먼저 실행될 수 있도록 배치)
         if not stock_info.is_trailing_stop_active:
-            activation_price = avg_buy_price * (1 + self.settings.trailing_stop_activation_profit_rate / 100.0)
-            if current_price >= activation_price:
+            # avg_buy_price와 holding_quantity는 이미 이 함수의 시작 부분에서 포트폴리오 기준으로 가져옴.
+            profit_info_for_trailing = self._calculate_expected_net_profit_info(current_price, avg_buy_price, holding_quantity, 'sell')
+            if profit_info_for_trailing['net_profit_rate'] >= self.settings.trailing_stop_activation_profit_rate / 100.0:
                 stock_info.is_trailing_stop_active = True
                 stock_info.current_high_price_after_buy = current_price # 활성화 시점 고점 재설정
-                self.log(f"{TradeColors.TRAILING}📈 [{code}] 트레일링 스탑 활성화됨 (BOUGHT). 현재가({current_price:.2f}) >= 활성화가({activation_price:.2f}). 기준 고점: {stock_info.current_high_price_after_buy:.2f}{TradeColors.RESET}", "INFO")
+                self.log(f"{TradeColors.TRAILING}📈 [{code}] 트레일링 스탑 활성화됨 (BOUGHT, 순수익률 기준). 현재 순수익률({profit_info_for_trailing['net_profit_rate']*100:.2f}%) >= 활성화 순수익률({self.settings.trailing_stop_activation_profit_rate}%). 기준 고점: {stock_info.current_high_price_after_buy:.2f}{TradeColors.RESET}", "INFO")
 
         # 최종 익절 조건 검사
         if self._check_and_execute_full_take_profit(code, stock_info, current_price, avg_buy_price, holding_quantity):
@@ -1297,11 +1316,12 @@ class TradingStrategy(QObject):
 
         # 트레일링 스탑 활성화 (이미 BOUGHT 상태에서 활성화되었을 가능성 높음, 여기서도 체크)
         if not stock_info.is_trailing_stop_active:
-            activation_price = avg_buy_price * (1 + self.settings.trailing_stop_activation_profit_rate / 100.0)
-            if current_price >= activation_price:
+            # avg_buy_price와 holding_quantity는 이미 이 함수의 시작 부분에서 포트폴리오 기준으로 가져옴.
+            profit_info_for_trailing = self._calculate_expected_net_profit_info(current_price, avg_buy_price, holding_quantity, 'sell')
+            if profit_info_for_trailing['net_profit_rate'] >= self.settings.trailing_stop_activation_profit_rate / 100.0:
                 stock_info.is_trailing_stop_active = True
                 stock_info.current_high_price_after_buy = current_price # 활성화 시점 고점 재설정
-                self.log(f"{TradeColors.TRAILING}📈 [{code}] 트레일링 스탑 활성화됨 (PARTIAL_SOLD). 현재가({current_price:.2f}) >= 활성화가({activation_price:.2f}). 기준 고점: {stock_info.current_high_price_after_buy:.2f}{TradeColors.RESET}", "INFO")
+                self.log(f"{TradeColors.TRAILING}📈 [{code}] 트레일링 스탑 활성화됨 (PARTIAL_SOLD, 순수익률 기준). 현재 순수익률({profit_info_for_trailing['net_profit_rate']*100:.2f}%) >= 활성화 순수익률({self.settings.trailing_stop_activation_profit_rate}%). 기준 고점: {stock_info.current_high_price_after_buy:.2f}{TradeColors.RESET}", "INFO")
 
         # 최종 익절 조건 검사 (남은 물량에 대해)
         if self._check_and_execute_full_take_profit(code, stock_info, current_price, avg_buy_price, holding_quantity):
@@ -3398,6 +3418,39 @@ class TradingStrategy(QObject):
         if rq_name_key and rq_name_key in self.account_state.active_orders:
             return self.account_state.active_orders[rq_name_key]
         return None
+
+    def _calculate_expected_net_profit_info(self, current_price, avg_buy_price, quantity, trade_type='sell'):
+        if quantity <= 0 or avg_buy_price <= 0 or current_price <= 0: # current_price <= 0 조건 추가
+            return {'net_profit': 0, 'net_profit_rate': 0, 'actual_buy_cost': 0, 'expected_net_sell_amount': 0}
+
+        buy_fee_rate = self.current_fee_tax_rates.get("buy_fee_rate", 0.0)
+        sell_fee_rate = self.current_fee_tax_rates.get("sell_fee_rate", 0.0)
+        sell_tax_rate = self.current_fee_tax_rates.get("sell_tax_rate", 0.0)
+
+        # 실질 총 매수 원금 (매수 수수료 포함)
+        pure_buy_amount = avg_buy_price * quantity
+        actual_buy_cost = pure_buy_amount * (1 + buy_fee_rate)
+
+        if trade_type == 'sell':
+            # 예상 순매도 금액 (매도 수수료 및 세금 차감)
+            expected_sell_amount = current_price * quantity
+            expected_sell_fee = expected_sell_amount * sell_fee_rate
+            expected_sell_tax = expected_sell_amount * sell_tax_rate # 코스피/코스닥에 따라 세율이 다를 수 있으나, 여기서는 통합 세율 사용
+            expected_net_sell_amount = expected_sell_amount - expected_sell_fee - expected_sell_tax
+
+            # 예상 순이익 및 순수익률
+            net_profit = expected_net_sell_amount - actual_buy_cost
+            net_profit_rate = net_profit / actual_buy_cost if actual_buy_cost > 0 else 0
+            
+            return {
+                'net_profit': net_profit,
+                'net_profit_rate': net_profit_rate,
+                'actual_buy_cost': actual_buy_cost,
+                'expected_net_sell_amount': expected_net_sell_amount
+            }
+        else: # trade_type == 'buy' 또는 기타 (현재는 sell만 고려)
+            # 매수 시점의 예상 순수익률은 정의하기 나름이므로, 우선 sell 케이스만 상세 구현
+            return {'net_profit': 0, 'net_profit_rate': 0, 'actual_buy_cost': actual_buy_cost, 'expected_net_sell_amount': 0}
 
     def _find_active_order_rq_name_key(self, code_from_chejan, api_order_no_from_chejan, chejan_data_dict): # chejan_data_dict는 로깅용으로만 사용될 수 있음
         # 종목코드 정규화 ('A'로 시작하는 경우 제거)

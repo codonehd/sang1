@@ -13,12 +13,12 @@
     "226950": {
       "code": "226950",
       "stock_name": "올릭스",
-      "current_price": 51400.0,
+      "current_price": 0.0,
       "yesterday_close_price": 51200.0,
       "strategy_state": "BOUGHT",
       "avg_buy_price": 0.0,
       "total_buy_quantity": 0,
-      "current_high_price_after_buy": 51600.0,
+      "current_high_price_after_buy": 0.0,
       "is_trailing_stop_active": false,
       "trailing_stop_partially_sold": false,
       "partial_take_profit_executed": false,
@@ -27,7 +27,7 @@
     "017510": {
       "code": "017510",
       "stock_name": "세명전기",
-      "current_price": 8050.0,
+      "current_price": 0.0,
       "yesterday_close_price": 7230.0,
       "strategy_state": "WAITING",
       "avg_buy_price": 0.0,
@@ -50,6 +50,6 @@
     "손실건수": 0,
     "손실금액": 0
   },
-  "last_snapshot_date": "2025-05-22",
-  "saved_datetime": "2025-05-27 14:07:59"
+  "last_snapshot_date": "2025-05-27",
+  "saved_datetime": "2025-05-27 20:27:05"
 }
