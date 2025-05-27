@@ -13,6 +13,7 @@ from dataclasses import dataclass, field
 from typing import Dict, Any, List, Optional
 import os
 import json
+import ats_utils
 
 # --- 로그 색상 막 정의 ---
 class TradeColors:
@@ -1483,7 +1484,7 @@ class TradingStrategy(QObject):
         self.log(f"[Strategy_EXECUTE_SELL_DEBUG] execute_sell 호출. 계좌번호: '{self.account_state.account_number}'", "DEBUG")
         
         # get_code_market_info는 내부적으로 정규화된 코드를 반환하므로, 여기서는 code (이미 정규화됨) 사용
-        pure_code, market_ctx = self.modules.kiwoom_api.get_code_market_info(code, logger_instance=self.modules.logger if hasattr(self.modules, 'logger') else None)
+        pure_code, market_ctx = ats_utils.get_code_market_info(code, logger_instance=self.modules.logger if hasattr(self.modules, 'logger') else None)
 
 
         if stock_info.last_order_rq_name:
