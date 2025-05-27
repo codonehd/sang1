@@ -149,53 +149,54 @@ def main():
     # 향상된 signal_handler 정의
     def enhanced_signal_handler(signal_num, frame):
         """향상된 시그널 핸들러: 주요 리소스 정리 및 앱 종료 시퀀스"""
+        nonlocal logger  # logger 변수 참조
         try:
             # 외부 함수(main)의 변수에 접근하기 위해 nonlocal 사용
             nonlocal app, kiwoom, db, strategy
-            print(f"[SIG_HANDLER] 시그널 {signal_num} 수신. 정상 종료 시퀀스 시작.")
+            logger.info(f"[SIG_HANDLER] 시그널 {signal_num} 수신. 정상 종료 시퀀스 시작.")
             
             # 매매 전략 중지
             if strategy:
                 try:
-                    print("[SIG_HANDLER] 매매 전략 중지 시작...")
+                    logger.info("[SIG_HANDLER] 매매 전략 중지 시작...")
                     strategy.stop()  # 정확한 stop 메서드 호출 확인
-                    print("[SIG_HANDLER] 매매 전략 중지 완료.")
+                    logger.info("[SIG_HANDLER] 매매 전략 중지 완료.")
                 except Exception as e:
-                    print(f"[SIG_HANDLER] 매매 전략 중지 중 오류: {e}")
+                    logger.error(f"[SIG_HANDLER] 매매 전략 중지 중 오류: {e}", exc_info=True)
             
             # API 연결 종료
             if kiwoom:
                 try:
-                    print("[SIG_HANDLER] KiwoomAPI 리소스 해제 및 연결 종료 시작...")
+                    logger.info("[SIG_HANDLER] KiwoomAPI 리소스 해제 및 연결 종료 시작...")
                     kiwoom.disconnect_api()
-                    print("[SIG_HANDLER] KiwoomAPI disconnect_api 호출 완료 (실제 종료는 비동기적일 수 있음).")
+                    logger.info("[SIG_HANDLER] KiwoomAPI disconnect_api 호출 완료 (실제 종료는 비동기적일 수 있음).")
                 except Exception as e:
-                    print(f"[SIG_HANDLER] KiwoomAPI 연결 종료 중 오류: {e}")
+                    logger.error(f"[SIG_HANDLER] KiwoomAPI 연결 종료 중 오류: {e}", exc_info=True)
             
             # DB 연결 종료
             if db:
                 try:
                     db.close()
-                    print("[SIG_HANDLER] DB 연결 종료 완료.")
+                    logger.info("[SIG_HANDLER] DB 연결 종료 완료.")
                 except Exception as e:
-                    print(f"[SIG_HANDLER] DB 연결 종료 중 오류: {e}")
+                    logger.error(f"[SIG_HANDLER] DB 연결 종료 중 오류: {e}", exc_info=True)
             
             # QApplication 종료
             if app:
                 try:
-                    print("[SIG_HANDLER] QApplication.quit() 호출...")
+                    logger.info("[SIG_HANDLER] QApplication.quit() 호출...")
                     app.quit()
-                    print("[SIG_HANDLER] QApplication.quit() 호출 완료.")
+                    logger.info("[SIG_HANDLER] QApplication.quit() 호출 완료.")
                 except Exception as e:
-                    print(f"[SIG_HANDLER] QApplication 종료 중 오류: {e}")
+                    logger.error(f"[SIG_HANDLER] QApplication 종료 중 오류: {e}", exc_info=True)
             
-            print("[SIG_HANDLER] enhanced_signal_handler 실행 완료. 프로그램이 정상적으로 종료됩니다.")
+            logger.info("[SIG_HANDLER] enhanced_signal_handler 실행 완료. 프로그램이 정상적으로 종료됩니다.")
             
             # 프로세스 강제 종료를 추가 - quit()만으로는 완전히 종료되지 않는 문제 해결
-            print("[SIG_HANDLER] 프로세스 강제 종료 진행...")
+            logger.info("[SIG_HANDLER] 프로세스 강제 종료 진행...")
             os._exit(0)  # 프로세스를 즉시 종료
         except Exception as e:
-            print(f"[SIG_HANDLER] 종료 처리 중 예상치 못한 오류 발생: {e}")
+            logger.critical(f"[SIG_HANDLER] 종료 처리 중 예상치 못한 오류 발생: {e}", exc_info=True)
             # 심각한 오류 발생 시 즉시 종료
             os._exit(1)
         
