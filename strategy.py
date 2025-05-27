@@ -148,8 +148,8 @@ class TradingStrategy(QObject):
                 return None
                 
             stock_info.strategy_state = TradingState.BOUGHT
-            stock_info.avg_buy_price = self._safe_to_float(portfolio_item.get('매입가'))
-            stock_info.total_buy_quantity = self._safe_to_int(portfolio_item.get('보유수량'))
+            stock_info.avg_buy_price = _safe_to_float(portfolio_item.get('매입가'))
+            stock_info.total_buy_quantity = _safe_to_int(portfolio_item.get('보유수량'))
             stock_info.buy_timestamp = datetime.now()  # 정확한 시간은 알 수 없으므로 현재 시간으로 설정
             
             # trading_status에도 상태 저장 (정규화된 코드로)
@@ -403,7 +403,7 @@ class TradingStrategy(QObject):
                 update_occurred = True
 
         # StockTrackingData의 명시적 필드 업데이트 (current_price 등)
-        new_current_price = self._safe_to_float(stock_info.api_data.get('현재가', stock_info.current_price))
+        new_current_price = _safe_to_float(stock_info.api_data.get('현재가', stock_info.current_price))
         if stock_info.current_price != new_current_price:
             stock_info.current_price = new_current_price
             update_occurred = True
@@ -975,7 +975,7 @@ class TradingStrategy(QObject):
                 if stock_info.strategy_state != TradingState.BOUGHT:
                     self.log(f"[{code}] 상태 교정: 실제로 {holding_quantity}주 보유 중이지만 상태가 {stock_info.strategy_state.name}입니다. BOUGHT로 변경", "WARNING")
                     stock_info.strategy_state = TradingState.BOUGHT
-                    stock_info.avg_buy_price = self._safe_to_float(self.account_state.portfolio[code].get('매입가', 0))
+                    stock_info.avg_buy_price = _safe_to_float(self.account_state.portfolio[code].get('매입가', 0))
                     stock_info.total_buy_quantity = holding_quantity
                     stock_info.current_high_price_after_buy = max(stock_info.current_high_price_after_buy, current_price)
                     stock_info.buy_timestamp = datetime.now()  # 정확한 시간은 알 수 없으므로 현재 시간으로 설정
@@ -1026,8 +1026,8 @@ class TradingStrategy(QObject):
         
         # 포트폴리오에서 보유 정보 확인
         portfolio_item = self.account_state.portfolio.get(code, {})
-        avg_buy_price = self._safe_to_float(portfolio_item.get('매입가', stock_info.avg_buy_price))
-        holding_quantity = self._safe_to_int(portfolio_item.get('보유수량', 0))
+        avg_buy_price = _safe_to_float(portfolio_item.get('매입가', stock_info.avg_buy_price))
+        holding_quantity = _safe_to_int(portfolio_item.get('보유수량', 0))
         
         # 로그 추가: 포트폴리오와 종목 상태 비교 (디버깅용)
         self.log(f"[HOLDING_STATE_DEBUG] {code}: 현재가({current_price}), 매입가({avg_buy_price}), 보유량({holding_quantity}), StockInfo 상태({stock_info.strategy_state.name})", "DEBUG")
@@ -1045,7 +1045,7 @@ class TradingStrategy(QObject):
                 active_orders_for_code.append(order)
         
         if active_orders_for_code:
-            total_unfilled = sum(self._safe_to_int(order.get('unfilled_qty', 0)) for order in active_orders_for_code)
+            total_unfilled = sum(_safe_to_int(order.get('unfilled_qty', 0)) for order in active_orders_for_code)
             self.log(f"{code} 매도 주문 진행 중: {len(active_orders_for_code)}개 주문, 미체결 총량: {total_unfilled}. 추가 전략 처리 건너뜀.", "INFO")
             return
 
@@ -1152,11 +1152,11 @@ class TradingStrategy(QObject):
                 stock_info.last_order_rq_name = None
                 
                 # 포트폴리오에 종목이 있는지 확인하여 상태 조정
-                if code in self.account_state.portfolio and self._safe_to_int(self.account_state.portfolio[code].get('보유수량', 0)) > 0:
+                if code in self.account_state.portfolio and _safe_to_int(self.account_state.portfolio[code].get('보유수량', 0)) > 0:
                     self.log(f"[{code}] 포트폴리오에 종목이 존재함 - 상태를 BOUGHT로 변경", "WARNING")
                     stock_info.strategy_state = TradingState.BOUGHT
-                    stock_info.avg_buy_price = self._safe_to_float(self.account_state.portfolio[code].get('매입가', 0))
-                    stock_info.total_buy_quantity = self._safe_to_int(self.account_state.portfolio[code].get('보유수량', 0))
+                    stock_info.avg_buy_price = _safe_to_float(self.account_state.portfolio[code].get('매입가', 0))
+                    stock_info.total_buy_quantity = _safe_to_int(self.account_state.portfolio[code].get('보유수량', 0))
                     
                     # trading_status에도 상태 저장
                     self.account_state.trading_status[code] = {
@@ -1199,8 +1199,8 @@ class TradingStrategy(QObject):
     def _handle_bought_state(self, code, stock_info: StockTrackingData, current_price):
         """BOUGHT 상태 (보유 중)인 종목에 대한 전략을 처리합니다."""
         portfolio_item = self.account_state.portfolio.get(code, {})
-        avg_buy_price = self._safe_to_float(portfolio_item.get('매입가', stock_info.avg_buy_price))
-        holding_quantity = self._safe_to_int(portfolio_item.get('보유수량', 0))
+        avg_buy_price = _safe_to_float(portfolio_item.get('매입가', stock_info.avg_buy_price))
+        holding_quantity = _safe_to_int(portfolio_item.get('보유수량', 0))
 
         if holding_quantity <= 0:
             self.log(f"[{code}] BOUGHT 상태이지만 포트폴리오 보유량 0. 전략 정보 초기화.", "WARNING")
@@ -1261,8 +1261,8 @@ class TradingStrategy(QObject):
     def _handle_partial_sold_state(self, code, stock_info: StockTrackingData, current_price):
         """PARTIAL_SOLD 상태 (일부 매도 후 보유 중)인 종목에 대한 전략을 처리합니다."""
         portfolio_item = self.account_state.portfolio.get(code, {})
-        avg_buy_price = self._safe_to_float(portfolio_item.get('매입가', stock_info.avg_buy_price)) # 부분매도 후 매입가는 유지될 수도, 업데이트될 수도 있음. DB/포폴 기준.
-        holding_quantity = self._safe_to_int(portfolio_item.get('보유수량', 0))
+        avg_buy_price = _safe_to_float(portfolio_item.get('매입가', stock_info.avg_buy_price)) # 부분매도 후 매입가는 유지될 수도, 업데이트될 수도 있음. DB/포폴 기준.
+        holding_quantity = _safe_to_int(portfolio_item.get('보유수량', 0))
 
         if holding_quantity <= 0:
             self.log(f"[{code}] PARTIAL_SOLD 상태이지만 포트폴리오 보유량 0. 전략 정보 초기화.", "WARNING")
@@ -1364,7 +1364,7 @@ class TradingStrategy(QObject):
             return False
         
         # 수정된 부분: account_summary에서 직접 주문가능금액을 찾도록 수정
-        orderable_cash = self._safe_to_int(self.account_state.account_summary.get("주문가능금액", 0))
+        orderable_cash = _safe_to_int(self.account_state.account_summary.get("주문가능금액", 0))
         
         if orderable_cash < self.settings.buy_amount_per_stock:
             self.log(f"{TradeColors.WARNING}⚠️ [WARNING] 매수 주문 불가: 주문가능금액({orderable_cash:,}원)이 설정된 매수금액({self.settings.buy_amount_per_stock:,}원)보다 적습니다.{TradeColors.RESET}", "WARNING")
@@ -1510,7 +1510,7 @@ class TradingStrategy(QObject):
             self.log(f"{TradeColors.ERROR}❌ [ERROR] 매도 주문 실패 ({pure_code}, 원본:{code}): 현재가 정보 없음.{TradeColors.RESET}", "ERROR")
             return False
 
-        available_quantity = self._safe_to_int(portfolio_item.get('보유수량')) 
+        available_quantity = _safe_to_int(portfolio_item.get('보유수량')) 
 
         decision_reason_full = f"매도 ({reason}): 현재가({current_price}), 보유수량({available_quantity}), 시장({market_ctx}), 주문타입({order_type_to_send})"
         related_data_for_decision = {
@@ -1543,9 +1543,9 @@ class TradingStrategy(QObject):
         if quantity_type == "전량":
             sell_quantity = available_quantity
         elif quantity_type == "비율": 
-            sell_quantity = int(available_quantity * (self._safe_to_float(quantity_val) / 100.0))
+            sell_quantity = int(available_quantity * (_safe_to_float(quantity_val) / 100.0))
         elif quantity_type == "수량":
-            sell_quantity = min(self._safe_to_int(quantity_val), available_quantity)
+            sell_quantity = min(_safe_to_int(quantity_val), available_quantity)
         
         if sell_quantity <= 0: 
             self.log(f"매도 주문 실패 ({pure_code}, 원본:{code}): 계산된 매도 수량 {sell_quantity} (타입: {quantity_type}, 값: {quantity_val}, 보유량: {available_quantity})", "WARNING")
@@ -1658,8 +1658,8 @@ class TradingStrategy(QObject):
         
         code = normalized_code # 이후 모든 로직에서 정규화된 코드 사용
 
-        trade_price = self._safe_to_float(trade_price)
-        quantity = self._safe_to_int(quantity)
+        trade_price = _safe_to_float(trade_price)
+        quantity = _safe_to_int(quantity)
         portfolio = self.account_state.portfolio
         
         stock_data = self.watchlist.get(code) # 정규화된 코드로 조회
@@ -1676,8 +1676,8 @@ class TradingStrategy(QObject):
                     '수익률': 0.0
                 }
             
-            current_quantity = self._safe_to_int(portfolio[code].get('보유수량',0))
-            current_total_buy_amount = self._safe_to_float(portfolio[code].get('매입금액',0))
+            current_quantity = _safe_to_int(portfolio[code].get('보유수량',0))
+            current_total_buy_amount = _safe_to_float(portfolio[code].get('매입금액',0))
             
             new_total_quantity = current_quantity + quantity
             new_total_buy_amount = current_total_buy_amount + (trade_price * quantity)
@@ -1753,8 +1753,8 @@ class TradingStrategy(QObject):
 
         if stock_data and code in portfolio and portfolio[code]['보유수량'] > 0:
             current_price = stock_data.current_price # watchlist의 StockTrackingData에서 현재가 사용
-            avg_buy_price = self._safe_to_float(portfolio[code]['매입가'])
-            held_quantity = self._safe_to_int(portfolio[code]['보유수량'])
+            avg_buy_price = _safe_to_float(portfolio[code]['매입가'])
+            held_quantity = _safe_to_int(portfolio[code]['보유수량'])
 
             portfolio[code]['평가금액'] = current_price * held_quantity
             portfolio[code]['평가손익'] = (current_price - avg_buy_price) * held_quantity
@@ -1772,12 +1772,12 @@ class TradingStrategy(QObject):
     def get_account_summary(self):
         """계좌 요약 정보를 반환합니다."""
         summary = {
-            "총매입금액": self._safe_to_float(self.account_state.account_summary.get('총매입금액')),
-            "총평가금액": self._safe_to_float(self.account_state.account_summary.get('총평가금액')),
-            "총평가손익금액": self._safe_to_float(self.account_state.account_summary.get('총평가손익금액')),
-            "총수익률": self._safe_to_float(self.account_state.account_summary.get('총수익률(%)')),
-            "추정예탁자산": self._safe_to_float(self.account_state.account_summary.get('추정예탁자산')),
-            "예수금": self._safe_to_float(self.account_state.account_summary.get('예수금', self.account_state.account_summary.get('d+2추정예수금')))
+            "총매입금액": _safe_to_float(self.account_state.account_summary.get('총매입금액')),
+            "총평가금액": _safe_to_float(self.account_state.account_summary.get('총평가금액')),
+            "총평가손익금액": _safe_to_float(self.account_state.account_summary.get('총평가손익금액')),
+            "총수익률": _safe_to_float(self.account_state.account_summary.get('총수익률(%)')),
+            "추정예탁자산": _safe_to_float(self.account_state.account_summary.get('추정예탁자산')),
+            "예수금": _safe_to_float(self.account_state.account_summary.get('예수금', self.account_state.account_summary.get('d+2추정예수금')))
         }
         self.log(f"계좌 요약 정보: {summary}", "DEBUG")
         return summary
@@ -2039,9 +2039,9 @@ class TradingStrategy(QObject):
             float_fids = ['910', '931', '933', '950', '951', '10', '938', '939'] # 수수료(938), 세금(939) 추가
 
             if fid_str in int_fids:
-                parsed_data[fid_str] = self._safe_to_int(value_str)
+                parsed_data[fid_str] = _safe_to_int(value_str)
             elif fid_str in float_fids:
-                parsed_data[fid_str] = self._safe_to_float(value_str)
+                parsed_data[fid_str] = _safe_to_float(value_str)
             else:
                 parsed_data[fid_str] = str(value_str).strip() if value_str is not None else ''
         return parsed_data
@@ -2175,8 +2175,8 @@ class TradingStrategy(QObject):
                 self.log(f"[백업 처리] {code} ({stock_name}) 주문 참조 없이 체결 데이터 수신. 포트폴리오 정보로 상태 업데이트 시도", "WARNING")
                 
                 # 체결량과 체결가 가져오기
-                filled_qty_int = self._safe_to_int(filled_qty)
-                filled_price_float = self._safe_to_float(filled_price)
+                filled_qty_int = _safe_to_int(filled_qty)
+                filled_price_float = _safe_to_float(filled_price)
                 
                 # 매수/매도 구분 확인
                 is_buy_order = order_type_fid and ('매수' in order_type_fid)
@@ -2200,8 +2200,8 @@ class TradingStrategy(QObject):
                     # 포트폴리오 정보 업데이트
                     portfolio_item = self.account_state.portfolio.get(code)
                     if portfolio_item:
-                        stock_info.avg_buy_price = self._safe_to_float(portfolio_item.get('매입가'))
-                        stock_info.total_buy_quantity = self._safe_to_int(portfolio_item.get('보유수량'))
+                        stock_info.avg_buy_price = _safe_to_float(portfolio_item.get('매입가'))
+                        stock_info.total_buy_quantity = _safe_to_int(portfolio_item.get('보유수량'))
                         stock_info.current_high_price_after_buy = stock_info.avg_buy_price
                         stock_info.buy_timestamp = datetime.now()
                         
@@ -2227,7 +2227,7 @@ class TradingStrategy(QObject):
                     
                     # 포트폴리오 확인하여 보유 수량이 0이면 초기화
                     portfolio_item = self.account_state.portfolio.get(code)
-                    if portfolio_item and self._safe_to_int(portfolio_item.get('보유수량', 0)) == 0:
+                    if portfolio_item and _safe_to_int(portfolio_item.get('보유수량', 0)) == 0:
                         self.log(f"[백업 처리] {code} ({stock_name}) 전량 매도 완료. 관련 전략 정보 초기화.", "WARNING")
                         self.reset_stock_strategy_info(code)
 
@@ -2263,8 +2263,8 @@ class TradingStrategy(QObject):
             self.log(f"활성 주문에 API 주문번호 업데이트 (원본 수정): {active_order_entry_ref['order_no']} (RQName Key: {original_rq_name_key}, Code: {code})", "INFO")
 
         order_status = chejan_data.get("913")  # 주문상태 (예: 접수, 확인, 체결)
-        original_order_qty = self._safe_to_int(chejan_data.get("900"))  # 주문수량 FID
-        unfilled_qty = self._safe_to_int(chejan_data.get("902"))        # 미체결수량 FID (키움 API에서 직접 제공)
+        original_order_qty = _safe_to_int(chejan_data.get("900"))  # 주문수량 FID
+        unfilled_qty = _safe_to_int(chejan_data.get("902"))        # 미체결수량 FID (키움 API에서 직접 제공)
         total_filled_qty = original_order_qty - unfilled_qty           # 체결누계수량 (계산)
         
         # active_order_entry_ref는 원본이므로, 여기서의 변경사항은 self.account_state.active_orders에 반영됨
@@ -2278,10 +2278,10 @@ class TradingStrategy(QObject):
         self.log(f"주문 접수/확인 ({code}, {stock_name}): RQNameKey({original_rq_name_key}), API주문번호({log_order_no_ref}), 상태({order_status}), 원주문수량({original_order_qty}), 총체결({total_filled_qty}), 미체결({unfilled_qty})", "INFO")
 
         if total_filled_qty > 0: # 누적 체결량이 0보다 크면 (부분 또는 전체 체결)
-            last_filled_price = self._safe_to_float(chejan_data.get("10")) # 체결가 FID
+            last_filled_price = _safe_to_float(chejan_data.get("10")) # 체결가 FID
             
             # 🔧 핵심 수정: last_filled_qty 계산 로직 변경
-            current_unfilled_qty_from_chejan = self._safe_to_int(chejan_data.get("902")) # FID 902
+            current_unfilled_qty_from_chejan = _safe_to_int(chejan_data.get("902")) # FID 902
             
             # Get the original order quantity for fallback if 'last_known_unfilled_qty' is somehow missing
             original_order_qty_from_ref = active_order_entry_ref.get('order_qty', 0) 
@@ -2359,8 +2359,8 @@ class TradingStrategy(QObject):
                         self.log(f"[{code}] 매수 체결 후 고점 업데이트: {stock_info.current_high_price_after_buy}", "DEBUG")
                 
                 # 체결 데이터에서 수수료 및 세금 정보 가져오기 시도
-                fees_from_chejan = self._safe_to_float(chejan_data.get("938", 0)) # 수수료 FID
-                tax_from_chejan = self._safe_to_float(chejan_data.get("939", 0))   # 세금 FID
+                fees_from_chejan = _safe_to_float(chejan_data.get("938", 0)) # 수수료 FID
+                tax_from_chejan = _safe_to_float(chejan_data.get("939", 0))   # 세금 FID
 
                 self.modules.db_manager.add_trade( # 메서드명 및 파라미터 수정
                     order_no=log_order_no_ref, 
@@ -2394,8 +2394,8 @@ class TradingStrategy(QObject):
                     portfolio_item = self.account_state.portfolio.get(code)
                     if portfolio_item:
                         # 부분 체결 처리 개선: 포트폴리오 보유량으로 다시 동기화
-                        stock_info.avg_buy_price = self._safe_to_float(portfolio_item.get('매입가'))
-                        stock_info.total_buy_quantity = self._safe_to_int(portfolio_item.get('보유수량'))
+                        stock_info.avg_buy_price = _safe_to_float(portfolio_item.get('매입가'))
+                        stock_info.total_buy_quantity = _safe_to_int(portfolio_item.get('보유수량'))
                         
                         self.log(f"[매수 정보 기록] {code}: 매수가({stock_info.avg_buy_price}), 수량({stock_info.total_buy_quantity}), 매수시간({stock_info.buy_timestamp.strftime('%Y-%m-%d %H:%M:%S') if stock_info.buy_timestamp else 'N/A'})", "INFO")
                         
@@ -2410,7 +2410,7 @@ class TradingStrategy(QObject):
                     if code in self.account_state.trading_status:
                         ts = self.account_state.trading_status[code]
                         bought_price = ts.get('bought_price', 0)
-                        executed_price = self._safe_to_float(chejan_data.get("10")) # 체결가 추가
+                        executed_price = _safe_to_float(chejan_data.get("10")) # 체결가 추가
                         # 🔧 수정: 전량 체결이므로 원 주문 수량 사용 (FID 911 사용 중단)
                         executed_qty = original_order_qty  # 전량 체결 시 전체 주문 수량
                         profit_amount = (executed_price - bought_price) * executed_qty
@@ -2508,9 +2508,9 @@ class TradingStrategy(QObject):
         if active_order_entry_ref is None:
             self.log(f"잔고 변경 보고 처리 중 ({stock_name}, {code}): 연관된 활성 주문 참조(active_order_entry_ref)를 찾을 수 없습니다. API주문번호: {log_api_order_no}. 실현손익/수수료/세금만 로깅 시도.", "WARNING")
         
-        realized_pnl = self._safe_to_float(chejan_data.get("950")) # 실현손익 FID
-        commission = self._safe_to_float(chejan_data.get("938")) # 수수료 FID
-        tax = self._safe_to_float(chejan_data.get("939")) # 세금 FID
+        realized_pnl = _safe_to_float(chejan_data.get("950")) # 실현손익 FID
+        commission = _safe_to_float(chejan_data.get("938")) # 수수료 FID
+        tax = _safe_to_float(chejan_data.get("939")) # 세금 FID
         
         # active_order_entry_ref가 None일 경우를 대비하여 .get 사용 및 기본값 설정
         log_order_no_for_balance = active_order_entry_ref.get('order_no', log_api_order_no) if active_order_entry_ref else log_api_order_no
@@ -2549,10 +2549,10 @@ class TradingStrategy(QObject):
         
         # 계좌 정보 요약
         # 예수금 값을 직접 account_summary에서 가져오도록 수정
-        deposit = self._safe_to_int(self.account_state.account_summary.get("예수금", 0))
+        deposit = _safe_to_int(self.account_state.account_summary.get("예수금", 0))
         # d+2추정예수금도 체크하여 예수금이 0일 경우 대체값으로 사용
         if deposit == 0:
-            deposit = self._safe_to_int(self.account_state.account_summary.get("d+2추정예수금", 0))
+            deposit = _safe_to_int(self.account_state.account_summary.get("d+2추정예수금", 0))
         self.log(f"예수금: {deposit:,}", "INFO")
         
         # 포트폴리오 요약
@@ -2560,9 +2560,9 @@ class TradingStrategy(QObject):
             self.log(f"{TradeColors.PORTFOLIO}💼 보유 종목 ({len(self.account_state.portfolio)}개):{TradeColors.RESET}", "INFO")
             for code, stock_data in self.account_state.portfolio.items():
                 stock_name = stock_data.get("stock_name", "")
-                quantity = self._safe_to_int(stock_data.get("보유수량", 0))
-                eval_amount = self._safe_to_float(stock_data.get("평가금액", 0))
-                pl_rate = self._safe_to_float(stock_data.get("수익률", 0))
+                quantity = _safe_to_int(stock_data.get("보유수량", 0))
+                eval_amount = _safe_to_float(stock_data.get("평가금액", 0))
+                pl_rate = _safe_to_float(stock_data.get("수익률", 0))
                 self.log(f"  - {stock_name}({code}): {quantity}주, 평가액 {eval_amount:,.0f} (수익률 {pl_rate:.2f}%)", "INFO")
         else:
             self.log(f"{TradeColors.INFO}ℹ️ 보유 종목 없음{TradeColors.RESET}", "INFO")
@@ -2575,8 +2575,8 @@ class TradingStrategy(QObject):
                 code = order.get("code", "")
                 stock_name = order.get("stock_name", "")
                 order_type = order.get("order_type", "")
-                quantity = self._safe_to_int(order.get("remaining_quantity", 0))
-                price = self._safe_to_float(order.get("price", 0))
+                quantity = _safe_to_int(order.get("remaining_quantity", 0))
+                price = _safe_to_float(order.get("price", 0))
                 order_status = order.get("order_status", "")
                 rq_name = order.get("rq_name", "")
                 self.log(f"  - RQ:{rq_name}, {stock_name}({code}), {order_type} {quantity}@{price:.1f}, 미체결:{quantity}, 상태:{order_status}", "INFO")
@@ -2772,7 +2772,7 @@ class TradingStrategy(QObject):
             self.account_state.account_summary.update(deposit_info)
             
             # 주문가능금액 로그 추가
-            orderable_cash = self._safe_to_int(deposit_info.get("주문가능금액", 0))
+            orderable_cash = _safe_to_int(deposit_info.get("주문가능금액", 0))
             self.log(f"{TradeColors.BALANCE}💳 [BALANCE] 예수금 정보 업데이트: 주문가능금액={orderable_cash:,}원{TradeColors.RESET}", "INFO")
         else:
             self.log("예수금 정보 없음 (opw00001 응답에 single_data 없음)", "WARNING")
@@ -2800,18 +2800,18 @@ class TradingStrategy(QObject):
                     code = code.replace('A', '').strip() # 종목코드 클리닝 (A 제거)
                     # API 응답 필드명에 맞춰 '수익률(%)' -> '수익률' 변환 및 숫자형 변환
                     if '수익률(%)' in item:
-                        item['수익률'] = self._safe_to_float(item['수익률(%)'])
+                        item['수익률'] = _safe_to_float(item['수익률(%)'])
                     elif '수익률' in item: # 이미 '수익률' 필드가 있다면 숫자형 변환만 시도
-                        item['수익률'] = self._safe_to_float(item['수익률'])
+                        item['수익률'] = _safe_to_float(item['수익률'])
                     
                     current_portfolio[code] = {
                         'stock_name': item.get("종목명"),
-                        '보유수량': self._safe_to_int(item.get("보유수량")),
-                        '매입가': self._safe_to_float(item.get("매입단가", item.get("매입가"))), # '매입단가' 또는 '매입가' 사용
-                        '현재가': self._safe_to_float(item.get("현재가")),
-                        '평가금액': self._safe_to_float(item.get("평가금액")),
-                        '매입금액': self._safe_to_float(item.get("매입금액")),
-                        '평가손익': self._safe_to_float(item.get("평가손익")),
+                        '보유수량': _safe_to_int(item.get("보유수량")),
+                        '매입가': _safe_to_float(item.get("매입단가", item.get("매입가"))), # '매입단가' 또는 '매입가' 사용
+                        '현재가': _safe_to_float(item.get("현재가")),
+                        '평가금액': _safe_to_float(item.get("평가금액")),
+                        '매입금액': _safe_to_float(item.get("매입금액")),
+                        '평가손익': _safe_to_float(item.get("평가손익")),
                         '수익률': item.get('수익률', 0.0), # 이미 위에서 처리되었거나, 없다면 0.0
                         # 추가적으로 필요한 필드들 (예: '대출일', '만기일' 등)이 있다면 여기서 포함
                     }
@@ -2877,8 +2877,8 @@ class TradingStrategy(QObject):
         if initial_portfolio:
             self.account_state.portfolio[code] = copy.deepcopy(initial_portfolio)
             stock_info.strategy_state = TradingState.BOUGHT
-            stock_info.avg_buy_price = self._safe_to_float(initial_portfolio.get('매입가'))
-            stock_info.total_buy_quantity = self._safe_to_int(initial_portfolio.get('보유수량'))
+            stock_info.avg_buy_price = _safe_to_float(initial_portfolio.get('매입가'))
+            stock_info.total_buy_quantity = _safe_to_int(initial_portfolio.get('보유수량'))
             stock_info.current_high_price_after_buy = stock_info.avg_buy_price 
             
             st_data_override = test_params.get("stock_tracking_data_override", {})
@@ -2921,7 +2921,7 @@ class TradingStrategy(QObject):
 
         test_current_price = test_params.get("test_current_price")
         if test_current_price is not None:
-            stock_info.current_price = self._safe_to_float(test_current_price)
+            stock_info.current_price = _safe_to_float(test_current_price)
             self.log(f"테스트 현재가 설정 ({code}): {stock_info.current_price}", "INFO")
         else:
             self.log(f"경고: 테스트 현재가가 제공되지 않았습니다 ({code}).", "WARNING")
@@ -3183,13 +3183,13 @@ class TradingStrategy(QObject):
                     self.log(f"[자동 정리] [{code}] 미처리 주문({stock_info.last_order_rq_name}) 감지 - {elapsed_minutes:.1f}분 경과", "WARNING")
                     
                     # 포트폴리오에 종목이 있는지 확인
-                    if code in self.account_state.portfolio and self._safe_to_int(self.account_state.portfolio[code].get('보유수량', 0)) > 0:
+                    if code in self.account_state.portfolio and _safe_to_int(self.account_state.portfolio[code].get('보유수량', 0)) > 0:
                         # 보유 중이지만 상태가 BOUGHT가 아니면 상태 교정
                         if stock_info.strategy_state != TradingState.BOUGHT:
                             self.log(f"[자동 정리] [{code}] 포트폴리오에 존재하지만 상태가 {stock_info.strategy_state.name}입니다. BOUGHT로 변경합니다.", "WARNING")
                             stock_info.strategy_state = TradingState.BOUGHT
-                            stock_info.avg_buy_price = self._safe_to_float(self.account_state.portfolio[code].get('매입가', 0))
-                            stock_info.total_buy_quantity = self._safe_to_int(self.account_state.portfolio[code].get('보유수량', 0))
+                            stock_info.avg_buy_price = _safe_to_float(self.account_state.portfolio[code].get('매입가', 0))
+                            stock_info.total_buy_quantity = _safe_to_int(self.account_state.portfolio[code].get('보유수량', 0))
                         
                         # trading_status에도 상태 저장
                         self.account_state.trading_status[code] = {
