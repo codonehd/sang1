@@ -1,12 +1,12 @@
 {
   "daily_buy_executed_count": 0,
-  "today_date_for_buy_limit": "2025-05-24",
+  "today_date_for_buy_limit": "2025-05-27",
   "trading_status": {},
   "watchlist": {
     "384470": {
       "code": "384470",
       "stock_name": "코어라인소프트",
-      "current_price": 0.0,
+      "current_price": 8060.0,
       "yesterday_close_price": 7550.0,
       "strategy_state": "WAITING",
       "avg_buy_price": 0.0,
@@ -34,9 +34,9 @@
     "464080": {
       "code": "464080",
       "stock_name": "에스오에스랩",
-      "current_price": 0.0,
+      "current_price": 13850.0,
       "yesterday_close_price": 13850.0,
-      "strategy_state": "BOUGHT",
+      "strategy_state": "WAITING",
       "avg_buy_price": 0.0,
       "total_buy_quantity": 0,
       "current_high_price_after_buy": 0.0,
@@ -48,7 +48,7 @@
     "481070": {
       "code": "481070",
       "stock_name": "에이유브랜즈",
-      "current_price": 0.0,
+      "current_price": 17070.0,
       "yesterday_close_price": 16000.0,
       "strategy_state": "WAITING",
       "avg_buy_price": 0.0,
@@ -72,5 +72,5 @@
     "손실금액": 0
   },
   "last_snapshot_date": "2025-05-22",
-  "saved_datetime": "2025-05-24 11:02:44"
+  "saved_datetime": "2025-05-27 12:14:22"
 }
