@@ -970,7 +970,7 @@ class TradingStrategy(QObject):
         """
         # 이미 보유중인지 확인 (watchlist 상태와 실제 portfolio 모두 확인)
         if code in self.account_state.portfolio:
-            holding_quantity = self._safe_to_int(self.account_state.portfolio[code].get('보유수량', 0))
+            holding_quantity = _safe_to_int(self.account_state.portfolio[code].get('보유수량', 0))
             if holding_quantity > 0:
                 # 이미 종목을 보유 중인데 상태가 잘못되어 있는 경우 상태 교정
                 if stock_info.strategy_state != TradingState.BOUGHT:
