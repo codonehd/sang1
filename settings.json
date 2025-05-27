@@ -5,7 +5,7 @@
     },
     "매수금액": 1000000,
     "매매전략": {
-        "익절_수익률": 5.0,
+        "익절_수익률": 2.0,
         "익절_매도비율": 50,
         "최종_익절_수익률": 9.0,
         "트레일링_활성화_수익률": 2.0,
@@ -32,7 +32,8 @@
     "watchlist": [
         
         
-        { "code": "439580", "name": "블루엠텍", "yesterday_close_price": 7450 }
+        { "code": "376180", "name": "피코그램", "yesterday_close_price": 3310 },
+        { "code": "126730", "name": "코칩", "yesterday_close_price": 13000 }
     ],
     "PeriodicStatusReport": {
         "enabled": true,

@@ -1,13 +1,13 @@
 {
-  "daily_buy_executed_count": 0,
+  "daily_buy_executed_count": 1,
   "today_date_for_buy_limit": "2025-05-27",
   "trading_status": {},
   "watchlist": {
-    "384470": {
-      "code": "384470",
-      "stock_name": "코어라인소프트",
-      "current_price": 8060.0,
-      "yesterday_close_price": 7550.0,
+    "376180": {
+      "code": "376180",
+      "stock_name": "피코그램",
+      "current_price": 3190.0,
+      "yesterday_close_price": 3310.0,
       "strategy_state": "WAITING",
       "avg_buy_price": 0.0,
       "total_buy_quantity": 0,
@@ -17,39 +17,11 @@
       "partial_take_profit_executed": false,
       "buy_completion_count": 0
     },
-    "330350": {
-      "code": "330350",
-      "stock_name": "위더스제약",
-      "current_price": 0.0,
-      "yesterday_close_price": 8300.0,
-      "strategy_state": "WAITING",
-      "avg_buy_price": 0.0,
-      "total_buy_quantity": 0,
-      "current_high_price_after_buy": 0.0,
-      "is_trailing_stop_active": false,
-      "trailing_stop_partially_sold": false,
-      "partial_take_profit_executed": false,
-      "buy_completion_count": 0
-    },
-    "464080": {
-      "code": "464080",
-      "stock_name": "에스오에스랩",
-      "current_price": 13850.0,
-      "yesterday_close_price": 13850.0,
-      "strategy_state": "WAITING",
-      "avg_buy_price": 0.0,
-      "total_buy_quantity": 0,
-      "current_high_price_after_buy": 0.0,
-      "is_trailing_stop_active": false,
-      "trailing_stop_partially_sold": false,
-      "partial_take_profit_executed": false,
-      "buy_completion_count": 0
-    },
-    "481070": {
-      "code": "481070",
-      "stock_name": "에이유브랜즈",
-      "current_price": 17070.0,
-      "yesterday_close_price": 16000.0,
+    "126730": {
+      "code": "126730",
+      "stock_name": "코칩",
+      "current_price": 12580.0,
+      "yesterday_close_price": 13000.0,
       "strategy_state": "WAITING",
       "avg_buy_price": 0.0,
       "total_buy_quantity": 0,
@@ -72,5 +44,5 @@
     "손실금액": 0
   },
   "last_snapshot_date": "2025-05-22",
-  "saved_datetime": "2025-05-27 12:14:22"
+  "saved_datetime": "2025-05-27 12:53:37"
 }
