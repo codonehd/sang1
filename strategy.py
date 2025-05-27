@@ -2523,15 +2523,15 @@ class TradingStrategy(QObject):
                             self.log(f"[{code}] 해당 주문의 마지막 체결분 순손익: {net_profit_for_db:.0f}원 (참고: 총누적순손익: {final_net_profit_for_this_order:.0f}원)", "DEBUG")
                             
                             # 매도된 종목의 상태를 COMPLETE로 변경 (Enum의 이름(문자열)을 사용)
-                            ts['status'] = TradingState.COMPLETE.name
-                            self.log(f"[상태 업데이트] {code} ({stock_name}) 트레이딩 상태를 {TradingState.COMPLETE.name}으로 변경", "INFO")
-                        else:
-                            self.log(f"[{code}] trading_status의 항목이 예상된 딕셔너리 형태가 아닙니다. 타입: {type(ts)}", "ERROR")
-                    else:
-                        self.log(f"[{code}] trading_status에 해당 종목 정보가 없어 상태를 COMPLETE로 변경할 수 없습니다.", "WARNING")
+                            # ts['status'] = TradingState.COMPLETE.name # 이 줄은 아래의 새 로직으로 대체됨
+                            # self.log(f"[상태 업데이트] {code} ({stock_name}) 트레이딩 상태를 {TradingState.COMPLETE.name}으로 변경", "INFO")
+                        # else:
+                            # self.log(f"[{code}] trading_status의 항목이 예상된 딕셔너리 형태가 아닙니다. 타입: {type(ts)}", "ERROR")
+                    # else:
+                        # self.log(f"[{code}] trading_status에 해당 종목 정보가 없어 상태를 COMPLETE로 변경할 수 없습니다.", "WARNING")
                     
                     # 포트폴리오 임시 주문 수량 초기화
-                    portfolio_item = self.account_state.portfolio.get(code)
+                    portfolio_item = self.account_state.portfolio.get(code) # 이미 위에서 한번 호출했지만, 명확성을 위해 다시 가져올 수 있음 (또는 기존 변수 사용)
                     if portfolio_item and portfolio_item.get('임시_주문수량', 0) > 0:
                         old_temp_qty = portfolio_item.get('임시_주문수량', 0)
                         portfolio_item['임시_주문수량'] = 0
@@ -2543,29 +2543,49 @@ class TradingStrategy(QObject):
                         stock_info.temp_order_quantity = 0
                         self.log(f"[{code}] 매도 체결 완료 후 StockTrackingData 임시 주문 수량 초기화: {old_temp_qty} -> 0", "INFO")
                     
-                    portfolio_item = self.account_state.portfolio.get(code)
-                    if portfolio_item and portfolio_item.get('보유수량', 0) == 0:
-                        self.log(f"{TradeColors.FILLED}🏁 [SELL_COMPLETED] {code} ({stock_name}) 전량 매도 완료. 관련 전략 정보 초기화.{TradeColors.RESET}", "INFO")
-                        self.reset_stock_strategy_info(code) # 내부에서 stock_info 상태를 WAITING 등으로 변경
-                    else: # 부분 매도 후 잔량 남은 경우 (이론상 PARTIAL_SOLD는 여기서 안되어야 함. 전량체결이므로)
-                          # 하지만, 포트폴리오에 잔량이 남아있다면 (Kiwoom 잔고통보가 아직 덜 왔거나 하는 예외상황)
-                          # reset_stock_strategy_info 대신 PARTIAL_SOLD로 둘 수 있음.
-                          # 여기서는 reset_stock_strategy_info가 내부적으로 IDLE 또는 WAITING으로 설정한다고 가정.
-                        self.log(f"{code} ({stock_name}) 매도 주문 전량 체결. 포트폴리오 보유량: {portfolio_item.get('보유수량', 'N/A')}. 상태는 reset_stock_strategy_info에 의해 결정됨.", "INFO")
-                        # 부분 매도 완료 시나리오는 _check_and_execute_partial_take_profit 등에서 이미 PARTIAL_SOLD로 설정했을 것임.
-                        # 여기서 '전량 체결'은 주문 단위의 전량 체결이므로, 보유량이 0이 되면 reset.
-                        if portfolio_item and portfolio_item.get('보유수량', 0) > 0 :
-                             stock_info.strategy_state = TradingState.PARTIAL_SOLD # 만약 아직 보유량이 있다면 PARTIAL_SOLD
-                             self.log(f"{code} ({stock_name}) 매도 전량체결이나 포트폴리오 잔량 남아있어 PARTIAL_SOLD로 상태 유지. 수량: {portfolio_item.get('보유수량')}", "WARNING")
-                             
-                             # StockTrackingData 임시 주문 수량 초기화
-                             if hasattr(stock_info, 'temp_order_quantity') and stock_info.temp_order_quantity > 0:
-                                old_temp_qty = stock_info.temp_order_quantity
-                                stock_info.temp_order_quantity = 0
-                                self.log(f"[{code}] 매도 체결 완료 후 StockTrackingData 임시 주문 수량 초기화: {old_temp_qty} -> 0", "INFO")
+                    # <<< 여기가 핵심 수정 지점 >>>
+                    if portfolio_item:
+                        remaining_qty = _safe_to_int(portfolio_item.get('보유수량', 0))
+                        if remaining_qty == 0:
+                            # 실제 종목 전량 매도 완료
+                            self.log(f"{TradeColors.FILLED}🏁 [SELL_COMPLETED] {code} ({stock_name}) 포트폴리오 상 전량 매도 완료. 관련 전략 정보 초기화.{TradeColors.RESET}", "INFO")
+                            self.reset_stock_strategy_info(code) # WAITING 등으로 상태 변경
+                            
+                            if code in self.account_state.trading_status:
+                                ts_entry = self.account_state.trading_status[code]
+                                if isinstance(ts_entry, dict):
+                                    ts_entry['status'] = TradingState.COMPLETE.name # COMPLETE 상태로 변경
+                                    self.log(f"[상태 업데이트] {code} ({stock_name}) 트레이딩 상태를 {TradingState.COMPLETE.name}으로 변경 (전량 매도 완료)", "INFO")
+                                else:
+                                    self.log(f"경고: {code}의 trading_status 항목이 dict가 아님. COMPLETE 상태 변경 불가.", "WARNING")
+                            else:
+                                self.log(f"경고: {code}가 trading_status에 없어 COMPLETE로 상태 변경 못함", "WARNING")
+
+                        elif remaining_qty > 0:
+                            # 부분 매도 완료 (잔량 존재)
+                            stock_info.strategy_state = TradingState.PARTIAL_SOLD
+                            self.log(f"{code} ({stock_name}) 주문은 전량 체결되었으나, 포트폴리오에 잔량({remaining_qty}) 존재. StockTrackingData 상태를 PARTIAL_SOLD로 설정/유지.", "INFO")
+                            
+                            if code in self.account_state.trading_status:
+                                ts_entry = self.account_state.trading_status[code]
+                                if isinstance(ts_entry, dict):
+                                    ts_entry['status'] = TradingState.PARTIAL_SOLD.name # PARTIAL_SOLD 상태로 변경
+                                    self.log(f"[상태 업데이트] {code} ({stock_name}) 트레이딩 상태를 {TradingState.PARTIAL_SOLD.name}으로 변경 (부분 매도 주문 완료 후 잔량 존재)", "INFO")
+                                else:
+                                    self.log(f"경고: {code}의 trading_status 항목이 dict가 아님. PARTIAL_SOLD 상태 변경 불가.", "WARNING")
+                            else:
+                               self.log(f"경고: {code}가 trading_status에 없어 PARTIAL_SOLD로 상태 변경 못함", "WARNING")
+                        # else: remaining_qty < 0 인 경우는 비정상적이므로 로깅만 (위에서 _safe_to_int로 처리되어 음수가 나오긴 어려움)
+                        #    self.log(f"경고: {code} ({stock_name}) 포트폴리오 보유수량 음수({remaining_qty}). 상태 변경 로직 재검토 필요.", "ERROR")
+                            
+                    else: # portfolio_item이 없는 경우 (매우 예외적 상황)
+                        self.log(f"경고: {code} ({stock_name}) 주문 전량 체결되었으나, 포트폴리오 정보를 찾을 수 없음. 상태 변경 보류.", "ERROR")
+                        # 이 경우 reset_stock_strategy_info를 호출하여 최소한의 안전 상태로 만들거나,
+                        # 또는 아무것도 하지 않고 다음 로직/주기적 점검에서 처리되도록 할 수 있음.
+                        # 여기서는 일단 로그만 남기고 넘어감.
 
                 # stock_info의 last_order_rq_name 초기화 조건: 현재 완료된 주문의 original_rq_name_key와 일치할 때
-                if stock_info.last_order_rq_name == original_rq_name_key:
+                if stock_info and stock_info.last_order_rq_name == original_rq_name_key: # stock_info None 체크 추가
                     stock_info.last_order_rq_name = None
                     self.log(f"{code}의 last_order_rq_name을 None으로 설정 (체결 완료). 이전 RQNameKey: {original_rq_name_key}", "INFO")
                 elif stock_info.last_order_rq_name and stock_info.last_order_rq_name != original_rq_name_key:

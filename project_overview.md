@@ -302,7 +302,7 @@
     *   `trades` 테이블에 `net_profit` 컬럼 추가.
     *   `settings.json`에 `account_type` (모의/실거래) 설정 추가.
     *   계좌 유형(`account_type` 설정)에 따라 **키움증권의 공식 규정을 확인**하여 실제 수수료율 및 세금 계산 로직을 **정확하게 적용**하고, 이를 통해 계산된 순수익금(`net_profit`)을 DB에 기록하는 것을 최우선으로 고려. (단순 예상/예측이 아닌 **공식 문서 기반의 정밀한 계산**)
-*   **슬리피지 관리 기능 부재 및 개선 필요성 인지**: 현재 슬리피지 측정 및 관리 기능이 없음을 명시하고, 향후 슬리피지 계산, `trades` 테이블에 `slippage` 컬럼 추가, 관련 알림 및 주문 전략 가이드 제공 검토.
+*   **슬리피지 관리 기능 부재 및 개선 필요성 인지**: 현재 슬리피지 측정 및 관리 기능이 없음을 명시하고, 향후 슬리피지 계산, `trades` 테이블에 `slippage` 컬럼 추가 및 관련 기능 도입 필요성 인지.
 
 ## 8. 향후 개선 방향 (제안)
 
@@ -412,3 +412,16 @@
 
 ---
 *이 섹션은 2024년 12월 현재 AI 어시스턴트의 프로그램 파악 수준과 주요 기능 변경사항 및 문제 해결 진행사항을 기록한 것으로, 향후 협업 효율성 향상을 위해 지속적으로 업데이트될 예정입니다.*
+
+## 최근 변경 및 수정 사항
+
+### 2024-07-30
+
+- **버그 수정: 부분 익절 후 상태 처리 오류 해결**
+    - **문제점:** 부분 익절 주문의 모든 요청 수량이 체결되었을 때, 프로그램이 이를 해당 '종목'의 전량 매도로 오인하여 `TradingState` Enum에 정의되지 않은 `SOLD` 상태로 변경하려다 `AttributeError: SOLD` 오류를 발생시키며 비정상 종료되는 문제가 있었습니다.
+    - **원인 분석:** `_handle_order_execution_report` 함수에서 '주문'의 전량 체결과 '종목 보유량'의 전량 매도를 명확히 구분하지 못하고, `account_state.trading_status`의 상태를 업데이트하는 로직이 미흡했습니다.
+    - **해결 방안:**
+        1. 매도 주문의 모든 요청 수량이 체결된 경우(`unfilled_qty == 0`), `update_portfolio_on_execution`을 통해 업데이트된 실제 포트폴리오의 잔여 보유 수량을 확인합니다.
+        2. 잔여 보유 수량이 0이면 (실제 전량 매도 완료), `stock_info.strategy_state`는 `reset_stock_strategy_info`를 통해 `WAITING` 등으로 초기화되고, `account_state.trading_status`의 해당 종목 상태는 `TradingState.COMPLETE.name`으로 설정됩니다.
+        3. 잔여 보유 수량이 0보다 크면 (부분 매도 완료), `stock_info.strategy_state`는 `TradingState.PARTIAL_SOLD.name`으로 설정하고, `account_state.trading_status`의 해당 종목 상태도 `TradingState.PARTIAL_SOLD.name`으로 명확히 설정하여, 남은 물량에 대한 매도 감시 로직이 지속되도록 수정했습니다.
+    - **추가 확인:** `database.py`의 `trades` 테이블에는 `net_profit` 컬럼이 이미 올바르게 정의되어 있었음을 확인했습니다. (초기 분석에서 누락된 것으로 오인했었음)
