@@ -2522,13 +2522,13 @@ class TradingStrategy(QObject):
                                                                                                         # net_profit_for_db가 마지막 체결분에 대한 순손익.
                             self.log(f"[{code}] 해당 주문의 마지막 체결분 순손익: {net_profit_for_db:.0f}원 (참고: 총누적순손익: {final_net_profit_for_this_order:.0f}원)", "DEBUG")
                             
-                            # 매도된 종목의 상태를 SOLD로 변경 (Enum의 이름(문자열)을 사용)
-                            ts['status'] = TradingState.SOLD.name 
-                            self.log(f"[상태 업데이트] {code} ({stock_name}) 트레이딩 상태를 {TradingState.SOLD.name}으로 변경", "INFO")
+                            # 매도된 종목의 상태를 COMPLETE로 변경 (Enum의 이름(문자열)을 사용)
+                            ts['status'] = TradingState.COMPLETE.name
+                            self.log(f"[상태 업데이트] {code} ({stock_name}) 트레이딩 상태를 {TradingState.COMPLETE.name}으로 변경", "INFO")
                         else:
                             self.log(f"[{code}] trading_status의 항목이 예상된 딕셔너리 형태가 아닙니다. 타입: {type(ts)}", "ERROR")
                     else:
-                        self.log(f"[{code}] trading_status에 해당 종목 정보가 없어 상태를 SOLD로 변경할 수 없습니다.", "WARNING")
+                        self.log(f"[{code}] trading_status에 해당 종목 정보가 없어 상태를 COMPLETE로 변경할 수 없습니다.", "WARNING")
                     
                     # 포트폴리오 임시 주문 수량 초기화
                     portfolio_item = self.account_state.portfolio.get(code)
