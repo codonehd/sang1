@@ -318,6 +318,9 @@ class TradingStrategy(QObject):
         # 주기적 상태 보고 관련 설정
         self.settings.periodic_report_enabled = self.modules.config_manager.get_setting("PeriodicStatusReport", "enabled", True)
         self.settings.periodic_report_interval_seconds = self.modules.config_manager.get_setting("PeriodicStatusReport", "interval_seconds", 60)
+        
+        self.account_type = self.modules.config_manager.get_setting("계좌정보", "account_type", "실거래") # 기본값을 config.py와 일치
+        self.log(f"계좌 유형 설정 로드: {self.account_type}", "INFO")
 
     def log(self, message, level="INFO"):
         """색상 지원 로그 메서드 - Logger 모듈을 통해 파일 및 콘솔에 기록"""
@@ -1448,6 +1451,7 @@ class TradingStrategy(QObject):
                         "order_qty": order_quantity,
                         "quantity": order_quantity, # For compatibility if other parts use 'quantity'
                         "price": current_price,  # 주문 시점의 현재가 (참고용)
+                        "expected_price": current_price, # <--- 이 줄 추가
                         "order_price": order_price,  # 실제 주문 가격 (지정가 주문 시 사용)
                         "order_time": order_time,
                         "status": "접수",
@@ -1576,6 +1580,7 @@ class TradingStrategy(QObject):
                 'unfilled_qty': sell_quantity, # Initial unfilled quantity
                 'last_known_unfilled_qty': sell_quantity, # Initialize here
                 'order_price': price_to_order,
+                'expected_price': price_to_order, # <--- 이 줄 추가
                 'order_status': '접수요청', 
                 'timestamp': get_current_time_str(),
                 'reason': reason
@@ -2322,6 +2327,18 @@ class TradingStrategy(QObject):
                         stock_info.temp_order_quantity = new_stock_temp_qty
                         self.log(f"[{code}] 부분 체결로 StockTrackingData 임시 주문 수량 감소: {old_stock_temp_qty} -> {new_stock_temp_qty} (체결량: {last_filled_qty})", "INFO")
                 
+                
+                slippage = 0  # 기본값
+                expected_price = active_order_entry_ref.get('expected_price')
+                if expected_price is not None and expected_price > 0 and last_filled_price > 0 : # last_filled_price는 이번 체결 가격
+                    if active_order_entry_ref['order_type'] == '매수':
+                        slippage = last_filled_price - expected_price
+                    elif active_order_entry_ref['order_type'] == '매도':
+                        slippage = expected_price - last_filled_price
+                    self.log(f"[{code}] 슬리피지 계산: {slippage:.2f} (예상가: {expected_price:.2f}, 체결가: {last_filled_price:.2f}, 유형: {active_order_entry_ref['order_type']})")
+                else:
+                    self.log(f"[{code}] 슬리피지 계산 불가: expected_price({expected_price}) 또는 last_filled_price({last_filled_price}) 정보 부족", "WARNING")
+                
                 self.update_portfolio_on_execution(code, stock_name, last_filled_price, last_filled_qty, trade_type)
 
                 # 매수 체결인 경우 추가 처리 (부분 체결 시에도 체결 정보와 상태 업데이트)
@@ -2367,18 +2384,66 @@ class TradingStrategy(QObject):
                 fees_from_chejan = _safe_to_float(chejan_data.get("938", 0)) # 수수료 FID
                 tax_from_chejan = _safe_to_float(chejan_data.get("939", 0))   # 세금 FID
 
-                self.modules.db_manager.add_trade( # 메서드명 및 파라미터 수정
+                # 계좌 유형별 수수료/세금 처리 기반
+                calculated_fees = fees_from_chejan
+                calculated_tax = tax_from_chejan
+
+                if self.account_type == "모의투자":
+                    self.log(f"[{code}] 모의투자 계좌 유형에 따른 수수료/세금 적용 예정 (현재는 API 값 사용).", "DEBUG")
+                    # TODO: 모의투자용 수수료/세금 계산 로직 (키움증권 공식 규정 확인 필요)
+                    # 예시: calculated_fees = (last_filled_price * last_filled_qty) * 0.0035 # 모의투자 수수료율 0.35% 가정
+                    #      calculated_tax = 0 # 모의투자는 세금 면제라고 가정 (실제 확인 필요)
+                    pass # 실제 로직은 다음 단계에서 구현
+                elif self.account_type == "실거래":
+                    self.log(f"[{code}] 실거래 계좌 유형에 따른 수수료/세금 적용 예정 (현재는 API 값 사용).", "DEBUG")
+                    # TODO: 실거래용 수수료/세금 계산 로직 (키움증권 공식 규정 확인 필요)
+                    # 예시: calculated_fees = fees_from_chejan # API 값을 그대로 사용하거나, 필요시 재계산
+                    #      calculated_tax = tax_from_chejan  # API 값을 그대로 사용하거나, 필요시 재계산 (매도 시 세금 등)
+                    pass # 실제 로직은 다음 단계에서 구현
+                else:
+                    self.log(f"[{code}] 알 수 없는 계좌 유형({self.account_type}). 기본 API 수수료/세금 값 사용.", "WARNING")
+                
+                net_profit_for_db = 0
+                if active_order_entry_ref['order_type'] == '매도' and stock_info: # stock_info가 있어야 bought_price 접근 가능
+                    # profit_amount 계산은 전량 매도 시에만 수행되었으므로, 여기서 bought_price를 다시 가져와야 할 수 있음
+                    bought_price_for_net_profit = 0
+                    if code in self.account_state.trading_status:
+                        ts_status = self.account_state.trading_status[code]
+                        if isinstance(ts_status, dict):
+                             bought_price_for_net_profit = ts_status.get('bought_price', 0)
+                    if bought_price_for_net_profit == 0 and stock_info.avg_buy_price > 0 : # trading_status에 없다면 stock_info에서 가져오기
+                        bought_price_for_net_profit = stock_info.avg_buy_price
+                    
+                    if bought_price_for_net_profit > 0 :
+                        매도체결금액 = last_filled_price * last_filled_qty
+                        매수원금_이번체결분 = bought_price_for_net_profit * last_filled_qty
+                        # 순수익금 계산 시 calculated_fees, calculated_tax 사용하도록 수정
+                        net_profit_amount_이번체결분 = 매도체결금액 - 매수원금_이번체결분 - calculated_fees - calculated_tax # 수정됨
+                        net_profit_for_db = net_profit_amount_이번체결분
+                        
+                        self.log(f"[{code}] 순수익금(이번 체결분) 계산: {net_profit_amount_이번체결분:.0f}원 (매도금액: {매도체결금액:.0f}, 매수원금({bought_price_for_net_profit:.0f}*{last_filled_qty}): {매수원금_이번체결분:.0f}, 적용된수수료: {calculated_fees:.0f}, 적용된세금: {calculated_tax:.0f})")
+                        
+                        if '총순손익금' not in self.account_state.trading_records:
+                            self.account_state.trading_records['총순손익금'] = 0
+                        self.account_state.trading_records['총순손익금'] += net_profit_amount_이번체결분
+                    else:
+                        self.log(f"[{code}] 매도 순수익금 계산 불가: 매수가 정보 부족 (bought_price_for_net_profit: {bought_price_for_net_profit})", "WARNING")
+
+
+                self.modules.db_manager.add_trade( 
                     order_no=log_order_no_ref, 
                     code=code,
-                    name=stock_name, # stock_name 사용
+                    name=stock_name, 
                     trade_type=trade_type,
                     quantity=last_filled_qty,
                     price=last_filled_price,
                     trade_reason=active_order_entry_ref.get('reason', ''),
-                    fees=fees_from_chejan, # 체결 데이터에서 가져온 수수료
-                    tax=tax_from_chejan    # 체결 데이터에서 가져온 세금
+                    fees=calculated_fees,   # 수정됨
+                    tax=calculated_tax,     # 수정됨
+                    net_profit=net_profit_for_db, 
+                    slippage=slippage             
                 )
-                self.log(f"DB에 체결 기록 저장 완료: {code}, {trade_type}, {last_filled_qty}주 @ {last_filled_price}원 (수수료: {fees_from_chejan}, 세금: {tax_from_chejan})", "DEBUG")
+                self.log(f"DB에 체결 기록 저장 완료: {code}, {trade_type}, {last_filled_qty}주 @ {last_filled_price}원 (적용된수수료: {calculated_fees}, 적용된세금: {calculated_tax}, 순손익: {net_profit_for_db}, 슬리피지: {slippage})", "DEBUG")
 
         # 전량 체결 완료 시 처리 (미체결 0 그리고 상태 '체결')
         if unfilled_qty == 0 and order_status == '체결':
@@ -2419,25 +2484,43 @@ class TradingStrategy(QObject):
                             executed_price = _safe_to_float(chejan_data.get("10")) # 체결가 추가
                             # 🔧 수정: 전량 체결이므로 원 주문 수량 사용 (FID 911 사용 중단)
                             executed_qty = original_order_qty  # 전량 체결 시 전체 주문 수량
-                            profit_amount = (executed_price - bought_price) * executed_qty
-                            profit_rate = round((executed_price / bought_price - 1) * 100, 2) if bought_price > 0 else 0
+                            bought_price = ts.get('bought_price', 0) # 이 bought_price는 평균 매수가
+                            executed_price = _safe_to_float(chejan_data.get("10")) # 체결가
+                            executed_qty = original_order_qty  # 전량 체결 시 전체 주문 수량
                             
-                            # 수익/손실에 따른 색상 구분
-                            profit_color = TradeColors.PROFIT if profit_amount > 0 else TradeColors.LOSS
-                            profit_emoji = "💰" if profit_amount > 0 else "📉"
-                            self.log(f"{profit_color}{profit_emoji} [매도 상세] 매도가: {executed_price}, 매수가: {bought_price}, 수익금: {profit_amount}원, 수익률: {profit_rate}%{TradeColors.RESET}")
+                            # 총 손익금 (Gross Profit)
+                            profit_amount_gross = (executed_price - bought_price) * executed_qty
+                            profit_rate_gross = round((executed_price / bought_price - 1) * 100, 2) if bought_price > 0 else 0
                             
-                            # 통계 업데이트
+                            # 수익/손실에 따른 색상 구분 (총 손익금 기준)
+                            profit_color = TradeColors.PROFIT if profit_amount_gross > 0 else TradeColors.LOSS
+                            profit_emoji = "💰" if profit_amount_gross > 0 else "📉"
+                            self.log(f"{profit_color}{profit_emoji} [매도 상세(총)] 매도가: {executed_price}, 평균매수가: {bought_price}, 총수익금: {profit_amount_gross}원, 총수익률: {profit_rate_gross}%{TradeColors.RESET}")
+                            
+                            # 통계 업데이트 (총손익금 - Gross)
                             self.account_state.trading_records['매도건수'] += 1
-                            self.account_state.trading_records['매도금액'] += executed_qty * executed_price
-                            self.account_state.trading_records['총손익금'] += profit_amount
+                            self.account_state.trading_records['매도금액'] += executed_qty * executed_price # 총 매도금액
+                            self.account_state.trading_records['총손익금'] += profit_amount_gross # Gross Profit
                             
-                            if profit_amount > 0:
+                            if profit_amount_gross > 0:
                                 self.account_state.trading_records['이익건수'] += 1
-                                self.account_state.trading_records['이익금액'] += profit_amount
+                                self.account_state.trading_records['이익금액'] += profit_amount_gross
                             else:
                                 self.account_state.trading_records['손실건수'] += 1
-                                self.account_state.trading_records['손실금액'] += abs(profit_amount)
+                                self.account_state.trading_records['손실금액'] += abs(profit_amount_gross)
+                            
+                            # 순손익금 (Net Profit) - 이미 위에서 `net_profit_amount_이번체결분`으로 계산되어 `총순손익금`에 누적됨.
+                            # 여기서는 전량 체결 시의 최종 순손익을 한번 더 로깅할 수 있음.
+                            # 다만, 부분 체결이 여러번 있었다면, `net_profit_amount_이번체결분`은 마지막 체결 건에 대한 순손익임.
+                            # 전체 주문에 대한 총 순손익을 보려면, active_order_entry_ref에 누적된 fees, tax를 사용하거나,
+                            # DB에서 해당 주문번호의 모든 거래를 합산해야 함.
+                            # 현재는 `net_profit_amount_이번체결분`이 `총순손익금`에 계속 누적되므로,
+                            # `self.account_state.trading_records['총순손익금']`이 해당 주문의 최종 누적 순손익을 반영.
+                            # 여기서는 로깅 목적으로만 간단히 표시.
+                            final_net_profit_for_this_order = self.account_state.trading_records.get('총순손익금', 0) # 이 값은 전체 누적임.
+                                                                                                        # 이번 주문만의 순손익은 아님.
+                                                                                                        # net_profit_for_db가 마지막 체결분에 대한 순손익.
+                            self.log(f"[{code}] 해당 주문의 마지막 체결분 순손익: {net_profit_for_db:.0f}원 (참고: 총누적순손익: {final_net_profit_for_this_order:.0f}원)", "DEBUG")
                             
                             # 매도된 종목의 상태를 SOLD로 변경 (Enum의 이름(문자열)을 사용)
                             ts['status'] = TradingState.SOLD.name 

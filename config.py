@@ -8,7 +8,8 @@ import json
 DEFAULT_SETTINGS = {
     "계좌정보": {
         "계좌번호": "0000000000", 
-        "비밀번호": ""
+        "비밀번호": "",
+        "account_type": "실거래"  # <--- 이 줄 추가 (기본값은 "실거래" 또는 "모의투자" 중 선택)
     },
     "매수금액": 1000000, 
     "매매전략": {
@@ -85,11 +86,22 @@ class ConfigManager:
 
         # 1. 계좌번호 (account_number)
         account_number = current_settings.get("계좌정보", {}).get("계좌번호", DEFAULT_SETTINGS["계좌정보"]["계좌번호"])
+        account_settings = current_settings.get("계좌정보", DEFAULT_SETTINGS["계좌정보"].copy())
+        default_account_settings = DEFAULT_SETTINGS["계좌정보"]
+
+        account_number = account_settings.get("계좌번호", default_account_settings["계좌번호"])
         if not isinstance(account_number, str) or not account_number.strip():
-            self._log_message(f"설정 오류: '계좌정보.계좌번호'가 유효하지 않습니다 (값: '{account_number}'). 기본값 '{DEFAULT_SETTINGS['계좌정보']['계좌번호']}'으로 대체합니다.", "WARNING")
-            account_number = DEFAULT_SETTINGS["계좌정보"]["계좌번호"]
-        if "계좌정보" not in current_settings: current_settings["계좌정보"] = {}
-        current_settings["계좌정보"]["계좌번호"] = account_number
+            self._log_message(f"설정 오류: '계좌정보.계좌번호'가 유효하지 않습니다 (값: '{account_number}'). 기본값 '{default_account_settings['계좌번호']}'으로 대체합니다.", "WARNING")
+            account_number = default_account_settings["계좌번호"]
+        account_settings["계좌번호"] = account_number
+        
+        account_type = account_settings.get("account_type", default_account_settings["account_type"])
+        if account_type not in ["실거래", "모의투자"]:
+            self._log_message(f"설정 오류: '계좌정보.account_type'이 유효하지 않습니다 (값: '{account_type}'). 기본값 '{default_account_settings['account_type']}'으로 대체합니다.", "WARNING")
+            account_type = default_account_settings["account_type"]
+        account_settings["account_type"] = account_type
+
+        current_settings["계좌정보"] = account_settings
 
         # 2. 종목당 매수 금액 (buy_amount_per_stock) - "매수금액" 키 사용
         buy_amount = current_settings.get("매수금액", DEFAULT_SETTINGS["매수금액"])

@@ -55,7 +55,9 @@ class Database:
                 trade_time TEXT NOT NULL,
                 trade_reason TEXT,
                 fees REAL DEFAULT 0,
-                tax REAL DEFAULT 0
+                tax REAL DEFAULT 0,
+                net_profit REAL DEFAULT 0,
+                slippage REAL DEFAULT 0
             )
             ''')
 
@@ -297,7 +299,7 @@ class Database:
                 print(f"ERROR: 일별 계좌 스냅샷 추가 오류 ({date}): {e}")
             return False
             
-    def add_trade(self, order_no, code, name, trade_type, quantity, price, trade_reason=None, fees=0, tax=0):
+    def add_trade(self, order_no, code, name, trade_type, quantity, price, trade_reason=None, fees=0, tax=0, net_profit=0, slippage=0):
         """
         거래 내역 추가
         
@@ -318,9 +320,9 @@ class Database:
             amount = quantity * price
             
             cursor.execute(
-                "INSERT INTO trades (order_no, code, name, trade_type, quantity, price, amount, trade_time, trade_reason, fees, tax) "
-                "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
-                (order_no, code, name, trade_type, quantity, price, amount, now, trade_reason, fees, tax)
+                "INSERT INTO trades (order_no, code, name, trade_type, quantity, price, amount, trade_time, trade_reason, fees, tax, net_profit, slippage) "
+                "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)", # 물음표 개수 확인
+                (order_no, code, name, trade_type, quantity, price, amount, now, trade_reason, fees, tax, net_profit, slippage) # 전달 변수 추가
             )
             
             self.conn.commit()
@@ -448,7 +450,9 @@ class Database:
                     "trade_time": row[8],
                     "trade_reason": row[9],
                     "fees": row[10],
-                    "tax": row[11]
+                    "tax": row[11],
+                    "net_profit": row[12] if len(row) > 12 else 0, # Handle older rows that might not have these columns
+                    "slippage": row[13] if len(row) > 13 else 0   # Handle older rows
                 })
             
             return result
@@ -528,7 +532,9 @@ class Database:
                     trade_time TEXT NOT NULL,
                     trade_reason TEXT,
                     fees REAL DEFAULT 0,
-                    tax REAL DEFAULT 0
+                    tax REAL DEFAULT 0,
+                    net_profit REAL DEFAULT 0,
+                    slippage REAL DEFAULT 0
                 )
                 ''')
                 self.conn.commit()
