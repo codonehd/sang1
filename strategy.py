@@ -320,19 +320,23 @@ class TradingStrategy(QObject):
         self.settings.periodic_report_interval_seconds = self.modules.config_manager.get_setting("PeriodicStatusReport", "interval_seconds", 60)
 
     def log(self, message, level="INFO"):
-        """색상 지원 로그 메서드 - 콘솔과 로그 파일 모두에 색상 정보 저장"""
+        """색상 지원 로그 메서드 - Logger 모듈을 통해 파일 및 콘솔에 기록"""
         timestamp = get_current_time_str()
         
-        # 로그 파일과 콘솔 모두에 색상 정보 포함하여 저장
         if hasattr(self, 'modules') and self.modules and hasattr(self.modules, 'logger') and self.modules.logger:
             log_func = getattr(self.modules.logger, level.lower(), self.modules.logger.info)
+            # 로그 메시지 포맷은 Logger 클래스에서 처리하므로, 여기서는 순수 메시지만 전달하거나,
+            # Strategy 모듈명을 명시적으로 포함하여 전달할 수 있습니다.
+            # 여기서는 기존처럼 [Strategy] 접두사를 포함하여 전달합니다.
             log_func(f"[Strategy][{timestamp}] {message}")
-            
-            # 콘솔에도 색상으로 출력 (ANSI 색상 지원 터미널용)
-            print(f"[{level.upper()}][Strategy][{timestamp}] {message}")
         else:
-            # Fallback: 콘솔 출력
-            print(f"[{level.upper()}][Strategy_FALLBACK][{timestamp}] {message}")
+            # Logger 모듈이 없는 경우에 대한 fallback 로깅 (예: 표준 print 또는 logging 사용)
+            # 이 부분은 원래 print를 사용했으므로, 만약 logger가 없는 극단적인 상황을 대비해 유지하거나,
+            # 혹은 logger가 항상 존재한다고 가정하고 이 else 블록을 제거할 수 있습니다.
+            # 현재 요구사항은 print 제거이므로, 이 fallback도 제거하거나 logger를 사용하는 방식으로 변경해야 합니다.
+            # 여기서는 logger가 항상 존재한다고 가정하고 else 블록 내용을 주석 처리하거나 삭제합니다.
+            # print(f"[{level.upper()}][Strategy_FALLBACK_NO_LOGGER][{timestamp}] {message}") # 이 부분도 제거
+            pass # Logger가 없다면 아무 동작도 하지 않음 (또는 기본 logging 모듈 사용 고려)
 
     def _on_login_completed(self, account_number_from_signal):
         self.log(f"[STRATEGY_LOGIN_DEBUG] _on_login_completed 호출됨. account_number_from_signal: '{account_number_from_signal}'", "DEBUG")
