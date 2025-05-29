@@ -199,3 +199,12 @@
 2025-05-20 22:02:19,488 - AppLogger - INFO - logger:84 - [Strategy][2025-05-20 22:02:19] 포트폴리오: 보유수량(5), 매입가(100000.0)
 2025-05-20 22:02:19,488 - AppLogger - INFO - logger:84 - [Strategy][2025-05-20 22:02:19] === 드라이런 테스트 시나리오 종료: 트레일링스탑_첫발동_시나리오3 ===\n
 2025-05-20 22:02:19,489 - AppLogger - INFO - logger:84 - 모든 드라이런 테스트 시나리오 실행 완료.
+2025-05-29 04:28:29,402 - AppLogger - INFO - logger:84 - 로깅 시스템 초기화 완료 (콘솔 및 파일 핸들러)
+2025-05-29 04:28:29,402 - AppLogger - INFO - logger:84 - Logger 초기화 완료.
+2025-05-29 04:28:29,402 - AppLogger - INFO - logger:84 - 'settings.json' 파일에서 설정을 로드했습니다.
+2025-05-29 04:28:29,402 - AppLogger - DEBUG - logger:81 - 로드된 설정과 기본 설정 병합 완료. 유효성 검사 시작...
+2025-05-29 04:28:29,402 - AppLogger - DEBUG - logger:81 - 설정값 유효성 검사 시작...
+2025-05-29 04:28:29,403 - AppLogger - DEBUG - logger:81 - 설정값 유효성 검사 완료.
+2025-05-29 04:28:29,403 - AppLogger - DEBUG - logger:81 - 최종 적용된 설정: {'계좌정보': {'계좌번호': '8101891811', '비밀번호': '', 'account_type': '실거래'}, '매수금액': 1000000, '매매전략': {'익절_수익률': 4.0, '익절_매도비율': 50, '트레일링_하락률': 1.5, '손절_손실률': 3.0, '종목당_최대시도횟수': 3, 'MarketOpenTime': '09:00:00', 'MarketCloseTime': '15:30:00', 'dry_run_mode': False, '최종_익절_수익률': 15.0, '트레일링_활성화_수익률': 4.1, '손절손실률_전일종가기준': 3.0}, 'watchlist': [{'code': '125020', 'name': '티씨머티리얼즈', 'yesterday_close_price': 7150.0}, {'code': '194370', 'name': '제이에스코퍼레이션', 'yesterday_close_price': 11770.0}, {'code': '214260', 'name': '라파스', 'yesterday_close_price': 19000.0}, {'code': '290670', 'name': '대보마그네틱', 'yesterday_close_price': 18120.0}, {'code': '114450', 'name': '그린생명과학', 'yesterday_close_price': 3720.0}], 'Database': {'path': 'logs/trading_data.test.db'}, 'Logging': {'level': 'INFO', 'max_bytes': 10485760, 'backup_count': 5}, 'API_Limit': {'tr_request_interval_ms': 210}, 'fee_tax_rates': {'실거래': {'buy_fee_rate': 0.00015, 'sell_fee_rate': 0.00015, 'sell_tax_rate': 0.0025}, '모의투자': {'buy_fee_rate': 0.0035, 'sell_fee_rate': 0.0035, 'sell_tax_rate': 0.002}}, 'AutoTrading': {'start_automatically': False}, 'PeriodicStatusReport': {'enabled': True, 'interval_seconds': 60}}
+2025-05-29 04:28:29,403 - AppLogger - INFO - logger:84 - ConfigManager 초기화 완료.
+2025-05-29 04:28:29,403 - AppLogger - ERROR - logger:90 - 테스트 오류: 드라이런 테스트는 settings.json에서 'dry_run_mode': true 로 설정해야 합니다.

@@ -1,0 +1,34 @@
+2025-05-29 04:31:11,692 - AppLogger - INFO - logger:84 - 로깅 시스템 초기화 완료 (콘솔 및 파일 핸들러)
+2025-05-29 04:31:11,692 - AppLogger - ERROR - logger:90 - 설정 로드 실패: Expecting value: line 1 column 2 (char 1). 기본 설정을 사용합니다.
+2025-05-29 04:31:11,692 - AppLogger - DEBUG - logger:81 - 설정값 유효성 검사 시작...
+2025-05-29 04:31:11,692 - AppLogger - DEBUG - logger:81 - 설정값 유효성 검사 완료.
+2025-05-29 04:31:11,702 - AppLogger - INFO - logger:84 - 데이터베이스 (logs/trading_data.test.db) 초기화 성공
+2025-05-29 04:31:11,708 - AppLogger - ERROR - logger:90 - 설정 로드 실패: Expecting value: line 1 column 2 (char 1). 기본 설정을 사용합니다.
+2025-05-29 04:31:11,708 - AppLogger - DEBUG - logger:81 - 설정값 유효성 검사 시작...
+2025-05-29 04:31:11,708 - AppLogger - DEBUG - logger:81 - 설정값 유효성 검사 완료.
+2025-05-29 04:31:11,709 - AppLogger - INFO - logger:84 - 데이터베이스 (logs/trading_data.test.db) 초기화 성공
+2025-05-29 04:31:11,711 - AppLogger - ERROR - logger:90 - 설정 로드 실패: Expecting value: line 1 column 2 (char 1). 기본 설정을 사용합니다.
+2025-05-29 04:31:11,711 - AppLogger - DEBUG - logger:81 - 설정값 유효성 검사 시작...
+2025-05-29 04:31:11,711 - AppLogger - DEBUG - logger:81 - 설정값 유효성 검사 완료.
+2025-05-29 04:31:11,711 - AppLogger - INFO - logger:84 - 데이터베이스 (logs/trading_data.test.db) 초기화 성공
+2025-05-29 04:31:11,713 - AppLogger - ERROR - logger:90 - 설정 로드 실패: Expecting value: line 1 column 2 (char 1). 기본 설정을 사용합니다.
+2025-05-29 04:31:11,713 - AppLogger - DEBUG - logger:81 - 설정값 유효성 검사 시작...
+2025-05-29 04:31:11,713 - AppLogger - DEBUG - logger:81 - 설정값 유효성 검사 완료.
+2025-05-29 04:31:11,713 - AppLogger - INFO - logger:84 - 데이터베이스 (logs/trading_data.test.db) 초기화 성공
+2025-05-29 05:01:24,375 - AppLogger - INFO - logger:84 - 로깅 시스템 초기화 완료 (콘솔 및 파일 핸들러)
+2025-05-29 05:01:24,376 - AppLogger - ERROR - logger:90 - 설정 로드 실패: Expecting value: line 1 column 2 (char 1). 기본 설정을 사용합니다.
+2025-05-29 05:01:24,376 - AppLogger - DEBUG - logger:81 - 설정값 유효성 검사 시작...
+2025-05-29 05:01:24,376 - AppLogger - DEBUG - logger:81 - 설정값 유효성 검사 완료.
+2025-05-29 05:01:24,377 - AppLogger - INFO - logger:84 - 데이터베이스 (logs/trading_data.test.db) 초기화 성공
+2025-05-29 05:01:24,379 - AppLogger - ERROR - logger:90 - 설정 로드 실패: Expecting value: line 1 column 2 (char 1). 기본 설정을 사용합니다.
+2025-05-29 05:01:24,379 - AppLogger - DEBUG - logger:81 - 설정값 유효성 검사 시작...
+2025-05-29 05:01:24,379 - AppLogger - DEBUG - logger:81 - 설정값 유효성 검사 완료.
+2025-05-29 05:01:24,380 - AppLogger - INFO - logger:84 - 데이터베이스 (logs/trading_data.test.db) 초기화 성공
+2025-05-29 05:01:24,381 - AppLogger - ERROR - logger:90 - 설정 로드 실패: Expecting value: line 1 column 2 (char 1). 기본 설정을 사용합니다.
+2025-05-29 05:01:24,381 - AppLogger - DEBUG - logger:81 - 설정값 유효성 검사 시작...
+2025-05-29 05:01:24,381 - AppLogger - DEBUG - logger:81 - 설정값 유효성 검사 완료.
+2025-05-29 05:01:24,382 - AppLogger - INFO - logger:84 - 데이터베이스 (logs/trading_data.test.db) 초기화 성공
+2025-05-29 05:01:24,383 - AppLogger - ERROR - logger:90 - 설정 로드 실패: Expecting value: line 1 column 2 (char 1). 기본 설정을 사용합니다.
+2025-05-29 05:01:24,383 - AppLogger - DEBUG - logger:81 - 설정값 유효성 검사 시작...
+2025-05-29 05:01:24,383 - AppLogger - DEBUG - logger:81 - 설정값 유효성 검사 완료.
+2025-05-29 05:01:24,384 - AppLogger - INFO - logger:84 - 데이터베이스 (logs/trading_data.test.db) 초기화 성공

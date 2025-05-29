@@ -1,173 +1,322 @@
-#!/usr/bin/env python
-# -*- coding: utf-8 -*-
+import os
+import unittest
+from unittest.mock import MagicMock, ANY, call # ANY, call 추가
+import logging
+from datetime import datetime, timedelta
 
-import sys
-from PyQt5.QtWidgets import QApplication
-
-# 필요한 모듈 임포트 (실제 경로에 맞게 조정 필요)
-from kiwoom_api import KiwoomAPI
-from strategy import TradingStrategy
-from config import ConfigManager
+# 테스트 대상 모듈 임포트 (실제 경로에 맞게 수정 필요)
+# sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))) # 필요시 경로 추가
+from strategy import TradingStrategy, TradingState # TradingState 추가
+from kiwoom_api import KiwoomAPI # 실제 KiwoomAPI 클래스 (모킹 대상)
+from config import ConfigManager # 실제 ConfigManager 클래스 (모킹 대상)
 from logger import Logger
 from database import Database
-from util import ScreenManager # ScreenManager 추가
+from util import ScreenManager # ScreenManager 임포트
 
-def main():
-    app = QApplication(sys.argv)
-    print("드라이런 테스트 스크립트 시작...")
+# 환경 변수 설정 (QAxWidget 문제 회피)
+os.environ['QT_QPA_PLATFORM'] = 'offscreen'
+os.environ['DISABLE_QT_FOR_TESTING'] = 'True'
 
-    # 1. 모듈 초기화
-    logger = Logger(log_file='logs/dry_run_test.log', log_level='DEBUG')
-    logger.info("Logger 초기화 완료.")
+class TestManualInterventionScenarios(unittest.TestCase):
 
-    config_manager = ConfigManager(logger=logger, config_file='settings.json')
-    logger.info("ConfigManager 초기화 완료.")
+    def setUp(self):
+        # 로거 초기화
+        self.logger = Logger(log_file="logs/test_app_manual.log", log_level=logging.DEBUG) # console_level 제거, 로그 파일명 변경
 
-    # 드라이런 모드 확인
-    is_dry_run = config_manager.get_setting("매매전략", "dry_run_mode", False)
-    if not is_dry_run:
-        logger.error("테스트 오류: 드라이런 테스트는 settings.json에서 'dry_run_mode': true 로 설정해야 합니다.")
-        print("오류: settings.json에서 'dry_run_mode': true 로 설정하고 다시 실행해주세요.")
-        return
-    logger.info(f"드라이런 모드 활성화 확인됨: {is_dry_run}")
-
-    db_path = config_manager.get_setting("Database", "path", "logs/trading_data.db")
-    db_manager = Database(logger=logger, db_file=db_path)
-    logger.info(f"DatabaseManager 초기화 완료 (DB 경로: {db_path})")
-
-    # ScreenManager 초기화 시 kiwoom_ocx는 KiwoomAPI 내부에서 생성되므로 None으로 전달 가능
-    # 또는 KiwoomAPI 생성 후 전달. 여기서는 KiwoomAPI가 내부적으로 ScreenManager를 관리하도록 함.
-    screen_manager = ScreenManager(logger=logger)
-    logger.info("ScreenManager 초기화 완료.")
-
-    kiwoom_api = KiwoomAPI(logger=logger, config_manager=config_manager, screen_manager=screen_manager)
-    logger.info("KiwoomAPI 초기화 시작됨.")
-
-    strategy = TradingStrategy(
-        kiwoom_api=kiwoom_api,
-        config_manager=config_manager,
-        logger=logger,
-        db_manager=db_manager,
-        screen_manager=screen_manager # Strategy에도 ScreenManager 전달
-    )
-    logger.info("TradingStrategy 초기화 완료.")
-
-    # KiwoomAPI에 strategy_instance 연결 (KiwoomAPI가 Strategy의 콜백을 호출하기 위함)
-    kiwoom_api.strategy_instance = strategy
-    logger.info("KiwoomAPI에 Strategy 인스턴스 연결 완료.")
-
-    # 2. 가상 로그인 시도 (드라이런 모드이므로 실제 API 호출 없음)
-    if not kiwoom_api.login():
-        logger.error("드라이런 가상 로그인 실패.")
-        return
-    logger.info(f"드라이런 가상 로그인 성공. 계좌번호: {kiwoom_api.account_number}")
-
-    # _on_login_completed 콜백이 strategy의 초기화를 진행할 시간을 약간 줌 (QTimer.singleShot 때문)
-    # QApplication.processEvents() # 이벤트 루프를 돌려 QTimer.singleShot 실행 유도
-    # time.sleep(0.5) # 또는 잠시 대기
-    # 위와 같은 명시적 대기보다는, strategy의 초기화 완료 상태를 확인하는 것이 더 좋음.
-    # 현재 run_dry_run_test_scenario 내부에서 초기화 상태를 강제로 설정하므로 추가 대기 불필요.
-
-    # 3. 테스트 시나리오 정의 및 실행
-    logger.info("테스트 시나리오 실행 준비...")
-
-    # 시나리오 1: 손절매 테스트 (전일 종가 기준)
-    # 조건: 전일 종가 70,000원, 손절률 2% (손절가 68,600원)
-    # 보유 상황: 005930 (삼성전자) 10주, 평균 매입가 71,000원
-    # 테스트 현재가: 68,000원 (손절 조건 충족)
-    scenario1_params = {
-        "code": "005930",
-        "stock_name": "삼성전자(DryRun)",
-        "yesterday_close_price": 70000.0,
-        "initial_portfolio": {
-            "stock_name": "삼성전자(DryRun)",
-            "보유수량": 10,
-            "매입가": 71000.0,
-            "현재가": 71000.0, # 초기 현재가는 매입가와 동일하게 설정 가능
-            "평가금액": 710000.0,
-            "매입금액": 710000.0,
-            "평가손익": 0,
-            "수익률": 0.0
-        },
-        "test_current_price": 68000.0,
-        "stock_tracking_data_override": { # BOUGHT 상태 및 관련 정보 설정
-            "strategy_state": "BOUGHT",
-            "avg_buy_price": 71000.0,      # initial_portfolio와 일치
-            "total_buy_quantity": 10,    # initial_portfolio와 일치
-            "current_high_price_after_buy": 71000.0, # 초기엔 매입가
-            "buy_timestamp_str": "now-10m" # 10분 전에 매수했다고 가정
+        # 테스트용 설정 데이터 (ConfigManager 모킹용)
+        self.test_settings_data = {
+            "계좌정보": {"계좌번호": "TESTACCT", "account_type": "모의투자"},
+            "매수금액": 100000.0, # float으로 명시
+            "매매전략": {
+                "익절_수익률": 5.0, "익절_매도비율": 50.0,
+                "최종_익절_수익률": 10.0, 
+                "트레일링_활성화_수익률": 2.0, "트레일링_하락률": 1.5,
+                "손절손실률_전일종가기준": 3.0,
+                "dry_run_mode": True, # 중요!
+                "종목당_최대시도횟수": 3,
+                "MarketOpenTime": "09:00:00", 
+                "MarketCloseTime": "15:30:00" 
+            },
+            "watchlist": [],
+            "Database": {"path": "logs/test_trading_data.db"}, 
+            "Logging": {"level": "DEBUG"},
+            "API_Limit": {"tr_request_interval_ms": 210}, 
+            "fee_tax_rates": { 
+                "모의투자": {"buy_fee_rate": 0.0035, "sell_fee_rate": 0.0035, "sell_tax_rate": 0.0000} 
+            },
+            "AutoTrading": {"start_automatically": False}, 
+            "PeriodicStatusReport": {"enabled": False, "interval_seconds": 60},
+            "API": {"RealTimeFID":"10;11;12;13"} # 추가된 설정
         }
-    }
-    strategy.run_dry_run_test_scenario("손절매_시나리오1(전일종가기준)", scenario1_params)
 
-    # 시나리오 2: 부분 익절 테스트
-    # 조건: 부분 익절률 5% (settings.json 기본값), 매입가 50,000원, 부분 익절 목표가 52,500원
-    # 보유 상황: 035720 (카카오) 20주, 평균 매입가 50,000원
-    # 테스트 현재가: 53,000원 (부분 익절 조건 충족)
-    scenario2_params = {
-        "code": "035720",
-        "stock_name": "카카오(DryRun)",
-        "yesterday_close_price": 49000.0, # 참고용 전일 종가
-        "initial_portfolio": {
-            "stock_name": "카카오(DryRun)",
-            "보유수량": 20,
-            "매입가": 50000.0,
-            "현재가": 50000.0,
-            "평가금액": 1000000.0,
-            "매입금액": 1000000.0,
-            "평가손익": 0,
-            "수익률": 0.0
-        },
-        "test_current_price": 53000.0,
-        "stock_tracking_data_override": {
-            "strategy_state": "BOUGHT",
-            "avg_buy_price": 50000.0,
-            "total_buy_quantity": 20,
-            "current_high_price_after_buy": 50000.0,
-            "buy_timestamp_str": "now-30m" # 30분 전에 매수했다고 가정
+        # ConfigManager 모킹
+        self.config_manager = MagicMock(spec=ConfigManager)
+        def mock_get_setting(section_or_key, key_or_default=None, default_val=None):
+            # self.logger.debug(f"MockConfigManager.get_setting 호출: section_or_key='{section_or_key}', key_or_default='{key_or_default}', default_val='{default_val}'")
+            if isinstance(section_or_key, str) and isinstance(key_or_default, str): # 섹션, 키 모두 제공
+                return self.test_settings_data.get(section_or_key, {}).get(key_or_default, default_val)
+            elif isinstance(section_or_key, str): # 섹션 또는 최상위 키만 제공
+                # 최상위 키인지, 아니면 섹션 전체를 요청하는 것인지 구분 필요
+                # 여기서는 key_or_default가 default_val의 역할을 한다고 가정 (ConfigManager의 실제 동작 따라야 함)
+                # 만약 get_setting("매수금액") 처럼 호출되면, key_or_default가 default_val이 됨
+                # 만약 get_setting("fee_tax_rates") 처럼 호출되면, key_or_default가 default_val이 됨
+                return self.test_settings_data.get(section_or_key, key_or_default if key_or_default is not None else default_val)
+            # self.logger.warning(f"MockConfigManager: 처리되지 않은 get_setting 호출 - section_or_key: {section_or_key}, key_or_default: {key_or_default}")
+            return default_val
+        
+        self.config_manager.get_setting.side_effect = mock_get_setting
+        self.config_manager.config_file = "mock_settings.json" 
+
+        # Database 초기화 (테스트용 인메모리 DB 또는 임시 파일 사용 권장)
+        self.db_manager = Database(db_file=self.test_settings_data["Database"]["path"], logger=self.logger) 
+        # self.db_manager.create_tables() # Database 클래스의 initialize_db가 자동으로 테이블 생성
+
+        # KiwoomAPI 모킹
+        self.mock_kiwoom_api = MagicMock(spec=KiwoomAPI)
+        self.mock_kiwoom_api.get_server_gubun = MagicMock(return_value="1") 
+        self.mock_kiwoom_api.send_order = MagicMock(return_value=0) 
+        self.mock_kiwoom_api.account_number = self.test_settings_data["계좌정보"]["계좌번호"]
+
+        # ScreenManager 초기화
+        self.screen_manager = ScreenManager(logger=self.logger)
+
+        # TradingStrategy 인스턴스 생성
+        self.strategy = TradingStrategy(
+            kiwoom_api=self.mock_kiwoom_api,
+            config_manager=self.config_manager,
+            logger=self.logger,
+            db_manager=self.db_manager,
+            screen_manager=self.screen_manager
+        )
+        
+        self.strategy._load_strategy_settings() 
+        
+        # TradingStrategy 초기화 완료 상태로 설정
+        self.strategy.initialization_status = {
+            "account_info_loaded": True, "deposit_info_loaded": True,
+            "portfolio_loaded": True, "settings_loaded": True,
+            "market_hours_initialized": True
         }
-    }
-    strategy.run_dry_run_test_scenario("부분익절_시나리오2", scenario2_params)
+        self.strategy.is_initialized_successfully = True
+        self.strategy.account_state.account_number = self.mock_kiwoom_api.account_number
+        
+        # 수수료/세율은 _load_strategy_settings에서 account_type을 읽은 후 설정됨
+        # self.strategy.account_type은 _load_strategy_settings에서 설정되어야 함
+        self.logger.info(f"Strategy account_type after load: {self.strategy.account_type}")
+        self.logger.info(f"Strategy current_fee_tax_rates after load: {self.strategy.current_fee_tax_rates}")
 
-    # 시나리오 3: 트레일링 스탑 활성화 및 첫 번째 발동 테스트
-    # 조건: 트레일링 활성화 수익률 2% (settings.json), 트레일링 하락률 1.8% (settings.json)
-    # 매입가: 100,000원. 트레일링 활성화 가격: 102,000원.
-    # 활성화 후 고점: 105,000원 도달. 트레일링 스탑 발동 가격: 105,000 * (1 - 0.018) = 103,110원
-    # 보유 상황: 105560 (AP시스템) 5주, 평균 매입가 100,000원
-    # 테스트 현재가: 103,000원 (트레일링 스탑 첫 발동 조건 충족)
-    scenario3_params = {
-        "code": "105560", 
-        "stock_name": "AP시스템(DryRun)",
-        "yesterday_close_price": 98000.0, 
-        "initial_portfolio": {
-            "stock_name": "AP시스템(DryRun)",
-            "보유수량": 5,
-            "매입가": 100000.0,
-            "현재가": 100000.0,
-            "평가금액": 500000.0,
-            "매입금액": 500000.0,
-            "평가손익": 0,
-            "수익률": 0.0
-        },
-        "test_current_price": 103000.0, # 이 가격에서 트레일링 스탑 발동 예상
-        "stock_tracking_data_override": {
-            "strategy_state": "BOUGHT",
-            "avg_buy_price": 100000.0,
-            "total_buy_quantity": 5,
-            "is_trailing_stop_active": True, # 테스트를 위해 강제 활성화 (원래는 수익률 도달 시 자동 활성화)
-            "current_high_price_after_buy": 105000.0, # 트레일링 스탑 발동 계산을 위한 고점 설정
-            "buy_timestamp_str": "now-1h" # 1시간 전에 매수했다고 가정
+
+        self.strategy.is_running = True 
+        self.strategy.log = MagicMock() 
+        
+        self.strategy.watchlist.clear()
+        self.strategy.account_state.portfolio.clear()
+        self.strategy.account_state.active_orders.clear()
+        self.strategy.account_state.trading_status.clear()
+        
+        self.logger.info("Test setUp 완료")
+
+
+    def tearDown(self):
+        self.logger.info("Test tearDown 시작")
+        # 핸들러 닫기 (파일 삭제 전)
+        handlers = self.logger.logger.handlers[:]
+        for handler in handlers:
+            handler.close()
+            self.logger.logger.removeHandler(handler)
+
+        # 테스트 중 생성된 파일 삭제
+        db_path = self.test_settings_data["Database"]["path"]
+        log_path = self.logger.log_file # Logger에 log_file 속성이 있다고 가정
+
+        if os.path.exists(db_path):
+            try:
+                self.db_manager.close() # DB 연결 먼저 닫기
+                os.remove(db_path)
+                # self.logger.info(f"테스트 DB 파일 삭제: {db_path}") # 로거가 이미 닫혔을 수 있음
+                print(f"테스트 DB 파일 삭제: {db_path}")
+            except Exception as e:
+                print(f"테스트 DB 파일 삭제 실패: {e}")
+
+        if os.path.exists(log_path):
+            try:
+                os.remove(log_path)
+                print(f"테스트 로그 파일 삭제: {log_path}")
+            except Exception as e:
+                print(f"테스트 로그 파일 삭제 실패: {e}")
+        
+        logs_dir = "logs"
+        if os.path.exists(logs_dir) and not os.listdir(logs_dir): 
+            try:
+                os.rmdir(logs_dir)
+                print(f"logs 디렉토리 삭제 성공.")
+            except Exception as e:
+                print(f"logs 디렉토리 삭제 실패: {e}")
+        print("Test tearDown 완료")
+
+
+    def test_scenario_manual_full_sell(self):
+        self.logger.info("시나리오 1: 수동 전체 매도 - 테스트 시작")
+        code = "000001"
+        stock_name = "테스트종목_수동매도"
+        self.strategy.add_to_watchlist(code, stock_name, yesterday_close_price=10000)
+        stock_info = self.strategy.watchlist.get(code)
+
+        # 초기 매수 상태 설정
+        stock_info.strategy_state = TradingState.BOUGHT
+        stock_info.avg_buy_price = 10000.0
+        stock_info.total_buy_quantity = 10
+        stock_info.current_high_price_after_buy = 10000.0
+        stock_info.buy_timestamp = datetime.now() - timedelta(hours=1)
+        stock_info.buy_completion_count = 1 
+
+        self.strategy.account_state.portfolio[code] = {
+            'stock_name': stock_name, '보유수량': 10, '매입가': 10000.0, '현재가': 10000.0,
+            '평가금액': 100000, '매입금액': 100000, '평가손익': 0, '수익률': 0.0
         }
-    }
-    strategy.run_dry_run_test_scenario("트레일링스탑_첫발동_시나리오3", scenario3_params)
+        self.strategy.account_state.trading_status[code] = {
+            'status': TradingState.BOUGHT, 'bought_price': 10000.0,
+            'bought_quantity': 10, 'bought_time': stock_info.buy_timestamp
+        }
 
-    logger.info("모든 드라이런 테스트 시나리오 실행 완료.")
-    print("드라이런 테스트 스크립트 종료. 상세 내용은 logs/dry_run_test.log 파일을 확인하세요.")
+        # 수동 매도 시뮬레이션: opw00018 응답에서 해당 종목 제외
+        mock_opw00018_data_after_manual_sell = {
+            'single_data': {'총매입금액': '0', '총평가금액': '0', '총평가손익금액': '0', '총수익률(%)': '0.00', '추정예탁자산': '10000000'},
+            'multi_data': [] 
+        }
+        self.strategy._handle_opw00018_response(rq_name="test_opw00018_full_sell", data=mock_opw00018_data_after_manual_sell)
 
-    # QApplication 이벤트 루프가 필요하다면 유지, 필요 없다면 제거 또는 sys.exit(app.exec_()) 대신 app.quit() 사용
-    # 여기서는 테스트 스크립트이므로 명시적으로 종료
-    # sys.exit(app.exec_()) # GUI가 없으므로 exec_()는 필요 없을 수 있음
-    app.quit()
+        # 결과 검증
+        updated_stock_info = self.strategy.watchlist.get(code) 
+        self.assertEqual(updated_stock_info.strategy_state, TradingState.WAITING)
+        self.assertEqual(updated_stock_info.total_buy_quantity, 0)
+        self.assertEqual(updated_stock_info.avg_buy_price, 0.0)
+        self.assertIsNone(updated_stock_info.buy_timestamp)
+        self.assertEqual(updated_stock_info.buy_completion_count, 0) 
+        self.assertNotIn(code, self.strategy.account_state.trading_status)
 
-if __name__ == "__main__":
-    main()
+        # 로그 검증
+        log_calls_info = [args[0] for args, kwargs in self.strategy.log.call_args_list if kwargs.get('level', 'INFO').upper() == 'INFO']
+        self.assertTrue(any(f"[SYNC_PORTFOLIO] 수동 전량 매도 감지: {code}" in log_msg for log_msg in log_calls_info))
+        self.assertTrue(any(f"[{code}] 종목 상태 초기화: BOUGHT -> WAITING" in log_msg for log_msg in log_calls_info))
+        self.logger.info("시나리오 1: 수동 전체 매도 - 테스트 완료")
+
+
+    def test_scenario_manual_additional_buy(self):
+        self.logger.info("시나리오 2: 수동 추가 매수 - 테스트 시작")
+        code = "000002"
+        stock_name = "테스트종목_수동추가매수"
+        self.strategy.add_to_watchlist(code, stock_name, yesterday_close_price=5000)
+        stock_info = self.strategy.watchlist.get(code)
+
+        # 초기 매수 상태 설정
+        stock_info.strategy_state = TradingState.BOUGHT
+        stock_info.avg_buy_price = 5000.0
+        stock_info.total_buy_quantity = 50
+        stock_info.current_high_price_after_buy = 5000.0
+        stock_info.buy_timestamp = datetime.now() - timedelta(hours=2)
+
+        self.strategy.account_state.portfolio[code] = {
+            'stock_name': stock_name, '보유수량': 50, '매입가': 5000.0, '현재가': 5000.0
+        }
+        self.strategy.account_state.trading_status[code] = {
+            'status': TradingState.BOUGHT, 'bought_price': 5000.0,
+            'bought_quantity': 50, 'bought_time': stock_info.buy_timestamp
+        }
+
+        # 수동 추가 매수 시뮬레이션
+        mock_opw00018_data_after_manual_buy = {
+            'single_data': {'총매입금액': '510000', '총평가금액': '520000', '현재가': '5200'}, 
+            'multi_data': [{
+                '종목번호': 'A'+code, '종목명': stock_name, '보유수량': '100', # 'A' 접두사 추가
+                '매입단가': '5100', '현재가': '5200', '평가금액': '520000', '매입금액': '510000', '매입가': '5100'
+            }]
+        }
+        self.strategy._handle_opw00018_response(rq_name="test_opw00018_add_buy", data=mock_opw00018_data_after_manual_buy)
+
+        # 결과 검증
+        updated_stock_info = self.strategy.watchlist.get(code)
+        self.assertEqual(updated_stock_info.strategy_state, TradingState.BOUGHT)
+        self.assertEqual(updated_stock_info.total_buy_quantity, 100)
+        self.assertAlmostEqual(updated_stock_info.avg_buy_price, 5100.0, places=2)
+        
+        log_calls_info = [args[0] for args, kwargs in self.strategy.log.call_args_list if kwargs.get('level', 'INFO').upper() == 'INFO']
+        self.assertTrue(any(f"[SYNC_PORTFOLIO] 수량 불일치 감지 ({code}): 추적(50) vs 실제(100)" in msg for msg in log_calls_info))
+        self.assertTrue(any(f"[SYNC_PORTFOLIO] 평균 매입가 불일치 감지 ({code}): 추적(5000.00) vs 실제(5100.00)" in msg for msg in log_calls_info))
+        self.logger.info("시나리오 2: 수동 추가 매수 - 테스트 완료")
+
+
+    def test_scenario_on_chejan_manual_buy(self):
+        self.logger.info("시나리오 3: on_chejan 수동 매수 - 테스트 시작")
+        code = "000003"
+        stock_name = "테스트종목_체결수동매수"
+        self.strategy.add_to_watchlist(code, stock_name, yesterday_close_price=20000)
+        stock_info_before = self.strategy.watchlist.get(code)
+
+        self.assertEqual(stock_info_before.strategy_state, TradingState.WAITING)
+        self.assertEqual(stock_info_before.total_buy_quantity, 0)
+        self.strategy.account_state.active_orders.clear()
+
+        # 수동 매수 체결 시뮬레이션
+        manual_chejan_data = {
+            '9001': 'A'+code, '302': stock_name, '9203': 'MANUALORDER123',
+            '913': '체결', '905': '+매수', '911': '10', '10': '20500',
+            '900': '10', '902': '0', '938': '100', '939': '0'
+        }
+        self.strategy.on_chejan_data_received(gubun='0', chejan_data=manual_chejan_data)
+
+        # 결과 검증
+        stock_info_after = self.strategy.watchlist.get(code)
+        self.assertEqual(stock_info_after.strategy_state, TradingState.BOUGHT)
+        self.assertEqual(stock_info_after.total_buy_quantity, 10) 
+        self.assertAlmostEqual(stock_info_after.avg_buy_price, 20500.0, places=2)
+        self.assertIsNotNone(stock_info_after.buy_timestamp)
+        self.assertEqual(stock_info_after.buy_completion_count, 0) 
+
+        log_calls_warning = [args[0] for args, kwargs in self.strategy.log.call_args_list if kwargs.get('level', 'INFO').upper() == 'WARNING'] # MANUAL_TRADE_DETECTED는 WARNING 레벨
+        log_calls_info = [args[0] for args, kwargs in self.strategy.log.call_args_list if kwargs.get('level', 'INFO').upper() == 'INFO']
+        
+        self.assertTrue(any(f"[MANUAL_TRADE_DETECTED] 시스템 주문과 매칭되지 않는 체결 데이터 수신 (수동 거래 추정): {code}" in msg for msg in log_calls_warning))
+        self.assertTrue(any(f"[MANUAL_TRADE] 수동 매수 체결 감지: {code}" in msg for msg in log_calls_info))
+
+        trades = self.db_manager.get_trades_by_code(code)
+        self.assertTrue(any(t['trade_reason'] == '수동체결' and t['quantity'] == 10 and t['price'] == 20500 for t in trades)) # trade_reason 수정
+        self.logger.info("시나리오 3: on_chejan 수동 매수 - 테스트 완료")
+
+
+    def test_scenario_inconsistent_state_partial_sold_zero_qty(self):
+        self.logger.info("시나리오 4: 일관성 없는 상태 (PARTIAL_SOLD, 수량0) - 테스트 시작")
+        code = "000004"
+        stock_name = "테스트종목_상태오류"
+        self.strategy.add_to_watchlist(code, stock_name, yesterday_close_price=30000)
+        stock_info = self.strategy.watchlist.get(code)
+
+        # 일관성 없는 상태 설정
+        stock_info.strategy_state = TradingState.PARTIAL_SOLD
+        stock_info.total_buy_quantity = 0
+        stock_info.avg_buy_price = 30000.0
+        stock_info.current_price = 30000.0 
+        stock_info.partial_take_profit_executed = True 
+        stock_info.buy_timestamp = datetime.now() - timedelta(days=1)
+
+        if code in self.strategy.account_state.portfolio: 
+            self.strategy.account_state.portfolio[code]['보유수량'] = 0
+        
+        self.strategy.check_conditions()
+
+        # 결과 검증
+        updated_stock_info = self.strategy.watchlist.get(code)
+        self.assertEqual(updated_stock_info.strategy_state, TradingState.WAITING)
+        self.assertEqual(updated_stock_info.total_buy_quantity, 0)
+        self.assertEqual(updated_stock_info.avg_buy_price, 0.0)
+        self.assertFalse(updated_stock_info.partial_take_profit_executed)
+
+        log_calls_warning = [args[0] for args, kwargs in self.strategy.log.call_args_list if kwargs.get('level', 'INFO').upper() == 'WARNING']
+        log_calls_info = [args[0] for args, kwargs in self.strategy.log.call_args_list if kwargs.get('level', 'INFO').upper() == 'INFO']
+        self.assertTrue(any(f"[INCONSISTENCY_DETECTED] {code}: PARTIAL_SOLD 상태이나 보유수량 0 이하 (0)" in msg for msg in log_calls_warning))
+        self.assertTrue(any(f"[{code}] 종목 상태 초기화: PARTIAL_SOLD -> WAITING" in msg for msg in log_calls_info))
+        self.logger.info("시나리오 4: 일관성 없는 상태 (PARTIAL_SOLD, 수량0) - 테스트 완료")
+
+
+if __name__ == '__main__':
+    unittest.main()
