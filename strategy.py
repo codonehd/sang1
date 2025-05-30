@@ -53,6 +53,7 @@ class TradingState(Enum):
     BOUGHT = auto()
     PARTIAL_SOLD = auto()
     COMPLETE = auto()
+    MANUALLY_SOLD = auto()
 
     def __format__(self, format_spec):
         return str(self.name)
@@ -276,6 +277,13 @@ class TradingStrategy(QObject):
         self.last_snapshot_date = None
         self.today_date_for_buy_limit: Optional[str] = None # 일일 매수 제한용 오늘 날짜
         self.daily_buy_executed_count: int = 0 # 오늘 실행된 매수 횟수
+
+        # 포트폴리오 주기적 확인 타이머
+        self.portfolio_check_timer = QTimer()
+        portfolio_check_interval_sec = self.modules.config_manager.get_setting("PeriodicPortfolioCheck", "interval_seconds", 60) # 기본값 60초
+        self.portfolio_check_timer.setInterval(portfolio_check_interval_sec * 1000)
+        self.log(f"주기적 포트폴리오 확인 타이머 간격 설정: {portfolio_check_interval_sec}초", "INFO")
+        self.portfolio_check_timer.timeout.connect(self._periodic_portfolio_check)
 
         # Market open/close time 객체 초기화
         try:
@@ -530,6 +538,10 @@ class TradingStrategy(QObject):
         
         self.daily_snapshot_timer.start()
         self.log(f"일일 스냅샷 타이머 시작 (주기: {self.daily_snapshot_timer.interval() / (3600 * 1000)}시간).", "INFO")
+        
+        self.portfolio_check_timer.start()
+        self.log("주기적 포트폴리오 확인 타이머 시작.")
+
         self.log(f"[STRATEGY_DEBUG] start() method called. Current is_running: {self.is_running}, initialization_status: {self.initialization_status}", "DEBUG")
         self.current_status_message = "전략 시작 요청 접수. 초기 데이터 로드 상태 확인 중..."
 
@@ -669,6 +681,10 @@ class TradingStrategy(QObject):
         if self.daily_snapshot_timer.isActive():
             self.daily_snapshot_timer.stop()
             self.log("일일 스냅샷 타이머 중지됨.", "DEBUG")
+        
+        if self.portfolio_check_timer.isActive():
+            self.portfolio_check_timer.stop()
+            self.log("주기적 포트폴리오 확인 타이머 중지됨.", "INFO")
         
         self.log("관심 종목 실시간 데이터 구독 해제 시도...", "INFO")
         for code in list(self.watchlist.keys()): # dict 변경 중 순회 에러 방지
@@ -1166,6 +1182,33 @@ class TradingStrategy(QObject):
             # 현재가가 0 이하인 경우 처리하지 않음
             self.log(f"[ProcessStrategy] 종목({code})의 현재가({current_price})가 0 이하이므로 전략 실행 불가", "WARNING")
             return
+
+        # 추가된 안전 장치: process_strategy 실행 전 포트폴리오 상태 확인
+        if stock_info.strategy_state in [TradingState.BOUGHT, TradingState.PARTIAL_SOLD]:
+            # normalized_code는 이미 이 메서드 초반에 계산되어 있음
+            portfolio_item = self.account_state.portfolio.get(code) # code는 이미 정규화된 상태
+            
+            if not portfolio_item or _safe_to_int(portfolio_item.get("보유수량", 0)) == 0:
+                self.log(f"[PROCESS_STRATEGY_SAFETY_CHECK] 경고: {stock_info.stock_name}({code})의 상태는 {stock_info.strategy_state.name}이지만, "
+                         f"실제 포트폴리오에 없거나 보유 수량이 0입니다. 수동 매도 또는 동기화 지연 가능성.", "WARNING")
+                # 이미 _handle_opw00018_response에서 주기적으로 동기화하므로, 여기서는 경고 후 처리를 건너뛰거나
+                # 혹은 즉시 포트폴리오 재요청 후 상태를 강제 조정할 수 있습니다.
+                # 현재 계획에 따라 여기서는 처리를 건너뛰고, 주기적 동기화에 의존합니다.
+                
+                # 만약 즉각적인 상태 조정이 필요하다면 아래와 같은 로직 추가 가능:
+                # self.log(f"[{code}] 즉시 포트폴리오 정보 요청 시도...", "INFO")
+                # self.request_portfolio_info() # 비동기 호출이므로 즉각 반영은 안됨
+                # self.log(f"[{code}] 포트폴리오 불일치로 인해 해당 종목 처리 건너뜀. 다음 주기적 동기화에서 처리될 예정.", "WARNING")
+                
+                # 현재 상태를 MANUALLY_SOLD로 변경하고 reset하는 것이 더 안전할 수 있음
+                self.log(f"[PROCESS_STRATEGY_SAFETY_CHECK] {stock_info.stock_name}({code}) 상태를 MANUALLY_SOLD로 강제 변경 및 초기화 시도.", "WARNING")
+                stock_info.strategy_state = TradingState.MANUALLY_SOLD
+                self.reset_stock_strategy_info(code)
+                if code in self.account_state.trading_status:
+                    self.account_state.trading_status[code]['status'] = TradingState.MANUALLY_SOLD.name
+                else:
+                    self.account_state.trading_status[code] = {'status': TradingState.MANUALLY_SOLD.name}
+                return # 해당 종목 처리 중단
 
         # 주문 처리 타임아웃 확인 (주문 접수 후 5분 이상 경과한 경우)
         if stock_info.last_order_rq_name and stock_info.buy_timestamp:
@@ -2963,8 +3006,28 @@ class TradingStrategy(QObject):
         if self.initialization_status["portfolio_loaded"] and self.initialization_status["deposit_info_loaded"]:
             self.log("포트폴리오 및 예수금 로드 완료. DB 및 저장된 상태에서 매매 상태 복원 시도...", "INFO")
             self.restore_trading_state_from_db()
+
+        # 수동 매도 감지 로직 추가
+        current_server_portfolio = self.account_state.portfolio
+        for code, stock_info in list(self.watchlist.items()):
+            normalized_code = self._normalize_stock_code(code)
+            if stock_info.strategy_state in [TradingState.BOUGHT, TradingState.PARTIAL_SOLD]:
+                server_stock_data = current_server_portfolio.get(normalized_code)
+                if not server_stock_data or _safe_to_int(server_stock_data.get("보유수량")) == 0:
+                    self.log(f"수동 매도 감지됨: {stock_info.stock_name}({normalized_code}). 프로그램 상태: {stock_info.strategy_state.name}, 서버 보유 수량: 0 또는 종목 없음. 상태를 MANUALLY_SOLD로 변경합니다.", "IMPORTANT")
+                    stock_info.strategy_state = TradingState.MANUALLY_SOLD
+                    self.reset_stock_strategy_info(normalized_code) # 내부적으로 WAITING으로 바꾸지만, 다음 줄에서 MANUALLY_SOLD로 덮어씀
+                    if normalized_code in self.account_state.trading_status:
+                        self.account_state.trading_status[normalized_code]['status'] = TradingState.MANUALLY_SOLD.name
+                    else: # trading_status에 없는 경우 새로 추가 (reset_stock_strategy_info에서 삭제되었을 수 있으므로)
+                        self.account_state.trading_status[normalized_code] = {'status': TradingState.MANUALLY_SOLD.name}
         
         self._check_all_data_loaded_and_start_strategy()
+
+    def _periodic_portfolio_check(self):
+        """주기적으로 포트폴리오 정보를 요청하여 동기화합니다."""
+        self.log("주기적 포트폴리오 확인 시작...", "DEBUG")
+        self.request_portfolio_info()
 
     def run_dry_run_test_scenario(self, scenario_name: str, test_params: dict):
         self.log(f"=== 드라이런 테스트 시나리오 시작: {scenario_name} ===", "IMPORTANT")

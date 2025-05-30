@@ -52,6 +52,9 @@ DEFAULT_SETTINGS = {
     "PeriodicStatusReport": {
         "enabled": True,
         "interval_seconds": 60
+    },
+    "PeriodicPortfolioCheck": { # 새로운 섹션 추가
+        "interval_seconds": 60 
     }
 }
 
@@ -255,6 +258,20 @@ class ConfigManager:
             fee_tax_settings[account_type_key] = current_rates
         
         current_settings["fee_tax_rates"] = fee_tax_settings
+
+        # 주기적 포트폴리오 확인 (PeriodicPortfolioCheck)
+        portfolio_check_settings = current_settings.get("PeriodicPortfolioCheck", DEFAULT_SETTINGS["PeriodicPortfolioCheck"].copy())
+        default_portfolio_check = DEFAULT_SETTINGS["PeriodicPortfolioCheck"]
+
+        portfolio_check_interval = portfolio_check_settings.get("interval_seconds", default_portfolio_check["interval_seconds"])
+        if not isinstance(portfolio_check_interval, int) or portfolio_check_interval < 10: # 최소 10초 간격
+            self._log_message(f"설정 오류: 'PeriodicPortfolioCheck.interval_seconds'가 유효하지 않거나 너무 짧습니다 (값: {portfolio_check_interval}). 기본값 {default_portfolio_check['interval_seconds']} (최소 10초)으로 대체합니다.", "WARNING")
+            portfolio_check_interval = default_portfolio_check["interval_seconds"]
+            if portfolio_check_interval < 10: portfolio_check_interval = 10
+        portfolio_check_settings["interval_seconds"] = portfolio_check_interval
+        
+        current_settings["PeriodicPortfolioCheck"] = portfolio_check_settings
+        
         self._log_message("설정값 유효성 검사 완료.", "DEBUG")
 
     def save_settings(self):
