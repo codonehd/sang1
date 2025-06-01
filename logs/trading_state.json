@@ -1,25 +1,31 @@
 {
-  "daily_buy_executed_count": 3,
-  "today_date_for_buy_limit": "2025-05-29",
+  "daily_buy_executed_count": 6,
+  "today_date_for_buy_limit": "2025-05-30",
   "trading_status": {
-    "290670": {
-      "status": "PARTIAL_SOLD",
-      "bought_price": 18050.0,
-      "bought_quantity": 55,
-      "bought_time": "2025-05-29 09:51:58"
+    "194370": {
+      "status": "BOUGHT",
+      "bought_price": 11760.0,
+      "bought_quantity": 84,
+      "bought_time": "2025-05-30 09:02:00"
     },
     "114450": {
       "status": "BOUGHT",
-      "bought_price": 3709.347014925373,
-      "bought_quantity": 134,
-      "bought_time": "2025-05-29 12:55:01"
+      "bought_price": 3715.0,
+      "bought_quantity": 268,
+      "bought_time": "2025-05-30 09:05:02"
+    },
+    "234920": {
+      "status": "BOUGHT",
+      "bought_price": 4735.0,
+      "bought_quantity": 211,
+      "bought_time": "2025-05-30 09:10:54"
     }
   },
   "watchlist": {
     "125020": {
       "code": "125020",
       "stock_name": "티씨머티리얼즈",
-      "current_price": 6920.0,
+      "current_price": 6830.0,
       "yesterday_close_price": 7150.0,
       "strategy_state": "WAITING",
       "avg_buy_price": 0.0,
@@ -33,72 +39,117 @@
     "194370": {
       "code": "194370",
       "stock_name": "제이에스코퍼레이션",
-      "current_price": 11540.0,
+      "current_price": 11810.0,
       "yesterday_close_price": 11770.0,
-      "strategy_state": "WAITING",
-      "avg_buy_price": 0.0,
-      "total_buy_quantity": 0,
-      "current_high_price_after_buy": 0.0,
+      "strategy_state": "BOUGHT",
+      "avg_buy_price": 11760.0,
+      "total_buy_quantity": 84,
+      "current_high_price_after_buy": 12080.0,
       "is_trailing_stop_active": false,
       "trailing_stop_partially_sold": false,
       "partial_take_profit_executed": false,
-      "buy_completion_count": 0
+      "buy_completion_count": 1,
+      "buy_timestamp": "2025-05-30 09:02:00"
     },
-    "214260": {
-      "code": "214260",
-      "stock_name": "라파스",
-      "current_price": 18350.0,
-      "yesterday_close_price": 19000.0,
-      "strategy_state": "WAITING",
-      "avg_buy_price": 0.0,
-      "total_buy_quantity": 0,
-      "current_high_price_after_buy": 0.0,
+    "234920": {
+      "code": "234920",
+      "stock_name": "자이글",
+      "current_price": 4705.0,
+      "yesterday_close_price": 4735.0,
+      "strategy_state": "BOUGHT",
+      "avg_buy_price": 4735.0,
+      "total_buy_quantity": 211,
+      "current_high_price_after_buy": 4795.0,
       "is_trailing_stop_active": false,
       "trailing_stop_partially_sold": false,
       "partial_take_profit_executed": false,
-      "buy_completion_count": 0
+      "buy_completion_count": 1,
+      "buy_timestamp": "2025-05-30 09:10:54"
     },
     "290670": {
       "code": "290670",
       "stock_name": "대보마그네틱",
-      "current_price": 17980.0,
+      "current_price": 17950.0,
       "yesterday_close_price": 18120.0,
-      "strategy_state": "PARTIAL_SOLD",
+      "strategy_state": "WAITING",
       "avg_buy_price": 0.0,
       "total_buy_quantity": 0,
-      "current_high_price_after_buy": 18050.0,
+      "current_high_price_after_buy": 0.0,
       "is_trailing_stop_active": false,
       "trailing_stop_partially_sold": false,
-      "partial_take_profit_executed": true,
-      "buy_completion_count": 1
+      "partial_take_profit_executed": false,
+      "buy_completion_count": 0
     },
     "114450": {
       "code": "114450",
       "stock_name": "그린생명과학",
-      "current_price": 0.0,
+      "current_price": 4330.0,
       "yesterday_close_price": 3720.0,
       "strategy_state": "BOUGHT",
+      "avg_buy_price": 3715.0,
+      "total_buy_quantity": 268,
+      "current_high_price_after_buy": 3875.0,
+      "is_trailing_stop_active": false,
+      "trailing_stop_partially_sold": false,
+      "partial_take_profit_executed": true,
+      "buy_completion_count": 1,
+      "buy_timestamp": "2025-05-30 09:05:02"
+    },
+    "003090": {
+      "code": "003090",
+      "stock_name": "대웅",
+      "current_price": 24150.0,
+      "yesterday_close_price": 25050.0,
+      "strategy_state": "WAITING",
       "avg_buy_price": 0.0,
       "total_buy_quantity": 0,
       "current_high_price_after_buy": 0.0,
-      "is_trailing_stop_active": true,
-      "trailing_stop_partially_sold": true,
-      "partial_take_profit_executed": true,
-      "buy_completion_count": 1
+      "is_trailing_stop_active": false,
+      "trailing_stop_partially_sold": false,
+      "partial_take_profit_executed": false,
+      "buy_completion_count": 0
+    },
+    "068330": {
+      "code": "068330",
+      "stock_name": "일신바이오",
+      "current_price": 1954.0,
+      "yesterday_close_price": 1670.0,
+      "strategy_state": "WAITING",
+      "avg_buy_price": 0.0,
+      "total_buy_quantity": 0,
+      "current_high_price_after_buy": 0.0,
+      "is_trailing_stop_active": false,
+      "trailing_stop_partially_sold": false,
+      "partial_take_profit_executed": false,
+      "buy_completion_count": 0
+    },
+    "014970": {
+      "code": "014970",
+      "stock_name": "삼륭물산",
+      "current_price": 8550.0,
+      "yesterday_close_price": 7550.0,
+      "strategy_state": "WAITING",
+      "avg_buy_price": 0.0,
+      "total_buy_quantity": 0,
+      "current_high_price_after_buy": 0.0,
+      "is_trailing_stop_active": false,
+      "trailing_stop_partially_sold": false,
+      "partial_take_profit_executed": false,
+      "buy_completion_count": 0
     }
   },
   "trading_records": {
     "매수건수": 0,
     "매수금액": 0,
-    "매도건수": 2,
-    "매도금액": 1028060.0,
-    "총손익금": 43657.500000000015,
-    "이익건수": 2,
-    "이익금액": 43657.500000000015,
+    "매도건수": 4,
+    "매도금액": 2063600.0,
+    "총손익금": 76987.50000000001,
+    "이익건수": 4,
+    "이익금액": 76987.50000000001,
     "손실건수": 0,
     "손실금액": 0,
-    "총순손익금": 30040.83710174719
+    "총순손익금": 52217.837101747195
   },
   "last_snapshot_date": "2025-05-27",
-  "saved_datetime": "2025-05-29 13:06:39"
+  "saved_datetime": "2025-05-30 09:22:55"
 }

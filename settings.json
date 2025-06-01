@@ -33,11 +33,14 @@
         
         
 
-        { "code": "125020", "name": "티씨머티리얼즈", "yesterday_close_price": 7150 },
         { "code": "194370", "name": "제이에스코퍼레이션", "yesterday_close_price": 11770 },
-        { "code": "214260", "name": "라파스", "yesterday_close_price": 19000 },
-        { "code": "290670", "name": "대보마그네틱", "yesterday_close_price": 18120 },
-        { "code": "114450", "name": "그린생명과학", "yesterday_close_price": 3720 }
+        { "code": "234920", "name": "자이글", "yesterday_close_price": 4735 },
+        { "code": "068330", "name": "일신바이오", "yesterday_close_price": 1670 },
+        { "code": "014970", "name": "삼륭물산", "yesterday_close_price": 7550 },
+        { "code": "256840", "name": "한국비엔씨", "yesterday_close_price": 5590 },
+        { "code": "032500", "name": "케이엠더블유", "yesterday_close_price": 11420 },
+        { "code": "290120", "name": "DH오토리드", "yesterday_close_price": 3345 },
+        { "code": "088800", "name": "에이스테크", "yesterday_close_price": 2500 }
 
     ],
     "PeriodicStatusReport": {
