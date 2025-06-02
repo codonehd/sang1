@@ -358,7 +358,73 @@ class TestTradingStrategy(unittest.TestCase):
         self.strategy.log(f"테스트용 계좌번호 설정됨: {self.strategy.account_state.account_number}", "DEBUG")
         
         self.mock_kiwoom_api.set_strategy_instance(self.strategy)
-        self.mock_kiwoom_api.send_order = MagicMock(name="send_order_mock", return_value=0) 
+        self.mock_kiwoom_api.send_order = MagicMock(name="send_order_mock", return_value=0)
+
+        # Cooldown test specific settings
+        self.TEST_CODE = "005930"
+        self.TEST_NAME = "테스트삼성"
+        self.MAX_BUY_ATTEMPTS = 2
+        self.COOLDOWN_MINUTES = 10
+
+        self.mock_config_manager.settings["매매전략"]["종목당_최대시도횟수"] = self.MAX_BUY_ATTEMPTS
+        self.mock_config_manager.settings["매매전략"]["cooldown_duration_minutes"] = self.COOLDOWN_MINUTES
+        # Ensure settings are reloaded or directly set in strategy if _load_strategy_settings is called in init
+        self.strategy.settings.max_buy_attempts_per_stock = self.MAX_BUY_ATTEMPTS
+        self.strategy.settings.cooldown_duration_minutes = self.COOLDOWN_MINUTES
+
+        # Ensure sufficient funds for testing buys
+        self.strategy.account_state.account_summary['주문가능금액'] = "500000000" # Sufficiently large amount as string
+        self.strategy.account_state.account_summary['예수금'] = "500000000"
+
+
+    def _simulate_successful_buy(self, code, stock_name, buy_price, quantity_to_buy):
+        """Helper function to simulate a successful buy order and its execution."""
+        stock_info = self.strategy.watchlist.get(code)
+        if not stock_info:
+            # If not in watchlist, add it. This might be needed if test starts without it.
+            self.strategy.add_to_watchlist(code, stock_name, yesterday_close_price=buy_price * 0.98) # Dummy yesterday close
+            stock_info = self.strategy.watchlist.get(code)
+
+        stock_info.current_price = buy_price
+        stock_info.strategy_state = TradingState.WAITING # Ensure it's in a state that allows buying
+
+        # Mock send_order to always succeed for this simulation
+        self.mock_kiwoom_api.send_order.return_value = 0
+
+        buy_executed = self.strategy.execute_buy(code)
+        self.assertTrue(buy_executed, f"execute_buy for {code} should have succeeded.")
+
+        rq_name = stock_info.last_order_rq_name
+        self.assertIsNotNone(rq_name, "last_order_rq_name should be set after sending buy order.")
+
+        # Simulate chejan data for buy execution
+        # Ensure the order is in active_orders before simulating chejan
+        self.assertIn(rq_name, self.strategy.account_state.active_orders, "Order should be in active_orders after sending.")
+        self.strategy.account_state.active_orders[rq_name]['order_no'] = f"mock_ord_no_{datetime.now().timestamp()}"
+
+        chejan_data = {
+            '9001': code,  # 종목코드
+            '302': stock_name, # 종목명
+            '9203': self.strategy.account_state.active_orders[rq_name]['order_no'],  # 주문번호
+            '913': '체결',  # 주문상태
+            '900': str(quantity_to_buy),  # 주문수량
+            '902': '0',  # 미체결수량 (전량체결)
+            '10': str(buy_price),  # 체결가
+            '911': str(quantity_to_buy),  # 체결량
+            '905': '+매수', # 주문구분
+            # 필요한 다른 FID 값들 추가...
+        }
+
+        # Ensure on_chejan_data_received can find the active order entry
+        # The _find_active_order_rq_name_key will use the 'order_no' from chejan_data
+
+        self.strategy.on_chejan_data_received(gubun='0', chejan_data=chejan_data)
+
+        # Post-chejan assertions
+        self.assertEqual(stock_info.strategy_state, TradingState.BOUGHT, "Stock state should be BOUGHT after buy chejan.")
+        # buy_completion_count is incremented in _handle_order_execution_report
+        # self.assertEqual(stock_info.buy_completion_count, expected_completion_count_after_buy)
+
 
     def tearDown(self):
         if hasattr(self.strategy, 'is_running') and self.strategy.is_running:
@@ -1123,7 +1189,9 @@ class TestTradingStrategy(unittest.TestCase):
         sent_rq_name_auto_liq = stock_data.last_order_rq_name
         self.assertIn(sent_rq_name_auto_liq, self.strategy.account_state.active_orders)
         # strategy.py의 _check_and_execute_auto_liquidation에서 reason 확인 -> "시간경과자동청산"
-        self.assertEqual(self.strategy.account_state.active_orders[sent_rq_name_auto_liq]['reason'], "시간경과자동청산")
+        self.assertEqual(self.strategy.account_state.active_orders[sent_rq_name_auto_liq]['reason'], "시간경과자동청산") # reason "시간청산({hold_minutes:.0f}분)"
+        # self.assertEqual(self.strategy.account_state.active_orders[sent_rq_name_auto_liq]['reason'], f"시간청산({int(stock_data.buy_timestamp.minute)}분)")
+
 
         # 5. 전량 매도 체결 처리 (이 테스트에서는 체결까지는 필수는 아니지만, 완전성을 위해 추가)
         chejan_data_auto_liq = {
@@ -1198,6 +1266,181 @@ class TestTradingStrategy(unittest.TestCase):
         self.assertEqual(self.strategy._normalize_stock_code("A123"), "123") # current behavior
         # Null input
         self.assertEqual(self.strategy._normalize_stock_code(None), "") # Handles None input
+
+    def test_buy_limit_triggers_cooldown(self):
+        self.strategy.log(f"Running test_buy_limit_triggers_cooldown...", "INFO")
+        self.strategy.add_to_watchlist(self.TEST_CODE, self.TEST_NAME, yesterday_close_price=69000)
+        stock_info = self.strategy.watchlist[self.TEST_CODE]
+        stock_info.strategy_state = TradingState.WAITING
+        stock_info.current_price = 70000 # Set a valid price
+
+        # Simulate max_buy_attempts_per_stock successful buys
+        for i in range(self.MAX_BUY_ATTEMPTS):
+            self.strategy.log(f"Simulating buy attempt #{i+1} for {self.TEST_CODE}", "DEBUG")
+            # Ensure stock is in WAITING state before each buy if it was changed by chejan
+            stock_info.strategy_state = TradingState.WAITING
+            self._simulate_successful_buy(self.TEST_CODE, self.TEST_NAME, buy_price=70000 + i*100, quantity_to_buy=1)
+            # After _simulate_successful_buy, state becomes BOUGHT. For next buy, it should be WAITING.
+            # Or, reset the state for the purpose of this loop if necessary.
+            # For this test, we are interested in buy_completion_count.
+            # After each simulated buy, reset_stock_strategy_info to allow next "first" buy.
+            # This is to purely test the buy_completion_count accumulation and cooldown trigger.
+            # A more realistic scenario would involve selling in between.
+            # For now, let's assume buy_completion_count is correctly incremented by _simulate_successful_buy's chejan handling.
+            self.assertEqual(stock_info.buy_completion_count, i + 1)
+            # To allow next execute_buy, we need to reset state from BOUGHT.
+            # This is tricky as execute_buy itself checks for BOUGHT state.
+            # Let's assume for this test, we are just checking the counter and cooldown transition.
+            # So, we'll manually reset the state to allow further calls to execute_buy for count accumulation.
+            if i < self.MAX_BUY_ATTEMPTS -1 : # For all but the last simulated buy that fills the quota
+                 self.strategy.reset_stock_strategy_info(self.TEST_CODE) # Resets buy_completion_count, so this approach is flawed for accumulation.
+                 stock_info.strategy_state = TradingState.WAITING # Re-set state
+                 stock_info.buy_completion_count = i + 1 # Manually restore count
+                 stock_info.current_price = 70000 + (i+1)*100
+
+
+        # At this point, buy_completion_count should be MAX_BUY_ATTEMPTS
+        # Let's re-do the loop for buy_completion_count accumulation more cleanly
+        stock_info.buy_completion_count = 0 # Reset for clean accumulation
+        for i in range(self.MAX_BUY_ATTEMPTS):
+            self.strategy.log(f"Cleanly Simulating buy completion #{i+1} for {self.TEST_CODE}", "DEBUG")
+            stock_info.buy_completion_count +=1 # Directly increment for test purpose
+        self.assertEqual(stock_info.buy_completion_count, self.MAX_BUY_ATTEMPTS)
+
+
+        # Attempt one more buy - this should trigger cooldown
+        stock_info.strategy_state = TradingState.WAITING # Set to WAITING to attempt buy
+        stock_info.current_price = 70000 + self.MAX_BUY_ATTEMPTS * 100
+
+        # Patch datetime.now for predictable cooldown_until_timestamp
+        mock_now = datetime(2024, 1, 1, 10, 0, 0)
+        with patch('strategy.datetime') as mock_datetime:
+            mock_datetime.now.return_value = mock_now
+            mock_datetime.strptime = datetime.strptime # Keep strptime working
+            mock_datetime.timedelta = timedelta     # Keep timedelta working
+
+            self.assertFalse(self.strategy.execute_buy(self.TEST_CODE), "execute_buy should fail after max attempts.")
+
+        self.assertEqual(stock_info.strategy_state, TradingState.COOL_DOWN)
+        expected_cooldown_until = mock_now + timedelta(minutes=self.COOLDOWN_MINUTES)
+        self.assertIsNotNone(stock_info.cooldown_until_timestamp)
+        self.assertEqual(stock_info.cooldown_until_timestamp, expected_cooldown_until)
+        self.strategy.log(f"Cooldown triggered for {self.TEST_CODE}. Cooldown until: {stock_info.cooldown_until_timestamp}", "INFO")
+
+    def test_buy_attempt_during_cooldown(self):
+        self.strategy.log(f"Running test_buy_attempt_during_cooldown...", "INFO")
+        self.strategy.add_to_watchlist(self.TEST_CODE, self.TEST_NAME, yesterday_close_price=69000)
+        stock_info = self.strategy.watchlist[self.TEST_CODE]
+
+        # Bring stock to COOL_DOWN state
+        stock_info.buy_completion_count = self.MAX_BUY_ATTEMPTS
+        stock_info.strategy_state = TradingState.WAITING
+        stock_info.current_price = 71000
+
+        mock_now = datetime(2024, 1, 1, 10, 0, 0)
+        with patch('strategy.datetime') as mock_datetime:
+            mock_datetime.now.return_value = mock_now
+            mock_datetime.strptime = datetime.strptime
+            mock_datetime.timedelta = timedelta
+            self.assertFalse(self.strategy.execute_buy(self.TEST_CODE), "execute_buy should fail to enter cooldown.")
+
+        self.assertEqual(stock_info.strategy_state, TradingState.COOL_DOWN)
+        self.assertIsNotNone(stock_info.cooldown_until_timestamp)
+
+        # Attempt to buy while in cooldown (before timestamp expires)
+        # Simulate time passing but not enough to expire cooldown
+        mock_now_during_cooldown = mock_now + timedelta(minutes=self.COOLDOWN_MINUTES // 2)
+        with patch('strategy.datetime') as mock_datetime:
+            mock_datetime.now.return_value = mock_now_during_cooldown
+            mock_datetime.strptime = datetime.strptime
+            mock_datetime.timedelta = timedelta
+
+            # Ensure state is still COOL_DOWN before attempting buy
+            # process_strategy might alter state if time is manipulated, so check execute_buy directly
+            original_cooldown_ts = stock_info.cooldown_until_timestamp
+            self.assertFalse(self.strategy.execute_buy(self.TEST_CODE), "execute_buy should still fail during cooldown.")
+
+        self.assertEqual(stock_info.strategy_state, TradingState.COOL_DOWN, "State should remain COOL_DOWN.")
+        self.assertEqual(stock_info.cooldown_until_timestamp, original_cooldown_ts, "Cooldown timestamp should not change.")
+        self.strategy.log(f"Buy attempt during cooldown for {self.TEST_CODE} correctly blocked.", "INFO")
+
+    def test_cooldown_expires_and_resets_state(self):
+        self.strategy.log(f"Running test_cooldown_expires_and_resets_state...", "INFO")
+        self.strategy.add_to_watchlist(self.TEST_CODE, self.TEST_NAME, yesterday_close_price=69000)
+        stock_info = self.strategy.watchlist[self.TEST_CODE]
+
+        # 1. Bring stock to COOL_DOWN state
+        stock_info.buy_completion_count = self.MAX_BUY_ATTEMPTS
+        stock_info.strategy_state = TradingState.WAITING
+        stock_info.current_price = 71000
+
+        mock_now_cooldown_start = datetime(2024, 1, 1, 10, 0, 0)
+        with patch('strategy.datetime') as mock_datetime:
+            mock_datetime.now.return_value = mock_now_cooldown_start
+            mock_datetime.strptime = datetime.strptime
+            mock_datetime.timedelta = timedelta
+            self.assertFalse(self.strategy.execute_buy(self.TEST_CODE)) # This sets it to COOL_DOWN
+
+        self.assertEqual(stock_info.strategy_state, TradingState.COOL_DOWN)
+        self.assertIsNotNone(stock_info.cooldown_until_timestamp)
+
+        # 2. Simulate time passing for cooldown to expire
+        mock_now_after_cooldown = mock_now_cooldown_start + timedelta(minutes=self.COOLDOWN_MINUTES + 1)
+        with patch('strategy.datetime') as mock_datetime:
+            mock_datetime.now.return_value = mock_now_after_cooldown
+            mock_datetime.strptime = datetime.strptime
+            mock_datetime.timedelta = timedelta
+
+            # Call process_strategy, which should call _handle_cool_down_state
+            self.strategy.process_strategy(self.TEST_CODE)
+
+        # 3. Verify state is reset
+        self.assertEqual(stock_info.strategy_state, TradingState.WAITING, "State should reset to WAITING after cooldown.")
+        self.assertEqual(stock_info.buy_completion_count, 0, "buy_completion_count should reset to 0.")
+        self.assertIsNone(stock_info.cooldown_until_timestamp, "cooldown_until_timestamp should be None.")
+        self.strategy.log(f"Cooldown expired for {self.TEST_CODE}, state reset.", "INFO")
+
+        # 4. Verify buy is possible again
+        stock_info.current_price = 72000 # Ensure a valid price
+        # _simulate_successful_buy will set state to WAITING if needed.
+        # We expect one successful buy here.
+        self.mock_kiwoom_api.send_order.reset_mock() # Reset mock before new call
+        self._simulate_successful_buy(self.TEST_CODE, self.TEST_NAME, buy_price=72000, quantity_to_buy=1)
+        self.mock_kiwoom_api.send_order.assert_called_once()
+        self.assertEqual(stock_info.strategy_state, TradingState.BOUGHT)
+        self.assertEqual(stock_info.buy_completion_count, 1, "buy_completion_count should be 1 after new buy.")
+        self.strategy.log(f"Buy successful for {self.TEST_CODE} after cooldown.", "INFO")
+
+    def test_reset_stock_info_clears_cooldown(self):
+        self.strategy.log(f"Running test_reset_stock_info_clears_cooldown...", "INFO")
+        self.strategy.add_to_watchlist(self.TEST_CODE, self.TEST_NAME, yesterday_close_price=69000)
+        stock_info = self.strategy.watchlist[self.TEST_CODE]
+
+        # 1. Bring stock to COOL_DOWN state
+        stock_info.buy_completion_count = self.MAX_BUY_ATTEMPTS
+        stock_info.strategy_state = TradingState.WAITING
+        stock_info.current_price = 71000
+
+        mock_now = datetime(2024, 1, 1, 10, 0, 0)
+        with patch('strategy.datetime') as mock_datetime:
+            mock_datetime.now.return_value = mock_now
+            mock_datetime.strptime = datetime.strptime
+            mock_datetime.timedelta = timedelta
+            self.assertFalse(self.strategy.execute_buy(self.TEST_CODE))
+
+        self.assertEqual(stock_info.strategy_state, TradingState.COOL_DOWN)
+        self.assertIsNotNone(stock_info.cooldown_until_timestamp)
+        original_cooldown_ts = stock_info.cooldown_until_timestamp
+
+        # 2. Call reset_stock_strategy_info
+        self.strategy.reset_stock_strategy_info(self.TEST_CODE)
+
+        # 3. Verify cooldown_until_timestamp is cleared
+        self.assertIsNone(stock_info.cooldown_until_timestamp, "cooldown_until_timestamp should be None after reset.")
+        self.assertEqual(stock_info.strategy_state, TradingState.WAITING, "State should be WAITING after reset.")
+        self.assertEqual(stock_info.buy_completion_count, 0, "buy_completion_count should be 0 after reset.")
+        self.strategy.log(f"Cooldown info cleared for {self.TEST_CODE} after reset.", "INFO")
+
 
 if __name__ == '__main__':
     unittest.main()

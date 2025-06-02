@@ -604,31 +604,22 @@ class KiwoomAPI(QObject):
     def on_receive_tr_data(self, sScrNo, sRQName, sTrCode, sRecordName, sPrevNext, nDataLength, sErrorCode, sMessage, sSplmMsg):
         self.log(f"[EVENT_HANDLER_ENTRY] on_receive_tr_data: Scr='{sScrNo}', RQ='{sRQName}', TR='{sTrCode}', PrevNext='{sPrevNext}', ErrCode='{sErrorCode}', Msg='{sMessage}'", "CRITICAL")
 
+        # 1. sRQName을 사용하여 self.tr_data_cache.get(sRQName)을 호출하여 cached_request_info를 가져옵니다.
+        cached_request_info = self.tr_data_cache.get(sRQName)
+
+        # 2. cached_request_info가 dict 타입이 아닐 경우 (즉, None이거나 다른 타입일 경우),
+        #    WARNING 레벨로 로그를 남기고 함수를 바로 return 합니다.
+        if not isinstance(cached_request_info, dict):
+            self.log(f"sRQName '{sRQName}'에 대한 캐시 정보 없음. 시스템 자동 발생 TR이거나 comm_rq_data를 통하지 않은 요청일 수 있음. TR 코드: {sTrCode}. 추가 처리 중단.", "WARNING")
+            return # 3. 추가적인 처리를 중단하도록 합니다.
+
+        # 4. cached_request_info가 유효한 dict인 경우에는 기존 로직을 그대로 수행합니다.
         processed_error_code = 0
         if isinstance(sErrorCode, str) and sErrorCode.strip().lstrip('-').isdigit():
             processed_error_code = int(sErrorCode.strip())
         elif sErrorCode and str(sErrorCode).strip(): # 에러코드가 있지만 숫자 변환 실패 시
             self.log(f"TR 오류 코드 형식 오류: '{sErrorCode}' ({type(sErrorCode)}). 0으로 처리. ({sRQName}, {sTrCode})", "WARNING")
 
-        # 캐시가 comm_rq_data에서 미리 준비되었는지 확인 및 업데이트
-        # sRQName으로 캐시를 가져오고, dict 타입인지 확인합니다.
-        cached_request_info = self.tr_data_cache.get(sRQName)
-        if not isinstance(cached_request_info, dict):
-            self.log(f"on_receive_tr_data: {sRQName} 캐시가 없거나 dict 타입이 아닙니다! (타입: {type(cached_request_info)}). 비정상. 강제 초기화 시도.", "ERROR")
-            # 캐시가 없거나 유효하지 않으면, API에서 받은 sTrCode를 사용합니다.
-            self.tr_data_cache[sRQName] = {
-                'status': 'error', 
-                'error_message': 'Cache not initialized by comm_rq_data or invalid type', # 오류 메시지 명확화
-                'tr_code': sTrCode, # API에서 받은 TR 코드를 사용
-                'screen_no': sScrNo, 
-                'prev_next': sPrevNext,
-                'single_data':{}, 
-                'multi_data':[], 
-                'data':[] 
-            }
-            # 이 경우에도 cached_request_info를 업데이트하여 아래 로직에서 사용 가능하게 함
-            cached_request_info = self.tr_data_cache[sRQName] 
-        
         # 캐시에서 tr_code를 가져옵니다. 없으면 API에서 받은 sTrCode를 사용합니다.
         # 이 부분은 sTrCode를 API에서 받은 값으로 일관되게 사용하므로, 캐시의 tr_code는 참조/검증용입니다.
         cached_tr_code_from_cache = cached_request_info.get('tr_code')

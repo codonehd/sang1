@@ -52,7 +52,9 @@ class TradingState(Enum):
     READY = auto()
     BOUGHT = auto()
     PARTIAL_SOLD = auto()
-    COMPLETE = auto()
+    SOLD = auto() # 매도 완료 상태 (reset_stock_strategy_info와 연관)
+    COMPLETE = auto() # 기존의 최대 시도 도달 상태 (쿨다운 도입 후 사용 빈도 줄어들 수 있음)
+    COOL_DOWN = auto() # 새로운 쿨다운 상태
 
     def __format__(self, format_spec):
         return str(self.name)
@@ -81,6 +83,7 @@ class StrategySettings:
     periodic_report_interval_seconds: int = 60
     max_daily_buy_count: int = 10  # 하루 최대 매수 실행 횟수
     max_buy_attempts_per_stock: int = 3  # 종목당 최대 매수 시도 횟수
+    cooldown_duration_minutes: int = 60 # 쿨다운 시간 (분)
     cancel_pending_orders_on_exit: bool = True  # 프로그램 종료 시 미체결 주문 자동 취소 여부
     auto_liquidate_after_minutes_enabled: bool = False # 일정 시간 경과 시 자동 청산 기능 활성화 여부
     auto_liquidate_after_minutes: int = 60  # 자동 청산 기준 시간 (분)
@@ -104,6 +107,7 @@ class StockTrackingData:
     partial_take_profit_executed: bool = False # 5% 부분 익절 실행 여부
     buy_timestamp: Optional[datetime] = None # 매수 체결 시간 기록
     buy_completion_count: int = 0  # 매수 체결 완료 횟수 (종목당 최대 3회 제한용)
+    cooldown_until_timestamp: Optional[datetime] = None # 쿨다운 해제 시간
     api_data: Dict[str, Any] = field(default_factory=dict)
     # daily_chart_error: bool = False # REMOVED: No longer fetching daily chart via opt10081
 
@@ -332,6 +336,7 @@ class TradingStrategy(QObject):
         self.settings.market_close_time_str = self.modules.config_manager.get_setting("매매전략", "MarketCloseTime", "15:30:00")
         self.settings.dry_run_mode = self.modules.config_manager.get_setting("매매전략", "dry_run_mode", False)
         self.settings.max_buy_attempts_per_stock = self.modules.config_manager.get_setting("매매전략", "종목당_최대시도횟수", 3)
+        self.settings.cooldown_duration_minutes = self.modules.config_manager.get_setting("매매전략", "cooldown_duration_minutes", 60)
         
         # 주기적 상태 보고 관련 설정
         self.settings.periodic_report_enabled = self.modules.config_manager.get_setting("PeriodicStatusReport", "enabled", True)
@@ -1202,6 +1207,7 @@ class TradingStrategy(QObject):
             TradingState.BOUGHT: self._handle_bought_state, # Renamed from _handle_holding_state
             TradingState.PARTIAL_SOLD: self._handle_partial_sold_state,
             TradingState.COMPLETE: self._handle_complete_state,
+            TradingState.COOL_DOWN: self._handle_cool_down_state,
             # TradingState.READY 는 현재 WAITING에서 바로 매수 시도로 이어지므로 별도 핸들러 불필요할 수 있음
         }
 
@@ -1350,6 +1356,27 @@ class TradingStrategy(QObject):
         # 현재는 아무 동작도 하지 않음.
         pass
 
+    def _handle_cool_down_state(self, code, stock_info: StockTrackingData, current_price):
+        if stock_info.cooldown_until_timestamp and datetime.now() > stock_info.cooldown_until_timestamp:
+            old_state = stock_info.strategy_state
+            stock_info.strategy_state = TradingState.WAITING
+            stock_info.buy_completion_count = 0  # 쿨다운 해제 시 매수 시도 횟수 초기화
+            stock_info.cooldown_until_timestamp = None
+            self.log(f"[{code}] COOL_DOWN 상태 해제. 매수 시도 횟수 초기화 후 {stock_info.strategy_state.name} 상태로 전환. (이전 상태: {old_state.name})", "INFO")
+            # WAITING 상태로 변경 후 바로 매수 조건 검토를 위해 process_strategy 재호출 가능
+            # self.process_strategy(code) # 또는 다음 틱에서 자연스럽게 처리되도록 둠
+        else:
+            # 아직 쿨다운 중. 현재 시간과 해제 예정 시간 로깅 (너무 자주 로깅되지 않도록 주의)
+            if stock_info.cooldown_until_timestamp: # None 체크 추가
+                remaining_time = stock_info.cooldown_until_timestamp - datetime.now()
+                # 특정 간격으로만 로깅 (예: 1분에 한 번)
+                # last_log_time 같은 속성을 사용하여 조절하거나, 여기서는 단순 디버그 로그로 남김
+                self.log(f"[{code}] 현재 COOL_DOWN 상태. 해제까지 남은 시간: {remaining_time}. (해제 예정: {stock_info.cooldown_until_timestamp.strftime('%Y-%m-%d %H:%M:%S')})", "DEBUG")
+            else: # cooldown_until_timestamp가 None인 비정상적 상황
+                 self.log(f"[{code}] COOL_DOWN 상태이나 cooldown_until_timestamp가 설정되지 않음. WAITING으로 강제 전환 시도.", "ERROR")
+                 stock_info.strategy_state = TradingState.WAITING
+                 stock_info.buy_completion_count = 0
+
     def execute_buy(self, code):
         # 일일 매수 횟수 제한 확인 - 제거됨 (종목별 시도 횟수로 대체)
         original_code_param = code # 로깅용
@@ -1372,9 +1399,10 @@ class TradingStrategy(QObject):
         
         # 종목별 최대 체결 횟수 확인
         if stock_info.buy_completion_count >= self.settings.max_buy_attempts_per_stock:
-            self.log(f"[{code}] 매수 실행 불가: 이미 최대 체결 횟수({self.settings.max_buy_attempts_per_stock}회)에 도달했습니다. 현재 체결 횟수: {stock_info.buy_completion_count}", "WARNING")
-            stock_info.strategy_state = TradingState.COMPLETE  # 더 이상 매수 시도하지 않도록 상태 변경
-            return False
+            stock_info.strategy_state = TradingState.COOL_DOWN
+            stock_info.cooldown_until_timestamp = datetime.now() + timedelta(minutes=self.settings.cooldown_duration_minutes)
+            self.log(f"[{code}] 매수 실행 불가: 최대 체결 횟수({self.settings.max_buy_attempts_per_stock}회) 도달. {self.settings.cooldown_duration_minutes}분간 COOL_DOWN 상태로 전환. 해제 예정: {stock_info.cooldown_until_timestamp.strftime('%Y-%m-%d %H:%M:%S') if stock_info.cooldown_until_timestamp else 'N/A'}", "WARNING")
+            return False # 매수 실행 안 함
         
         # 매수 시도 횟수 증가 부분 제거 - 체결 시에만 증가하도록 변경
         
@@ -1651,6 +1679,7 @@ class TradingStrategy(QObject):
         stock_info.partial_take_profit_executed = False
         stock_info.buy_timestamp = None
         stock_info.buy_completion_count = 0  # 매수 체결 완료 횟수 초기화
+        stock_info.cooldown_until_timestamp = None # 쿨다운 해제 시간 초기화
         
         # 임시 주문 수량 초기화
         if hasattr(stock_info, 'temp_order_quantity'):
@@ -2131,8 +2160,63 @@ class TradingStrategy(QObject):
                     self.log(f"_find_active_order_rq_name_key: RQName 패턴({buy_req_prefix} 또는 {sell_req_prefix})으로 active_orders에서 일치하는 항목 찾음: {rq_name_key}", "DEBUG")
                     return rq_name_key
 
-        self.log(f"_find_active_order_rq_name_key: 종목코드({normalized_code}), API주문번호({api_order_no_from_chejan if api_order_no_from_chejan else 'N/A'})로 일치하는 활성 주문을 찾지 못했습니다.", "WARNING")
+        log_message = f"_find_active_order_rq_name_key: 최종적으로 일치하는 활성 주문 없음. "
+        log_message += f"입력 정보 - 종목코드(원본): '{code_from_chejan}', 종목코드(정규화): '{normalized_code}', API주문번호: '{api_order_no_from_chejan if api_order_no_from_chejan else 'N/A'}'. "
+
+        active_orders_summary = {}
+        if self.account_state and self.account_state.active_orders:
+            for key, order_details in self.account_state.active_orders.items():
+                # 로그가 너무 길어지지 않도록 주요 정보만 요약
+                active_orders_summary[key] = {
+                    "code": order_details.get("code"),
+                    "order_type": order_details.get("order_type"),
+                    "order_no": order_details.get("order_no"),
+                    "status": order_details.get("order_status") # 또는 'status'
+                }
+        log_message += f"현재 활성 주문 요약 (최대 5개 표시): {dict(list(active_orders_summary.items())[:5]) if active_orders_summary else '없음'}."
+
+        self.log(log_message, "ERROR") # 매칭 실패는 중요할 수 있으므로 ERROR 레벨로 변경
         return None
+
+    def _calculate_slippage(self, order_type: str, expected_price: float, filled_price: float, stock_code: str = "") -> float:
+        """
+        주문 예상 가격과 실제 체결 가격 간의 슬리피지를 계산합니다.
+
+        현재 계산 방식:
+        - 단순하게 주문 시점의 예상 가격(시장가 주문 시 현재가, 지정가 주문 시 주문 가격)과
+          실제 체결된 평균 가격을 비교합니다.
+        - 매수 슬리피지: 체결가 - 예상가 (양수면 불리, 음수면 유리)
+        - 매도 슬리피지: 예상가 - 체결가 (양수면 유리, 음수면 불리)
+        - 일반적으로 슬리피지는 (체결가 - 기준가) / 기준가 * 100 (%) 형태로도 표현되나,
+          여기서는 가격 차이(포인트)로 계산합니다.
+
+        향후 개선 방향:
+        - 시장가 주문과 지정가 주문을 구분하여 슬리피지 기준을 다르게 설정할 수 있습니다.
+          (예: 시장가 주문은 주문 직전 호가를 기준으로, 지정가 주문은 지정가를 기준으로)
+        - 호가 정보를 활용하여 더 정교한 슬리피지 분석 (예: 주문 수량에 따른 예상 체결 분포)
+        - 시간 가중 평균 가격(TWAP) 또는 거래량 가중 평균 가격(VWAP)과의 비교를 통한 분석.
+
+        Args:
+            order_type (str): 주문 유형 ("매수" 또는 "매도").
+            expected_price (float): 주문 시점의 예상 가격 또는 지정가.
+            filled_price (float): 실제 체결된 평균 가격.
+            stock_code (str, optional): 슬리피지 계산 대상 종목 코드 (로깅용). Defaults to "".
+
+        Returns:
+            float: 계산된 슬리피지 값. 매수 시 양수는 불리, 매도 시 양수는 유리.
+        """
+        slippage = 0.0
+        if expected_price > 0 and filled_price > 0: # 0으로 나누는 것 방지 및 유효 가격 확인
+            if order_type == '매수':
+                slippage = filled_price - expected_price
+            elif order_type == '매도':
+                slippage = expected_price - filled_price
+
+            # 로그는 호출부에서 남기도록 변경 (요청사항 반영)
+            # self.log(f"[{stock_code}] 슬리피지 계산됨: {slippage:.2f} (예상가: {expected_price:.2f}, 체결가: {filled_price:.2f}, 유형: {order_type})", "DEBUG")
+        # else:
+            # self.log(f"[{stock_code}] 슬리피지 계산 불가 (0 또는 유효하지 않은 가격): 예상가({expected_price}), 체결가({filled_price})", "DEBUG")
+        return slippage
 
     def on_chejan_data_received(self, gubun, chejan_data):  # item_cnt, fid_list_str 제거, chejan_data는 dict
         self.log(f"체결/잔고 데이터 수신 - 구분: {gubun}", "DEBUG")  # item_cnt 관련 로그 제거
@@ -2348,17 +2432,19 @@ class TradingStrategy(QObject):
                         self.log(f"[{code}] 부분 체결로 StockTrackingData 임시 주문 수량 감소: {old_stock_temp_qty} -> {new_stock_temp_qty} (체결량: {last_filled_qty})", "INFO")
                 
                 
-                slippage = 0  # 기본값
-                expected_price = active_order_entry_ref.get('expected_price')
-                if expected_price is not None and expected_price > 0 and last_filled_price > 0 : # last_filled_price는 이번 체결 가격
-                    if active_order_entry_ref['order_type'] == '매수':
-                        slippage = last_filled_price - expected_price
-                    elif active_order_entry_ref['order_type'] == '매도':
-                        slippage = expected_price - last_filled_price
-                    self.log(f"[{code}] 슬리피지 계산: {slippage:.2f} (예상가: {expected_price:.2f}, 체결가: {last_filled_price:.2f}, 유형: {active_order_entry_ref['order_type']})")
+                # 슬리피지 계산 로직을 _calculate_slippage 함수로 대체
+                slippage = self._calculate_slippage(
+                    order_type=active_order_entry_ref['order_type'],
+                    expected_price=active_order_entry_ref.get('expected_price', 0.0),
+                    filled_price=last_filled_price,
+                    stock_code=code
+                )
+                # 슬리피지 계산 결과 로깅
+                if active_order_entry_ref.get('expected_price', 0.0) > 0 and last_filled_price > 0:
+                    self.log(f"[{code}] 슬리피지: {slippage:.2f} (주문유형: {active_order_entry_ref['order_type']}, 예상가: {active_order_entry_ref.get('expected_price', 0.0):.2f}, 체결가: {last_filled_price:.2f})", "INFO")
                 else:
-                    self.log(f"[{code}] 슬리피지 계산 불가: expected_price({expected_price}) 또는 last_filled_price({last_filled_price}) 정보 부족", "WARNING")
-                
+                    self.log(f"[{code}] 슬리피지 계산 불가 (유효 가격 부족): 예상가({active_order_entry_ref.get('expected_price', 0.0)}), 체결가({last_filled_price})", "WARNING")
+
                 self.update_portfolio_on_execution(code, stock_name, last_filled_price, last_filled_qty, trade_type)
 
                 # 매수 체결인 경우 추가 처리 (부분 체결 시에도 체결 정보와 상태 업데이트)

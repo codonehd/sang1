@@ -105,6 +105,24 @@ class Database:
             )
             ''')
 
+            # trades 테이블 컬럼 정보 확인 및 추가
+            cursor.execute("PRAGMA table_info(trades)")
+            columns = [row[1] for row in cursor.fetchall()]
+
+            if 'net_profit' not in columns:
+                cursor.execute("ALTER TABLE trades ADD COLUMN net_profit REAL DEFAULT 0")
+                if self.logger:
+                    self.logger.info("trades 테이블에 net_profit 컬럼 추가 완료.")
+                else:
+                    print("INFO: trades 테이블에 net_profit 컬럼 추가 완료.")
+
+            if 'slippage' not in columns:
+                cursor.execute("ALTER TABLE trades ADD COLUMN slippage REAL DEFAULT 0")
+                if self.logger:
+                    self.logger.info("trades 테이블에 slippage 컬럼 추가 완료.")
+                else:
+                    print("INFO: trades 테이블에 slippage 컬럼 추가 완료.")
+
             self.conn.commit()
             if self.logger:
                 self.logger.info(f"데이터베이스 ({self.db_file}) 초기화 성공")
