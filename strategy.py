@@ -84,6 +84,8 @@ class StrategySettings:
     max_daily_buy_count: int = 10  # 하루 최대 매수 실행 횟수
     max_buy_attempts_per_stock: int = 3  # 종목당 최대 매수 시도 횟수
     cooldown_duration_minutes: int = 60 # 쿨다운 시간 (분)
+    reset_trailing_high_after_partial_sell: bool = False # 부분 익절 후 트레일링 기준 고점 재설정 여부
+    trailing_whipsaw_delay_seconds: int = 10 # 트레일링 스탑 휩쏘 방지 지연 시간 (초)
     cancel_pending_orders_on_exit: bool = True  # 프로그램 종료 시 미체결 주문 자동 취소 여부
     auto_liquidate_after_minutes_enabled: bool = False # 일정 시간 경과 시 자동 청산 기능 활성화 여부
     auto_liquidate_after_minutes: int = 60  # 자동 청산 기준 시간 (분)
@@ -108,6 +110,7 @@ class StockTrackingData:
     buy_timestamp: Optional[datetime] = None # 매수 체결 시간 기록
     buy_completion_count: int = 0  # 매수 체결 완료 횟수 (종목당 최대 3회 제한용)
     cooldown_until_timestamp: Optional[datetime] = None # 쿨다운 해제 시간
+    trailing_trigger_breached_time: Optional[datetime] = None # 트레일링 스탑 발동가 하회 시작 시간
     api_data: Dict[str, Any] = field(default_factory=dict)
     # daily_chart_error: bool = False # REMOVED: No longer fetching daily chart via opt10081
 
@@ -337,6 +340,8 @@ class TradingStrategy(QObject):
         self.settings.dry_run_mode = self.modules.config_manager.get_setting("매매전략", "dry_run_mode", False)
         self.settings.max_buy_attempts_per_stock = self.modules.config_manager.get_setting("매매전략", "종목당_최대시도횟수", 3)
         self.settings.cooldown_duration_minutes = self.modules.config_manager.get_setting("매매전략", "cooldown_duration_minutes", 60)
+        self.settings.reset_trailing_high_after_partial_sell = self.modules.config_manager.get_setting("매매전략", "reset_trailing_high_after_partial_sell", False)
+        self.settings.trailing_whipsaw_delay_seconds = self.modules.config_manager.get_setting("매매전략", "trailing_whipsaw_delay_seconds", 10)
         
         # 주기적 상태 보고 관련 설정
         self.settings.periodic_report_enabled = self.modules.config_manager.get_setting("PeriodicStatusReport", "enabled", True)
@@ -960,39 +965,67 @@ class TradingStrategy(QObject):
 #        return False # 주문 실행 안됨
 
     def _check_and_execute_trailing_stop(self, code, stock_info: StockTrackingData, current_price, avg_buy_price, holding_quantity):
-        """트레일링 스탑 로직을 검사하고 실행합니다 (활성화된 경우에만)."""
+        """트레일링 스탑 로직을 검사하고 실행합니다 (활성화된 경우에만). 휩쏘 방지 지연 로직 포함."""
         if not stock_info.is_trailing_stop_active or holding_quantity <= 0:
             return False
 
+        current_time = datetime.now()
         high_since_buy_or_activation = stock_info.current_high_price_after_buy
         trailing_stop_trigger_price = high_since_buy_or_activation * (1 - self.settings.trailing_stop_fall_rate / 100.0)
 
-        self.log(f"[{code}] 트레일링 스탑 조건 검토 (활성상태: {stock_info.is_trailing_stop_active}, 부분매도여부: {stock_info.trailing_stop_partially_sold}): 현재가({current_price:.2f}) vs 발동가({trailing_stop_trigger_price:.2f}). 기준고점({high_since_buy_or_activation:.2f}), 하락률({self.settings.trailing_stop_fall_rate}%)", "DEBUG")
+        log_msg_prefix = f"[{code}] 트레일링 스탑 조건 검토 (활성: {stock_info.is_trailing_stop_active}, 부분매도: {stock_info.trailing_stop_partially_sold}): 현재가({current_price:.2f}) vs 발동가({trailing_stop_trigger_price:.2f}). 기준고점({high_since_buy_or_activation:.2f}), 하락률({self.settings.trailing_stop_fall_rate}%)"
 
         if current_price <= trailing_stop_trigger_price:
-            if not stock_info.trailing_stop_partially_sold: # 첫 번째 트레일링 스탑 발동
-                sell_qty = int(holding_quantity * (self.settings.partial_sell_ratio / 100.0)) # 현재 보유량의 50%
-                if sell_qty <= 0 and holding_quantity > 0 : 
-                    sell_qty = holding_quantity
-                    self.log(f"[{code}] 트레일링 스탑 (첫 발동): 계산된 매도 수량 0이나 보유량({holding_quantity}) 있어 전량 매도 시도.", "WARNING")
-                elif sell_qty <=0:
-                    self.log(f"[{code}] 트레일링 스탑 (첫 발동): 계산된 매도 수량 0. 진행 안함.", "DEBUG")
-                    return False
+            if stock_info.trailing_trigger_breached_time is None:
+                stock_info.trailing_trigger_breached_time = current_time
+                self.log(f"{log_msg_prefix} - 가격 하회 감지. 휩쏘 방어 위해 {self.settings.trailing_whipsaw_delay_seconds}초 지연 시작. breached_time: {stock_info.trailing_trigger_breached_time.strftime('%H:%M:%S')}", "INFO")
+                return False # 아직 매도 안 함
 
-                self.log(f"{TradeColors.TRAILING}🔽 [TRAILING_STOP] 트레일링 스탑 발동(50%): {code} ({stock_info.stock_name}), 현재가({current_price:.2f}) <= 발동가({trailing_stop_trigger_price:.2f}), 매도수량({sell_qty}){TradeColors.RESET}", "INFO")
-                if self.execute_sell(code, reason="트레일링스탑(50%)", quantity_type="수량", quantity_val=sell_qty):
-                    stock_info.trailing_stop_partially_sold = True
-                    self.log(f"[{code}] 트레일링 스탑 (50%) 매도 주문 접수. trailing_stop_partially_sold 플래그 True 설정.", "INFO")
-                    return True
-                else:
-                    self.log(f"[{code}] 트레일링 스탑 (50%) 매도 주문 실패.", "ERROR")
-            else: # 이미 부분 매도된 상태 (두 번째 트레일링 스탑 발동)
-                self.log(f"{TradeColors.TRAILING}🔽 [TRAILING_STOP] 트레일링 스탑 발동(잔량): {code} ({stock_info.stock_name}), 현재가({current_price:.2f}) <= 발동가({trailing_stop_trigger_price:.2f}){TradeColors.RESET}", "INFO")
-                if self.execute_sell(code, reason="트레일링스탑(잔량)", quantity_type="전량"):
-                    return True
-                else:
-                    self.log(f"[{code}] 트레일링 스탑 (잔량 전량) 매도 주문 실패.", "ERROR")
-        return False
+            delay_seconds = (current_time - stock_info.trailing_trigger_breached_time).total_seconds()
+
+            if delay_seconds >= self.settings.trailing_whipsaw_delay_seconds:
+                self.log(f"{log_msg_prefix} - 가격 하회 지속 ({delay_seconds:.1f}초 >= 설정 {self.settings.trailing_whipsaw_delay_seconds}초). 매도 실행.", "INFO")
+
+                reason_suffix = ""
+                if not stock_info.trailing_stop_partially_sold: # 첫 번째 트레일링 스탑 발동
+                    sell_qty = int(holding_quantity * self.settings.partial_sell_ratio)
+                    if sell_qty <= 0 and holding_quantity > 0 :
+                        sell_qty = holding_quantity
+                        self.log(f"[{code}] 트레일링 스탑 (첫 발동, 지연 후): 계산된 매도 수량 0이나 보유량({holding_quantity}) 있어 전량 매도 시도.", "WARNING")
+                    elif sell_qty <= 0:
+                        self.log(f"[{code}] 트레일링 스탑 (첫 발동, 지연 후): 계산된 매도 수량 0. 진행 안함.", "DEBUG")
+                        return False
+                    reason_suffix = "(50%)"
+
+                    if self.execute_sell(code, reason=f"트레일링스탑{reason_suffix}", quantity_type="수량", quantity_val=sell_qty):
+                        stock_info.trailing_stop_partially_sold = True
+                        self.log(f"[{code}] 트레일링 스탑 {reason_suffix} 매도 주문 접수 (지연 후). trailing_stop_partially_sold 플래그 True 설정.", "INFO")
+                        if self.settings.reset_trailing_high_after_partial_sell:
+                            old_high_before_reset = stock_info.current_high_price_after_buy
+                            stock_info.current_high_price_after_buy = current_price
+                            self.log(f"[{code}] 트레일링 스탑 부분 매도 후 기준 고점 재설정 (설정 True): {old_high_before_reset:.2f} -> {stock_info.current_high_price_after_buy:.2f}", "INFO")
+                        stock_info.trailing_trigger_breached_time = None # 매도 실행 후 초기화
+                        return True
+                    else:
+                        self.log(f"[{code}] 트레일링 스탑 {reason_suffix} 매도 주문 실패 (지연 후).", "ERROR")
+                        return False
+                else: # 이미 부분 매도된 상태 (두 번째 트레일링 스탑 발동 - 잔량 매도)
+                    reason_suffix = "(잔량)"
+                    if self.execute_sell(code, reason=f"트레일링스탑{reason_suffix}", quantity_type="전량"):
+                        self.log(f"[{code}] 트레일링 스탑 {reason_suffix} 매도 주문 접수 (지연 후).", "INFO")
+                        stock_info.trailing_trigger_breached_time = None # 매도 실행 후 초기화
+                        return True
+                    else:
+                        self.log(f"[{code}] 트레일링 스탑 {reason_suffix} 매도 주문 실패 (지연 후).", "ERROR")
+                        return False
+            else:
+                self.log(f"{log_msg_prefix} - 가격 하회 지속. 지연 시간 미경과 ({delay_seconds:.1f}초 < 설정 {self.settings.trailing_whipsaw_delay_seconds}초). 매도 보류.", "DEBUG")
+                return False
+        else: # current_price > trailing_stop_trigger_price (가격이 발동가보다 높음)
+            if stock_info.trailing_trigger_breached_time is not None:
+                self.log(f"{log_msg_prefix} - 가격 회복. 휩쏘 방어 지연 해제. breached_time 초기화.", "INFO")
+                stock_info.trailing_trigger_breached_time = None
+            return False
 
     def _handle_waiting_state(self, code, stock_info: StockTrackingData, current_price):
         """
@@ -1680,6 +1713,7 @@ class TradingStrategy(QObject):
         stock_info.buy_timestamp = None
         stock_info.buy_completion_count = 0  # 매수 체결 완료 횟수 초기화
         stock_info.cooldown_until_timestamp = None # 쿨다운 해제 시간 초기화
+        stock_info.trailing_trigger_breached_time = None # 트레일링 스탑 휩쏘 지연 시작 시간 초기화
         
         # 임시 주문 수량 초기화
         if hasattr(stock_info, 'temp_order_quantity'):
