@@ -425,3 +425,24 @@
         2. 잔여 보유 수량이 0이면 (실제 전량 매도 완료), `stock_info.strategy_state`는 `reset_stock_strategy_info`를 통해 `WAITING` 등으로 초기화되고, `account_state.trading_status`의 해당 종목 상태는 `TradingState.COMPLETE.name`으로 설정됩니다.
         3. 잔여 보유 수량이 0보다 크면 (부분 매도 완료), `stock_info.strategy_state`는 `TradingState.PARTIAL_SOLD.name`으로 설정하고, `account_state.trading_status`의 해당 종목 상태도 `TradingState.PARTIAL_SOLD.name`으로 명확히 설정하여, 남은 물량에 대한 매도 감시 로직이 지속되도록 수정했습니다.
     - **추가 확인:** `database.py`의 `trades` 테이블에는 `net_profit` 컬럼이 이미 올바르게 정의되어 있었음을 확인했습니다. (초기 분석에서 누락된 것으로 오인했었음)
+
+## 최근 업데이트 (2024-07-29)
+
+### 주요 변경 사항
+
+1.  **매매 전략 안정성 강화:**
+    *   **종목별 매수 횟수 제한 및 쿨다운 로직 도입 (`strategy.py`):** 특정 종목에 대해 단기간 내 반복적인 매수 및 손절을 방지하기 위해, 설정된 최대 매수 체결 횟수 도달 시 해당 종목을 일정 시간 동안 '쿨다운(COOL_DOWN)' 상태로 전환하는 기능을 추가했습니다. 쿨다운 기간이 지나면 해당 종목은 다시 정상적인 매매 대상으로 고려됩니다.
+        *   `TradingState` Enum에 `COOL_DOWN` 상태 추가.
+        *   `StrategySettings`에 `cooldown_duration_minutes` 설정 추가.
+        *   `StockTrackingData`에 `cooldown_until_timestamp` 필드 추가.
+    *   **단위 테스트 추가 (`tests/test_strategy.py`):** 새로 추가된 매수 횟수 제한 및 쿨다운 로직의 정확성을 검증하기 위한 단위 테스트 케이스들을 보강했습니다.
+
+2.  **데이터베이스 관리 개선 (`database.py`):**
+    *   **테이블 스키마 자동 마이그레이션:** 프로그램 시작 시 `trades` 테이블의 스키마를 자동으로 확인하여, `net_profit` 및 `slippage` 컬럼이 존재하지 않을 경우 자동으로 추가하는 기능을 구현했습니다. 이를 통해 구버전 데이터베이스 스키마와의 호환성 문제를 해결하고 데이터 무결성을 향상시켰습니다.
+
+3.  **API 연동 안정성 향상 (`kiwoom_api.py`):**
+    *   **TR 데이터 수신 처리 개선:** `on_receive_tr_data` 함수에서 시스템에 의해 자동으로 발생할 수 있는 TR(사용자가 직접 요청하지 않은 TR) 수신 시, 관련 요청 정보가 내부 캐시에 없는 경우 불필요한 오류 발생 없이 해당 이벤트를 안전하게 처리하도록 로직을 수정했습니다.
+    *   **주문 연결 로직 로깅 강화 (`strategy.py`):** 체결 데이터와 원주문을 연결하는 `_find_active_order_rq_name_key` 함수에서 주문 매칭에 실패했을 경우, 원인 분석에 용이하도록 더 상세한 정보를 포함하는 에러 로그를 남기도록 개선했습니다.
+
+4.  **코드 품질 개선 (`strategy.py`):**
+    *   **슬리피지 계산 로직 모듈화:** 기존에 `_handle_order_execution_report` 함수 내에 있던 슬리피지 계산 로직을 `_calculate_slippage`라는 별도의 내부 함수로 분리하여 코드의 가독성과 유지보수성을 높였습니다.
