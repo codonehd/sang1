@@ -1280,6 +1280,18 @@ class TradingStrategy(QObject):
             self.log(f"[{code}] BOUGHT 상태이나, 활성 매도 주문({len(active_sell_orders)}건) 존재. 추가 매도 조건 검사 건너뜀.", "INFO")
             return
 
+        # 부분 익절 조건 검사 (1회만) - 다른 매도 조건보다 먼저 평가
+        if not stock_info.partial_take_profit_executed:
+            if self._check_and_execute_partial_take_profit(code, stock_info, current_price, avg_buy_price, holding_quantity):
+                # 부분 익절 실행됨
+                stock_info.is_trailing_stop_active = True
+                stock_info.current_high_price_after_buy = current_price
+                stock_info.trailing_stop_partially_sold = False # 부분 익절 후 트레일링 스탑은 새로 시작
+                stock_info.trailing_trigger_breached_time = None # 트레일링 스탑 휩쏘 관련 상태 초기화
+                self.log(f"{TradeColors.TRAILING}[{code}] 부분 익절 실행 후 트레일링 스탑 활성화 및 기준 고점({stock_info.current_high_price_after_buy:.2f}) 재설정.{TradeColors.RESET}", "INFO")
+                # 부분 익절이 실행된 턴에는 다른 매도 로직을 타지 않도록 즉시 반환
+                return
+
         # 손절 조건 검사
         if self._check_and_execute_stop_loss(code, stock_info, current_price, avg_buy_price, holding_quantity):
             return # 주문 실행됨
@@ -1290,9 +1302,8 @@ class TradingStrategy(QObject):
             stock_info.current_high_price_after_buy = current_price
             self.log(f"[{code}] BOUGHT 상태 매수 후 최고가 갱신: {old_high} -> {current_price}", "DEBUG")
         
-        # 트레일링 스탑 활성화 조건 검사 (다른 매도 조건보다 먼저 실행될 수 있도록 배치)
-        if not stock_info.is_trailing_stop_active:
-            # avg_buy_price와 holding_quantity는 이미 이 함수의 시작 부분에서 포트폴리오 기준으로 가져옴.
+        # 트레일링 스탑 활성화 조건 검사 (부분 익절이 실행되지 않았을 경우)
+        if not stock_info.is_trailing_stop_active: # 이미 부분 익절 시 True로 설정되었을 수 있음
             profit_info_for_trailing = self._calculate_expected_net_profit_info(current_price, avg_buy_price, holding_quantity, 'sell')
             if profit_info_for_trailing['net_profit_rate'] >= self.settings.trailing_stop_activation_profit_rate / 100.0:
                 stock_info.is_trailing_stop_active = True
@@ -1302,15 +1313,6 @@ class TradingStrategy(QObject):
         # 최종 익절 조건 검사
         if self._check_and_execute_full_take_profit(code, stock_info, current_price, avg_buy_price, holding_quantity):
             return # 주문 실행됨
-
-        # 부분 익절 조건 검사 (1회만)
-        if not stock_info.partial_take_profit_executed:
-            if self._check_and_execute_partial_take_profit(code, stock_info, current_price, avg_buy_price, holding_quantity):
-                # 부분 익절 후에는 상태가 PARTIAL_SOLD로 변경되어야 함 (on_chejan_data_received에서 처리 예상)
-                # 여기서는 주문 실행 후 추가 로직을 진행하지 않도록 return 할 수 있으나,
-                # 다른 조건 (예: 트레일링 스탑)도 바로 체크하는 것이 유리할 수 있음.
-                # 현재는 부분 익절 주문이 나가면 일단 현재 사이클에서는 추가 동작 안함.
-                return 
 
         # 트레일링 스탑 조건 검사
         if self._check_and_execute_trailing_stop(code, stock_info, current_price, avg_buy_price, holding_quantity):

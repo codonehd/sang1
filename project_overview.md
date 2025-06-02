@@ -161,6 +161,16 @@
     *   `StockTrackingData` (dataclass): 관심 종목별 추적 데이터 (현재가, 상태, 매수/매도 관련 정보).
     *   `watchlist` (dict): `{stock_code: StockTrackingData}`.
     *   `TradingState` (enum): 매매 상태 정의 (IDLE, WAITING, READY, BOUGHT, PARTIAL_SOLD, COMPLETE, SOLD, CANCELED).
+    *   **부분 익절과 트레일링 스탑 연동 강화 및 설정 가이드 (2024-07-30 업데이트):**
+        *   최근 업데이트(2024-07-30)를 통해 부분 익절 로직과 트레일링 스탑 로직의 연동이 강화되었습니다.
+        *   **부분 익절 우선 실행:** `partial_take_profit_rate` 조건이 충족되면, 해당 부분 익절이 다른 매도 로직보다 우선적으로 실행됩니다. (`_handle_bought_state` 참조)
+        *   **부분 익절 후 트레일링 스탑 자동 재설정:** 성공적인 부분 익절 후에는 트레일링 스탑이 **자동으로 활성화**되고, 그 기준 고점은 **부분 익절 시점의 현재가로 재설정**됩니다. 이는 `reset_trailing_high_after_partial_sell` 설정이 `False`일지라도 일반 부분 익절 후에는 항상 적용됩니다. (`reset_trailing_high_after_partial_sell`은 트레일링 스탑 자체에 의한 첫 번째 부분 매도 후의 동작을 제어합니다.)
+        *   **주요 관련 설정값 및 권장 방향:**
+            *   `partial_take_profit_rate`: (필수) 목표하는 초기 순수익률 (예: 3~5%). 이 수익률 도달 시 부분 매도.
+            *   `partial_sell_ratio`: (필수) 부분 익절 시 매도할 물량 비율 (예: 30~50%). 이 비율은 트레일링 스탑의 첫 번째 발동 시 매도 비율로도 사용됩니다.
+            *   `trailing_stop_activation_profit_rate`: (선택적) 일반적인 상황에서 트레일링 스탑이 활성화될 순수익률 (예: 2~3%). 부분 익절이 먼저 실행되면 이 값에 도달하기 전에 트레일링 스탑이 재설정될 수 있습니다.
+            *   `trailing_stop_fall_rate`: (필수) 트레일링 스탑 발동 하락률 (고점 대비, 예: 1~2%). "손해 보지 않는 투자"를 위해서는 너무 크지 않게 설정하는 것이 중요합니다.
+            *   **설정 조합 가이드:** "손해 보지 않는 투자"를 중시한다면, `partial_take_profit_rate`를 `trailing_stop_activation_profit_rate`보다 명확히 높게 설정하여 (예: 부분익절 5%, 트레일링활성 2%), 안정적인 수익 확보 후 트레일링을 시작하는 전략을 고려할 수 있습니다. 사용자의 투자 성향과 위험 감수 수준에 따라 이 값들은 신중하게 조정되어야 합니다.
 *   **`ScreenManager`:** `available_screens` (list), `screen_map` (dict), `used_screens` (dict)를 사용하여 화면 번호 관리.
 
 ## 6. 주문 처리 및 체결 로직
@@ -452,3 +462,24 @@
 
 4.  **코드 품질 개선 (`strategy.py`):**
     *   **슬리피지 계산 로직 모듈화:** 기존에 `_handle_order_execution_report` 함수 내에 있던 슬리피지 계산 로직을 `_calculate_slippage`라는 별도의 내부 함수로 분리하여 코드의 가독성과 유지보수성을 높였습니다.
+
+## 로직 변경 및 기능 개선 이력
+
+### 트레일링 스탑 및 부분 익절 로직 개선 (2024-07-30)
+
+**주요 변경 원칙:** 손해를 보지 않는 투자를 최우선으로, 부분 익절 후 트레일링 스탑을 강화하여 초기 수익을 확보하고 추가 상승을 추구하는 방향으로 로직을 개선했습니다.
+
+**세부 변경 내용:**
+
+*   **부분 익절 우선 실행:** `TradingStrategy` 클래스의 매수 상태(`BOUGHT`) 처리 로직 (`_handle_bought_state` 또는 유사 함수) 내에서, 사용자가 설정한 `partial_take_profit_rate`에 도달하여 부분 익절 조건이 충족되면 (`_check_and_execute_partial_take_profit` 함수 성공 시), 다른 매도 조건(최종 익절, 기존 트레일링 스탑 등)보다 이 부분 익절 로직이 **우선적으로 실행**됩니다.
+*   **부분 익절 후 트레일링 스탑 즉시 재설정/활성화:** 성공적인 부분 익절 직후, 남은 물량에 대한 트레일링 스탑 관리가 다음과 같이 즉시 업데이트됩니다:
+    *   `stock_info.is_trailing_stop_active = True`: 트레일링 스탑이 즉시 활성화됩니다.
+    *   `stock_info.current_high_price_after_buy = current_price`: 트레일링 스탑의 기준이 되는 고점은 부분 익절이 실행된 시점의 `current_price`(현재가)로 새롭게 설정됩니다.
+    *   `stock_info.trailing_stop_partially_sold = False`: 이전에 트레일링 스탑에 의해 부분 매도가 일어났었더라도, 일반 부분 익절 후에는 트레일링 스탑이 새로 시작되는 것으로 간주하여 해당 플래그를 초기화합니다.
+    *   `stock_info.trailing_trigger_breached_time = None`: 트레일링 스탑의 휩쏘 방지용 타이머도 초기화됩니다.
+*   **단일 행동 우선 원칙:** 부분 익절이 실행된 해당 거래 주기(tick 또는 timer 주기)에는 추가적인 다른 매도 로직(예: 손절, 최종 익절, 변경 전 트레일링 스탑)이 실행되지 않고, 다음 거래 주기부터 새롭게 설정된 트레일링 스탑 조건 등에 따라 판단합니다.
+
+**기대 효과:**
+
+*   사용자가 설정한 최소 수익 구간(`partial_take_profit_rate`) 도달 시, 우선적으로 이익의 일부를 안정적으로 실현합니다.
+*   일부 이익 실현 후에는 즉시 트레일링 스탑을 현재가 기준으로 재설정하여, 이미 확보한 수익을 보호하면서 남은 물량으로 추가적인 시장 상승분을 적극적으로 따라갈 수 있도록 합니다. 이는 "손해 보지 않는 투자" 원칙에 부합하며, 수익을 극대화할 기회를 제공합니다.
